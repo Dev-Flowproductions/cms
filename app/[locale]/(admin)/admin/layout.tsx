@@ -11,7 +11,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   await requireTeamMember();
-  const t = await getTranslations("admin");
+  const t = await getTranslations();
   return (
     <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
       {/* Sidebar */}
@@ -37,10 +37,10 @@ export default async function AdminLayout({
           </div>
           <div>
             <div className="font-bold text-sm leading-tight" style={{ color: "var(--text)" }}>
-              CMS
+              {t("common.appName")}
             </div>
             <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
-              Admin
+              {t("sidebarSubLabel")}
             </div>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default async function AdminLayout({
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M6 2L2 6l4 4M2 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            Back to dashboard
+            {t("admin.backToDashboard")}
           </Link>
           <AdminLogoutButton />
         </div>
@@ -77,7 +77,7 @@ export default async function AdminLayout({
           }}
         >
           <h1 className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
-            {t("title")}
+            {t("admin.title")}
           </h1>
           <LocaleSwitcher />
         </div>

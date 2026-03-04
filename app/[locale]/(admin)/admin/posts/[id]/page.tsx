@@ -78,6 +78,9 @@ export default async function EditPostPage({
           excerpt: t("excerpt"),
           content: t("content"),
           save: tCommon("save"),
+          postSettings: t("editPostPage.postSettings"),
+          markdownHint: t("editPostPage.markdownHint"),
+          preview: t("editPostPage.preview"),
         }}
         updatePostAction={handleUpdatePost}
         upsertLocalizationAction={handleUpsertLocalization}

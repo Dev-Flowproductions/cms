@@ -324,6 +324,18 @@ img, video {
   display: none;
 }
 
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
 .pointer-events-none {
   pointer-events: none;
 }
@@ -444,6 +456,22 @@ img, video {
 
 .mt-8 {
   margin-top: 2rem;
+}
+
+.mb-1\.5 {
+  margin-bottom: .375rem;
+}
+
+.mb-3 {
+  margin-bottom: .75rem;
+}
+
+.mt-0\.5 {
+  margin-top: .125rem;
+}
+
+.mt-10 {
+  margin-top: 2.5rem;
 }
 
 .line-clamp-2 {
@@ -647,6 +675,10 @@ img, video {
 
 .animate-slide-up {
   animation: .4s cubic-bezier(.16, 1, .3, 1) slideUp;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 .grid-cols-1 {
@@ -1130,6 +1162,10 @@ img, video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgba(255, 255, 255, var(--tw-text-opacity, 1));
+}
+
+.outline {
+  outline-style: solid;
 }
 
 .blur {

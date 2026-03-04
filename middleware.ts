@@ -6,72 +6,76 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const intlMiddleware = createMiddleware(routing);
 
-/** Matches /en, /en/, /pt, /pt/, /fr, /fr/ (next-intl may use trailing slash) */
-function isLocaleRoot(pathname: string): pathname is `/en` | `/pt` | `/fr` {
+/** Matches /en, /en/, /pt, /pt/, /fr, /fr/ */
+function isLocaleRoot(pathname: string) {
   return /^\/(en|pt|fr)\/?$/.test(pathname);
+}
+
+/**
+ * Copy Set-Cookie headers from `src` into `dest` so Supabase session
+ * cookies are always forwarded regardless of which response we return.
+ */
+function copySupabaseCookies(src: NextResponse, dest: NextResponse): NextResponse {
+  src.headers.getSetCookie().forEach((c) => dest.headers.append("Set-Cookie", c));
+  return dest;
 }
 
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Supabase: refresh session and get response with updated cookies
-  const { supabase, response: responseWithCookies } = await updateSession(request);
+  // Refresh Supabase session — must happen first so cookies are up to date
+  const { supabase, response: supabaseRes } = await updateSession(request);
 
-  // Redirect /admin and /admin/* to default locale
+  // ── Hard redirects (no intl needed) ────────────────────────────────────────
+
+  // Redirect bare /admin/* to default locale
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    const locale = routing.defaultLocale;
     const url = request.nextUrl.clone();
-    url.pathname = `/${locale}${pathname}`;
-    return NextResponse.redirect(url);
+    url.pathname = `/${routing.defaultLocale}${pathname}`;
+    return copySupabaseCookies(supabaseRes, NextResponse.redirect(url));
   }
 
-  // Root "/" always goes to login first (first screen = login)
+  // Root "/" → login
   if (pathname === "/") {
-    return NextResponse.redirect(new URL(`/${routing.defaultLocale}/login`, request.url));
+    const dest = new URL(`/${routing.defaultLocale}/login`, request.url);
+    return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
   }
 
-  // Admin: require auth in middleware so we never hit the layout without cookies (avoids redirect loop)
+  // ── Auth-gated routes ───────────────────────────────────────────────────────
+
   const adminMatch = pathname.match(/^\/(en|pt|fr)\/admin(\/|$)/);
   if (adminMatch) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      const locale = adminMatch[1];
-      const redirectRes = NextResponse.redirect(new URL(`/${locale}/login`, request.url));
-      responseWithCookies.headers.getSetCookie().forEach((c) => redirectRes.headers.append("Set-Cookie", c));
-      return redirectRes;
+      const dest = new URL(`/${adminMatch[1]}/login`, request.url);
+      return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
   }
 
-  // Dashboard: require auth (any logged-in user)
   const dashboardMatch = pathname.match(/^\/(en|pt|fr)\/dashboard(\/|$)/);
   if (dashboardMatch) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      const locale = dashboardMatch[1];
-      const redirectRes = NextResponse.redirect(new URL(`/${locale}/login`, request.url));
-      responseWithCookies.headers.getSetCookie().forEach((c) => redirectRes.headers.append("Set-Cookie", c));
-      return redirectRes;
+      const dest = new URL(`/${dashboardMatch[1]}/login`, request.url);
+      return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
   }
 
-  // First screen = login: redirect from locale root based on auth state
+  // Locale root → login (unauthed) or dashboard (authed)
   if (isLocaleRoot(pathname)) {
     const { data: { user } } = await supabase.auth.getUser();
     const locale = pathname.replace(/^\/|\/$/g, "") || routing.defaultLocale;
-    if (!user) {
-      return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
-    }
-    // Authenticated: send to dashboard
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    const dest = user
+      ? new URL(`/${locale}/dashboard`, request.url)
+      : new URL(`/${locale}/login`, request.url);
+    return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
   }
 
-  // Return response with refreshed cookies so client stays in sync (Supabase recommendation)
-  const intlResponse = intlMiddleware(request);
-  const isRedirect = intlResponse.status === 307 || intlResponse.status === 302;
-  if (isRedirect) {
-    return intlResponse;
-  }
-  return responseWithCookies;
+  // ── Normal page request: run intlMiddleware so locale cookie is always set ──
+  // intlMiddleware may itself redirect (e.g. unknown locale → default).
+  // In all cases we merge Supabase cookies into its response.
+  const intlRes = intlMiddleware(request);
+  return copySupabaseCookies(supabaseRes, intlRes);
 }
 
 export const config = {

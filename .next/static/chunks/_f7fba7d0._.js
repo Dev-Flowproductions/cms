@@ -41,7 +41,7 @@ var _s = __turbopack_context__.k.signature();
 ;
 function LoginPage() {
     _s();
-    const t = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$index$2e$react$2d$client$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useTranslations"])("auth");
+    const t = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$index$2e$react$2d$client$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useTranslations"])();
     const locale = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$index$2e$react$2d$client$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useLocale"])();
     const [email, setEmail] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
     const [password, setPassword] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
@@ -65,7 +65,7 @@ function LoginPage() {
             }
             if (!data.session) {
                 setLoading(false);
-                setError("Sign-in succeeded but no session was created. Try again.");
+                setError(t("auth.errors.noSession"));
                 return;
             }
             setRedirecting(true);
@@ -77,7 +77,7 @@ function LoginPage() {
             setRedirecting(false);
             const message = err instanceof Error ? err.message : String(err);
             if (message === "Failed to fetch" || message.toLowerCase().includes("fetch")) {
-                setError("Network error. Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set for this environment.");
+                setError(t("auth.errors.networkError"));
             } else {
                 setError(message);
             }
@@ -157,7 +157,7 @@ function LoginPage() {
                                     style: {
                                         color: "var(--text)"
                                     },
-                                    children: "CMS"
+                                    children: t("common.appName")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/login/page.tsx",
                                     lineNumber: 89,
@@ -183,11 +183,11 @@ function LoginPage() {
                                     color: "var(--text)"
                                 },
                                 children: [
-                                    "Content that",
+                                    t("login.tagline"),
                                     " ",
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-gradient",
-                                        children: "flows."
+                                        children: t("login.taglineAccent")
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/login/page.tsx",
                                         lineNumber: 102,
@@ -204,7 +204,7 @@ function LoginPage() {
                                 style: {
                                     color: "var(--text-muted)"
                                 },
-                                children: "An AI-native editorial platform for structured, citation-worthy publishing. Every story, every voice — in motion."
+                                children: t("login.taglineSubtitle")
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/login/page.tsx",
                                 lineNumber: 104,
@@ -221,15 +221,15 @@ function LoginPage() {
                         children: [
                             {
                                 value: "3",
-                                label: "Locales"
+                                label: t("login.stats.locales")
                             },
                             {
                                 value: "AI",
-                                label: "Assisted"
+                                label: t("login.stats.assisted")
                             },
                             {
                                 value: "∞",
-                                label: "Posts"
+                                label: t("login.stats.posts")
                             }
                         ].map((stat)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 children: [
@@ -315,7 +315,7 @@ function LoginPage() {
                                     style: {
                                         color: "var(--text)"
                                     },
-                                    children: "CMS"
+                                    children: t("common.appName")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/login/page.tsx",
                                     lineNumber: 141,
@@ -332,7 +332,7 @@ function LoginPage() {
                             style: {
                                 color: "var(--text)"
                             },
-                            children: "Welcome back"
+                            children: t("login.title")
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/login/page.tsx",
                             lineNumber: 144,
@@ -343,7 +343,7 @@ function LoginPage() {
                             style: {
                                 color: "var(--text-muted)"
                             },
-                            children: "Sign in to your editorial workspace."
+                            children: t("login.subtitle")
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/login/page.tsx",
                             lineNumber: 147,
@@ -361,7 +361,7 @@ function LoginPage() {
                                             style: {
                                                 color: "var(--text-muted)"
                                             },
-                                            children: t("email")
+                                            children: t("auth.email")
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/login/page.tsx",
                                             lineNumber: 153,
@@ -388,7 +388,7 @@ function LoginPage() {
                                                 e.currentTarget.style.boxShadow = "none";
                                             },
                                             autoComplete: "email",
-                                            placeholder: "you@example.com"
+                                            placeholder: t("login.emailPlaceholder")
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/login/page.tsx",
                                             lineNumber: 160,
@@ -408,7 +408,7 @@ function LoginPage() {
                                             style: {
                                                 color: "var(--text-muted)"
                                             },
-                                            children: t("password")
+                                            children: t("auth.password")
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/login/page.tsx",
                                             lineNumber: 186,
@@ -481,7 +481,7 @@ function LoginPage() {
                                             e.currentTarget.style.transform = "translateY(0)";
                                         }
                                     },
-                                    children: redirecting ? "Redirecting…" : loading ? "Signing in…" : t("signIn")
+                                    children: redirecting ? t("login.redirecting") : loading ? t("login.signingIn") : t("auth.signIn")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/login/page.tsx",
                                     lineNumber: 231,

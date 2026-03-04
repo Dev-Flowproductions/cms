@@ -5,6 +5,7 @@
   "/[locale]/(admin)/admin/review-queue/page": "app/[locale]/(admin)/admin/review-queue/page.js",
   "/[locale]/(admin)/admin/settings/page": "app/[locale]/(admin)/admin/settings/page.js",
   "/[locale]/(admin)/admin/sources/page": "app/[locale]/(admin)/admin/sources/page.js",
+  "/[locale]/(admin)/admin/users/page": "app/[locale]/(admin)/admin/users/page.js",
   "/[locale]/(public)/blog/page": "app/[locale]/(public)/blog/page.js",
   "/[locale]/(public)/page": "app/[locale]/(public)/page.js",
   "/[locale]/dashboard/page": "app/[locale]/dashboard/page.js",

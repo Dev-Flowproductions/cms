@@ -287,7 +287,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin
 ;
 async function AdminLayout({ children }) {
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireTeamMember"])();
-    const t = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$esm$2f$server$2f$react$2d$server$2f$getTranslations$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__default__as__getTranslations$3e$__["getTranslations"])("admin");
+    const t = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$esm$2f$server$2f$react$2d$server$2f$getTranslations$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__default__as__getTranslations$3e$__["getTranslations"])();
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen flex",
         style: {
@@ -344,7 +344,7 @@ async function AdminLayout({ children }) {
                                         style: {
                                             color: "var(--text)"
                                         },
-                                        children: "CMS"
+                                        children: t("common.appName")
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/layout.tsx",
                                         lineNumber: 39,
@@ -355,7 +355,7 @@ async function AdminLayout({ children }) {
                                         style: {
                                             color: "var(--accent)"
                                         },
-                                        children: "Admin"
+                                        children: t("sidebarSubLabel")
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/layout.tsx",
                                         lineNumber: 42,
@@ -419,7 +419,7 @@ async function AdminLayout({ children }) {
                                         lineNumber: 60,
                                         columnNumber: 13
                                     }, this),
-                                    "Back to dashboard"
+                                    t("admin.backToDashboard")
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/layout.tsx",
@@ -458,7 +458,7 @@ async function AdminLayout({ children }) {
                                 style: {
                                     color: "var(--text-muted)"
                                 },
-                                children: t("title")
+                                children: t("admin.title")
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/layout.tsx",
                                 lineNumber: 79,

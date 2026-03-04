@@ -4,7 +4,7 @@ import { Link } from "@/lib/navigation";
 const QUICK_LINKS = [
   { href: "/admin/posts", labelKey: "posts" as const },
   { href: "/admin/review-queue", labelKey: "reviewQueue" as const },
-  { href: "/admin/sources", labelKey: "sources" as const },
+  { href: "/admin/users", labelKey: "users" as const },
   { href: "/admin/settings", labelKey: "settings" as const },
 ];
 
@@ -18,7 +18,7 @@ export default async function AdminPage() {
           className="text-xs font-semibold uppercase tracking-widest mb-2"
           style={{ color: "var(--accent)" }}
         >
-          Admin panel
+          {t("panelEyebrow")}
         </p>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
           {t("dashboard")}

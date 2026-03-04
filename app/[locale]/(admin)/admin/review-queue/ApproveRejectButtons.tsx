@@ -15,7 +15,7 @@ export function ApproveRejectButtons({ postId }: { postId: string }) {
   }
 
   async function handleReject() {
-    const reason = window.prompt("Reject reason (optional):");
+    const reason = window.prompt(t("reviewQueuePage.rejectPrompt"));
     const result = await rejectPost(postId, reason ?? undefined);
     if (result.error) alert(result.error);
     else router.refresh();

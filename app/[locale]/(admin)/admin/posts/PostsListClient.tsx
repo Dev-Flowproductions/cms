@@ -28,7 +28,7 @@ export function PostsListClient({
           href="/admin/posts"
           className={`px-3 py-1.5 text-sm rounded ${!statusFilter ? "bg-gray-200 dark:bg-gray-700" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
         >
-          All
+          {t("postsPage.filterAll")}
         </Link>
         {["draft", "review", "published"].map((s) => (
           <Link
@@ -48,7 +48,7 @@ export function PostsListClient({
               <th className="text-left p-3 font-medium">{t("status")}</th>
               <th className="text-left p-3 font-medium">{t("primaryLocale")}</th>
               <th className="text-left p-3 font-medium">{t("author")}</th>
-              <th className="text-left p-3 font-medium">Updated</th>
+              <th className="text-left p-3 font-medium">{t("table.updated")}</th>
               <th className="p-3" />
             </tr>
           </thead>
@@ -56,7 +56,7 @@ export function PostsListClient({
             {initialPosts.length === 0 ? (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-gray-500">
-                  No posts yet. Create one to get started.
+                  {t("postsPage.noPosts")}
                 </td>
               </tr>
             ) : (
@@ -74,7 +74,7 @@ export function PostsListClient({
                       href={`/admin/posts/${post.id}`}
                       className="text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      Edit
+                      {t("editPost")}
                     </Link>
                   </td>
                 </tr>

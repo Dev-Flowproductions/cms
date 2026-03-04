@@ -37,8 +37,8 @@ const QUICK_LINKS = [
         labelKey: "reviewQueue"
     },
     {
-        href: "/admin/sources",
-        labelKey: "sources"
+        href: "/admin/users",
+        labelKey: "users"
     },
     {
         href: "/admin/settings",
@@ -58,7 +58,7 @@ async function AdminPage() {
                         style: {
                             color: "var(--accent)"
                         },
-                        children: "Admin panel"
+                        children: t("panelEyebrow")
                     }, void 0, false, {
                         fileName: "[project]/app/[locale]/(admin)/admin/page.tsx",
                         lineNumber: 17,

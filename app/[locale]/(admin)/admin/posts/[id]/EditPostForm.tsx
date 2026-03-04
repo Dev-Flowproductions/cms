@@ -86,7 +86,7 @@ export function EditPostForm({
     <div className="space-y-8">
       {/* Post-level fields */}
       <section className="border border-gray-200 dark:border-gray-700 rounded p-4">
-        <h2 className="font-medium mb-4">Post settings</h2>
+        <h2 className="font-medium mb-4">{labels.postSettings}</h2>
         <form action={setPostState} className="space-y-4">
           <input type="hidden" name="id" value={post.id} />
           <div>
@@ -221,7 +221,7 @@ export function EditPostForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{labels.content} (Markdown)</label>
+            <label className="block text-sm font-medium mb-1">{labels.content} {labels.markdownHint}</label>
             <textarea
               name="content_md"
               key={`content-${activeLocale}`}
@@ -233,7 +233,7 @@ export function EditPostForm({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 font-mono text-sm"
             />
             <div className="mt-2">
-              <p className="text-sm font-medium mb-1">Preview</p>
+              <p className="text-sm font-medium mb-1">{labels.preview}</p>
               <MarkdownPreview content={currentContent} />
             </div>
           </div>

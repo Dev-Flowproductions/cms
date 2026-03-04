@@ -1,0 +1,89 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "new": "New",
+    "back": "Back",
+    "submit": "Submit",
+    "preview": "Preview"
+  },
+  "nav": {
+    "home": "Home",
+    "blog": "Blog",
+    "admin": "Admin",
+    "login": "Log in",
+    "logout": "Log out",
+    "signUp": "Sign up"
+  },
+  "admin": {
+    "title": "Admin",
+    "posts": "Posts",
+    "reviewQueue": "Review queue",
+    "sources": "Sources",
+    "settings": "Settings",
+    "newPost": "New post",
+    "editPost": "Edit post",
+    "slug": "Slug",
+    "status": "Status",
+    "primaryLocale": "Primary locale",
+    "contentType": "Content type",
+    "author": "Author",
+    "coverImage": "Cover image",
+    "publishedAt": "Published at",
+    "scheduledFor": "Scheduled for",
+    "title": "Title",
+    "excerpt": "Excerpt",
+    "content": "Content",
+    "localizations": "Localizations",
+    "approve": "Approve",
+    "reject": "Reject",
+    "checklist": "Review checklist",
+    "citations": "Citations",
+    "addSource": "Add source",
+    "url": "URL",
+    "publisher": "Publisher",
+    "notes": "Notes",
+    "claim": "Claim",
+    "quote": "Quote",
+    "sectionAnchor": "Section anchor",
+    "citationCoverage": "Citation coverage"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "resetPassword": "Reset password"
+  },
+  "post": {
+    "status": {
+      "idea": "Idea",
+      "research": "Research",
+      "draft": "Draft",
+      "optimize": "Optimize",
+      "format": "Format",
+      "review": "Review",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "contentType": {
+      "hero": "Hero",
+      "hub": "Hub",
+      "hygiene": "Hygiene"
+    }
+  },
+  "checklist": {
+    "credibility": "At least 1 external citation or expert quote",
+    "brandVoice": "Brand voice audit",
+    "entityAccuracy": "Entity accuracy",
+    "intentCompleteness": "Intent completeness (why/how/when)",
+    "formatting": "Heading hierarchy, tables, snippet eligibility"
+  }
+}

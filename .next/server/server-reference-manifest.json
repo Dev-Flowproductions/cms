@@ -1,0 +1,21 @@
+{
+  "node": {
+    "60bde383ec2e585da2bbc6e5355089359ae12892cc": {
+      "workers": {
+        "app/[locale]/(public)/blog/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(public)/blog/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/blog.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getPublishedPostsList",
+          "filename": "lib/data/blog.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(public)/blog/page": "rsc"
+      },
+      "filename": "lib/data/blog.ts",
+      "exportedName": "getPublishedPostsList"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "wIVauF/Z/Egm+tiW4i+lINKZL6KBXOcqL7D858T9u5I="
+}

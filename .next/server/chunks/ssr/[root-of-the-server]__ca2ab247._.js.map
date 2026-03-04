@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/carlo/Desktop/work/cms/app/%5Blocale%5D/%28public%29/page.tsx"],"sourcesContent":["import { Link } from \"@/lib/navigation\";\nimport { getTranslations } from \"next-intl/server\";\n\nexport default async function HomePage() {\n  const t = await getTranslations(\"nav\");\n  return (\n    <div>\n      <h1 className=\"text-2xl font-bold mb-4\">AI-native CMS</h1>\n      <p className=\"text-gray-600 dark:text-gray-400 mb-6\">\n        Citation-worthy, entity-structured content with a Human-in-the-Loop editorial pipeline.\n      </p>\n      <Link\n        href=\"/blog\"\n        className=\"inline-block px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded font-medium\"\n      >\n        {t(\"blog\")}\n      </Link>\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAAA;AACA;;;;AAEe,eAAe;IAC5B,MAAM,IAAI,MAAM,IAAA,4PAAe,EAAC;IAChC,qBACE,8OAAC;;0BACC,8OAAC;gBAAG,WAAU;0BAA0B;;;;;;0BACxC,8OAAC;gBAAE,WAAU;0BAAwC;;;;;;0BAGrD,8OAAC,yHAAI;gBACH,MAAK;gBACL,WAAU;0BAET,EAAE;;;;;;;;;;;;AAIX","debugId":null}}]
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/i18n/routing.ts"],"sourcesContent":["import { defineRouting } from \"next-intl/routing\";\n\nexport const routing = defineRouting({\n  locales: [\"en\", \"pt\", \"fr\"],\n  defaultLocale: \"en\",\n  localePrefix: \"always\",\n});\n"],"names":[],"mappings":";;;;AAAA;;AAEO,MAAM,UAAU,IAAA,wKAAa,EAAC;IACnC,SAAS;QAAC;QAAM;QAAM;KAAK;IAC3B,eAAe;IACf,cAAc;AAChB"}},
+    {"offset": {"line": 35, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import createMiddleware from \"next-intl/middleware\";\nimport { routing } from \"./i18n/routing\";\n\nexport default createMiddleware(routing);\n\nexport const config = {\n  matcher: [\n    \"/\",\n    \"/(en|pt|fr)/:path*\",\n  ],\n};\n"],"names":[],"mappings":";;;;;;AAAA;AACA;;;uCAEe,IAAA,qKAAgB,EAAC,kIAAO;AAEhC,MAAM,SAAS;IACpB,SAAS;QACP;QACA;KACD;AACH"}}]
+}

@@ -86,7 +86,7 @@ export type ClientRow = {
   gcc_api_key: string | null;
   frequency: Frequency;
   created_at: string;
-  profiles: { display_name: string | null; id: string } | null;
+  profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
   email?: string;
 };
 

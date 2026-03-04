@@ -35,7 +35,7 @@ export default function LoginPage() {
       const message = err instanceof Error ? err.message : String(err);
       if (message === "Failed to fetch" || message.toLowerCase().includes("fetch")) {
         setError(
-          "Network error. In Supabase Dashboard go to Authentication → URL Configuration and add your app URL (e.g. http://localhost:3000) to Site URL and Redirect URLs."
+          "Network error. Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set for this environment (e.g. .env.local locally, or env vars in your host for staging/production)."
         );
       } else {
         setError(message);

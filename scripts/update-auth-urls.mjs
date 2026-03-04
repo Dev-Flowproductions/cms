@@ -1,5 +1,9 @@
 /**
- * Updates Supabase Auth URL config (Site URL + Redirect URLs) via Management API.
+ * Optional: Updates Supabase Auth Site URL and Redirect URLs via Management API.
+ * Only needed if you use OAuth or magic-link emails and need redirect allow-list.
+ * For email/password sign-in you do NOT need this; set NEXT_PUBLIC_SUPABASE_*
+ * per environment (e.g. in Vercel/host env for staging/production) instead.
+ *
  * Run: SUPABASE_ACCESS_TOKEN=xxx node scripts/update-auth-urls.mjs
  * Get token: https://supabase.com/dashboard/account/tokens
  */

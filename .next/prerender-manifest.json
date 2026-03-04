@@ -1,1 +1,11 @@
-{"version":4,"routes":{"/en":{},"/pt":{},"/fr":{},"/en/blog":{},"/pt/blog":{},"/fr/blog":{},"/en/admin":{},"/pt/admin":{},"/fr/admin":{},"/en/login":{},"/pt/login":{},"/fr/login":{}},"dynamicRoutes":{"/[locale]":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]","routeRegex":"^\\/([^/]+?)(?:\\/)?$","allowHeader":[]},"/[locale]/blog":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/blog","routeRegex":"^\\/([^/]+?)\\/blog(?:\\/)?$","allowHeader":[]},"/[locale]/admin":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/admin","routeRegex":"^\\/([^/]+?)\\/admin(?:\\/)?$","allowHeader":[]},"/[locale]/login":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/[locale]/login","routeRegex":"^\\/([^/]+?)\\/login(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"acb5bcfd550efeb9a233939cec2907a5","previewModeSigningKey":"8d4c410bb2f311d69d03768cd7f5979ef10d990d2a629a324cca6ec40278f90c","previewModeEncryptionKey":"ceef5bbe8d9e26e6cb5c6c2c72cab4860ccaa2b2916f7208f206283f0d1f4d15"}}
+{
+  "version": 4,
+  "routes": {},
+  "dynamicRoutes": {},
+  "notFoundRoutes": [],
+  "preview": {
+    "previewModeId": "9d48b277009143457cf7fba9fe604d27",
+    "previewModeSigningKey": "cf09b4926bb90f58564f3ee6245337391f75d42f443ba64955acb353346cfaff",
+    "previewModeEncryptionKey": "c5036b62dcf4c37b4ec9fc796f76d404bbb244e8c4d666fd3deb5b6f6860b6ef"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/carlo/Desktop/work/cms/app/%5Blocale%5D/login/layout.tsx"],"sourcesContent":["export default async function LoginLayout({\n  children,\n}: {\n  children: React.ReactNode;\n}) {\n  // Do NOT redirect logged-in users here: server redirect drops Set-Cookie and\n  // client redirect (RedirectToAdmin) causes admin layout to run without cookies\n  // in same request, redirecting back to login → loop.\n  return <>{children}</>;\n}\n"],"names":[],"mappings":";;;;;;AAAe,eAAe,YAAY,EACxC,QAAQ,EAGT;IACC,6EAA6E;IAC7E,+EAA+E;IAC/E,qDAAqD;IACrD,qBAAO;kBAAG;;AACZ","debugId":null}}]
+}

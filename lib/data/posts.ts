@@ -18,3 +18,19 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus }) {
   if (error) throw error;
   return data ?? [];
 }
+
+export async function getPostsForDashboard(userId: string, isAdmin: boolean) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("posts")
+    .select("id, slug, status, primary_locale, author_id, updated_at, profiles(display_name)")
+    .order("updated_at", { ascending: false });
+
+  if (!isAdmin) {
+    query = query.eq("author_id", userId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}

@@ -5,8 +5,8 @@ import { useRouter } from "@/lib/navigation";
 import {
   getReviewChecklist,
   saveReviewChecklist,
-  DEFAULT_CHECKLIST_KEYS,
 } from "../../review-queue/actions";
+import { DEFAULT_CHECKLIST_KEYS } from "../../review-queue/constants";
 import { useTranslations } from "next-intl";
 
 const CHECKLIST_MESSAGE_KEYS: Record<string, string> = {

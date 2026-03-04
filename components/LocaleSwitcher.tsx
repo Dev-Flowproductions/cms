@@ -10,20 +10,30 @@ export function LocaleSwitcher() {
   const pathnameWithoutLocale = pathname.replace(/^\/[a-z]{2}(\/|$)/, "$1") || "/";
 
   return (
-    <div className="flex gap-2">
-      {routing.locales.map((loc) => (
-        <a
-          key={loc}
-          href={`/${loc}${pathnameWithoutLocale}`}
-          className={`px-2 py-1 text-sm rounded ${
-            loc === locale
-              ? "bg-gray-200 dark:bg-gray-700 font-medium"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-          }`}
-        >
-          {loc.toUpperCase()}
-        </a>
-      ))}
+    <div
+      className="flex items-center gap-1 p-1 rounded-xl"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      {routing.locales.map((loc) => {
+        const isActive = loc === locale;
+        return (
+          <a
+            key={loc}
+            href={`/${loc}${pathnameWithoutLocale}`}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all"
+            style={{
+              background: isActive ? "var(--accent)" : "transparent",
+              color: isActive ? "white" : "var(--text-muted)",
+              boxShadow: isActive ? "0 0 10px rgba(124,92,252,0.3)" : "none",
+            }}
+          >
+            {loc}
+          </a>
+        );
+      })}
     </div>
   );
 }

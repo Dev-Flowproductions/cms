@@ -4,6 +4,14 @@
     "originalSource": "/"
   },
   {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin(\\\\.json)?[\\/#\\?]?$",
+    "originalSource": "/admin"
+  },
+  {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\\\.json)?[\\/#\\?]?$",
+    "originalSource": "/admin/:path*"
+  },
+  {
     "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/(en|pt|fr))(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\\\.json)?[\\/#\\?]?$",
     "originalSource": "/(en|pt|fr)/:path*"
   }

@@ -1,0 +1,95 @@
+{
+  "node": {
+    "40ebe1c3ca56d391392f6a1101ada304d090be0c7e": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "app/[locale]/(admin)/admin/posts/new/page.tsx"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "app/[locale]/(admin)/admin/posts/new/page.tsx"
+    },
+    "4085ccf157ba5f88cc82d8729441d224b16cd3d2ab": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deletePost",
+          "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "deletePost",
+      "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+    },
+    "40cb7ac79d62e6e80291d309da033a9a52e5125b17": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createPost",
+          "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "createPost",
+      "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+    },
+    "6002c0fa8558d1246ee28ae4e5ab6ead5795158f25": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "updatePost",
+          "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "updatePost",
+      "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+    },
+    "6072a9d62e07c9b35c4b4eed6a5ad8d96f4fc6556c": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "uploadCoverImage",
+          "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "uploadCoverImage",
+      "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+    },
+    "60cdf513920a5e481640bd8f9d000ec6b61c6148cb": {
+      "workers": {
+        "app/[locale]/(admin)/admin/posts/new/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/posts/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/posts/new/page.tsx [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "upsertLocalization",
+          "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/posts/new/page": "rsc"
+      },
+      "exportedName": "upsertLocalization",
+      "filename": "app/[locale]/(admin)/admin/posts/actions.ts"
+    }
+  },
+  "edge": {}
+}

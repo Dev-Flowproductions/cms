@@ -58,16 +58,28 @@ function LocaleSwitcher() {
     const pathname = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["usePathname"])();
     const pathnameWithoutLocale = pathname.replace(/^\/[a-z]{2}(\/|$)/, "$1") || "/";
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "flex gap-2",
-        children: __TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["routing"].locales.map((loc)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+        className: "flex items-center gap-1 p-1 rounded-xl",
+        style: {
+            background: "var(--surface)",
+            border: "1px solid var(--border)"
+        },
+        children: __TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["routing"].locales.map((loc)=>{
+            const isActive = loc === locale;
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                 href: `/${loc}${pathnameWithoutLocale}`,
-                className: `px-2 py-1 text-sm rounded ${loc === locale ? "bg-gray-200 dark:bg-gray-700 font-medium" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"}`,
-                children: loc.toUpperCase()
+                className: "px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
+                style: {
+                    background: isActive ? "var(--accent)" : "transparent",
+                    color: isActive ? "white" : "var(--text-muted)",
+                    boxShadow: isActive ? "0 0 10px rgba(124,92,252,0.3)" : "none"
+                },
+                children: loc
             }, loc, false, {
                 fileName: "[project]/components/LocaleSwitcher.tsx",
-                lineNumber: 15,
-                columnNumber: 9
-            }, this))
+                lineNumber: 23,
+                columnNumber: 11
+            }, this);
+        })
     }, void 0, false, {
         fileName: "[project]/components/LocaleSwitcher.tsx",
         lineNumber: 13,

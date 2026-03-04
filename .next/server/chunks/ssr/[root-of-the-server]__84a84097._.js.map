@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/carlo/Desktop/work/cms/app/%5Blocale%5D/%28admin%29/admin/settings/page.tsx"],"sourcesContent":["import { getTranslations } from \"next-intl/server\";\n\nexport default async function SettingsPage() {\n  const t = await getTranslations(\"admin\");\n  return (\n    <div>\n      <h1 className=\"text-xl font-bold mb-6\">{t(\"settings\")}</h1>\n      <p className=\"text-gray-600 dark:text-gray-400\">Settings (placeholder).</p>\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAAA;;;AAEe,eAAe;IAC5B,MAAM,IAAI,MAAM,IAAA,4PAAe,EAAC;IAChC,qBACE,8OAAC;;0BACC,8OAAC;gBAAG,WAAU;0BAA0B,EAAE;;;;;;0BAC1C,8OAAC;gBAAE,WAAU;0BAAmC;;;;;;;;;;;;AAGtD","debugId":null}}]
+}

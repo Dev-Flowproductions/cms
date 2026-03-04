@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getSession } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { z } from "zod";
 import type { Locale } from "@/lib/types/db";
 
@@ -13,8 +13,8 @@ const createPostSchema = z.object({
 });
 
 export async function createPost(formData: FormData) {
-  const session = await getSession();
-  if (!session?.user) return { error: "Unauthorized" };
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
 
   const parsed = createPostSchema.safeParse({
     slug: formData.get("slug")?.toString().toLowerCase().trim(),
@@ -39,7 +39,7 @@ export async function createPost(formData: FormData) {
       primary_locale,
       content_type,
       status,
-      author_id: session.user.id,
+      author_id: user.id,
     })
     .select("id")
     .single();
@@ -71,7 +71,8 @@ const updatePostSchema = z.object({
 });
 
 export async function updatePost(postId: string, formData: FormData) {
-  await getSession();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const supabase = await createClient();
 
   const slug = formData.get("slug")?.toString().toLowerCase().trim();
@@ -109,7 +110,8 @@ const localizationSchema = z.object({
 });
 
 export async function upsertLocalization(postId: string, formData: FormData) {
-  await getSession();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const parsed = localizationSchema.safeParse({
     locale: formData.get("locale"),
     title: formData.get("title") ?? "",
@@ -134,7 +136,8 @@ export async function upsertLocalization(postId: string, formData: FormData) {
 }
 
 export async function uploadCoverImage(postId: string, formData: FormData) {
-  await getSession();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const file = formData.get("file") as File | null;
   if (!file?.size) return { error: "No file provided" };
 
@@ -157,4 +160,36 @@ export async function uploadCoverImage(postId: string, formData: FormData) {
   if (updateError) return { error: updateError.message };
 
   return { success: true, path, publicUrl };
+}
+
+export async function deletePost(postId: string) {
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const supabase = await createClient();
+
+  // Verify ownership or admin role before deleting
+  const { data: post } = await supabase
+    .from("posts")
+    .select("author_id")
+    .eq("id", postId)
+    .maybeSingle();
+
+  if (!post) return { error: "Post not found" };
+
+  const isOwner = post.author_id === user.id;
+  if (!isOwner) {
+    // Check if user has admin role
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", user.id)
+      .eq("role_id", "admin")
+      .maybeSingle();
+    if (!roleRow) return { error: "Forbidden" };
+  }
+
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+  if (error) return { error: error.message };
+  return { success: true };
 }

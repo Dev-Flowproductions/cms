@@ -1,0 +1,80 @@
+{
+  "node": {
+    "00974097731fa82d08897eaef1c436651acb6a19cd": {
+      "workers": {
+        "app/[locale]/(admin)/admin/sources/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/sources/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/sources/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getSourcesList",
+          "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/sources/page": "rsc"
+      },
+      "exportedName": "getSourcesList",
+      "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+    },
+    "4035cfd28ae1a7541fcb2fafb2b84ee9cafe69ccee": {
+      "workers": {
+        "app/[locale]/(admin)/admin/sources/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/sources/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/sources/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "removeCitation",
+          "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/sources/page": "rsc"
+      },
+      "exportedName": "removeCitation",
+      "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+    },
+    "409e067179a1ddea3667ef50da3c6c3581cd5d87da": {
+      "workers": {
+        "app/[locale]/(admin)/admin/sources/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/sources/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/sources/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSource",
+          "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/sources/page": "action-browser"
+      },
+      "exportedName": "createSource",
+      "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+    },
+    "60031cb0a2f7a71602cac1ae5b18a7eb19b0675106": {
+      "workers": {
+        "app/[locale]/(admin)/admin/sources/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/sources/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/sources/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "addCitation",
+          "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/sources/page": "rsc"
+      },
+      "exportedName": "addCitation",
+      "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+    },
+    "6066539023e9cddd05773d7bcc120692efce0ea6cb": {
+      "workers": {
+        "app/[locale]/(admin)/admin/sources/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/sources/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/sources/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getCitationsForPost",
+          "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/sources/page": "rsc"
+      },
+      "exportedName": "getCitationsForPost",
+      "filename": "app/[locale]/(admin)/admin/sources/actions.ts"
+    }
+  },
+  "edge": {}
+}

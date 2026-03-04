@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getSession } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 export async function getSourcesList() {
   const supabase = await createClient();
@@ -14,8 +14,8 @@ export async function getSourcesList() {
 }
 
 export async function createSource(formData: FormData) {
-  const session = await getSession();
-  if (!session?.user) return { error: "Unauthorized" };
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
 
   const url = formData.get("url")?.toString()?.trim();
   if (!url) return { error: "URL is required" };
@@ -26,7 +26,7 @@ export async function createSource(formData: FormData) {
     title: formData.get("title")?.toString()?.trim() || null,
     publisher: formData.get("publisher")?.toString()?.trim() || null,
     notes: formData.get("notes")?.toString()?.trim() || null,
-    created_by: session.user.id,
+    created_by: user.id,
   });
   if (error) return { error: error.message };
   return { success: true };
@@ -45,7 +45,8 @@ export async function getCitationsForPost(postId: string, locale?: string) {
 }
 
 export async function addCitation(postId: string, formData: FormData) {
-  await getSession();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const sourceId = formData.get("source_id")?.toString();
   const locale = formData.get("locale")?.toString();
   if (!sourceId || !locale) return { error: "Source and locale required" };
@@ -64,7 +65,8 @@ export async function addCitation(postId: string, formData: FormData) {
 }
 
 export async function removeCitation(citationId: string) {
-  await getSession();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const supabase = await createClient();
   const { error } = await supabase.from("citations").delete().eq("id", citationId);
   if (error) return { error: error.message };

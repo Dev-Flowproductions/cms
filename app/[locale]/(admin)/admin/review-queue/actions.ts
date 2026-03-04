@@ -1,16 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireReviewer } from "@/lib/auth";
-import { getSession } from "@/lib/auth";
+import { requireReviewer, getUser } from "@/lib/auth";
 
-export const DEFAULT_CHECKLIST_KEYS = [
-  "credibility",
-  "brand_voice",
-  "entity_accuracy",
-  "intent_completeness",
-  "formatting",
-] as const;
 
 export async function getReviewChecklist(postId: string) {
   await requireReviewer();
@@ -30,12 +22,12 @@ export async function saveReviewChecklist(
   items: Array<{ key: string; label: string; passed: boolean; notes?: string }>,
   status: "pending" | "passed" | "failed"
 ) {
-  const { session } = await requireReviewer();
+  const { user } = await requireReviewer();
   const supabase = await createClient();
   const { error } = await supabase.from("review_checklists").upsert(
     {
       post_id: postId,
-      reviewer_id: session.user.id,
+      reviewer_id: user.id,
       locale: null,
       items,
       status,
@@ -48,7 +40,7 @@ export async function saveReviewChecklist(
 }
 
 export async function approvePost(postId: string) {
-  const { session } = await requireReviewer();
+  const { user } = await requireReviewer();
   const supabase = await createClient();
 
   const { data: checklist } = await supabase
@@ -71,7 +63,7 @@ export async function approvePost(postId: string) {
 
   await supabase.from("audit_events").insert({
     post_id: postId,
-    user_id: session.user.id,
+    user_id: user.id,
     action: "approved",
     payload: {},
   });
@@ -80,7 +72,7 @@ export async function approvePost(postId: string) {
 }
 
 export async function rejectPost(postId: string, reason?: string) {
-  const { session } = await requireReviewer();
+  const { user } = await requireReviewer();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -92,7 +84,7 @@ export async function rejectPost(postId: string, reason?: string) {
 
   await supabase.from("audit_events").insert({
     post_id: postId,
-    user_id: session.user.id,
+    user_id: user.id,
     action: "rejected",
     payload: { reason: reason ?? "" },
   });
@@ -101,8 +93,8 @@ export async function rejectPost(postId: string, reason?: string) {
 }
 
 export async function publishPost(postId: string) {
-  const session = await getSession();
-  if (!session?.user) return { error: "Unauthorized" };
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
   const supabase = await createClient();
 
   const { data: post } = await supabase
@@ -123,7 +115,7 @@ export async function publishPost(postId: string) {
 
   await supabase.from("audit_events").insert({
     post_id: postId,
-    user_id: session.user.id,
+    user_id: user.id,
     action: "published",
     payload: {},
   });

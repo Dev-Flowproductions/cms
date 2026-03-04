@@ -1,0 +1,50 @@
+{
+  "node": {
+    "0010e0a1fb7e7be1e106469eb73e334163fa63482c": {
+      "workers": {
+        "app/[locale]/(admin)/admin/review-queue/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/review-queue/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/review.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/review-queue/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getReviewQueuePosts",
+          "filename": "lib/data/review.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/review-queue/page": "rsc"
+      },
+      "exportedName": "getReviewQueuePosts",
+      "filename": "lib/data/review.ts"
+    },
+    "40277749419d7872b35226f85a37729b009399c36f": {
+      "workers": {
+        "app/[locale]/(admin)/admin/review-queue/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/review-queue/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/review.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/review-queue/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "approvePost",
+          "filename": "app/[locale]/(admin)/admin/review-queue/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/review-queue/page": "action-browser"
+      },
+      "exportedName": "approvePost",
+      "filename": "app/[locale]/(admin)/admin/review-queue/actions.ts"
+    },
+    "60823feaaebe0de974e5805ec86472ee07339207ac": {
+      "workers": {
+        "app/[locale]/(admin)/admin/review-queue/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/review-queue/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/review.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/review-queue/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "rejectPost",
+          "filename": "app/[locale]/(admin)/admin/review-queue/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/review-queue/page": "action-browser"
+      },
+      "exportedName": "rejectPost",
+      "filename": "app/[locale]/(admin)/admin/review-queue/actions.ts"
+    }
+  },
+  "edge": {}
+}

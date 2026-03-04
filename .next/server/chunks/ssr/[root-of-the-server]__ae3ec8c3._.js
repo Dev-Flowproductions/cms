@@ -209,7 +209,7 @@ function isTeamRole(role) {
 "[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-/* __next_internal_action_entry_do_not_use__ [{"007b6b4da807472b0f1f4707505b3cc78e44eb6eec":"listUsers","402fdfd96925c71836e30458c1a717694aaa2babc7":"deleteUser","40428b530bc87a1ef80d778be6363371befaa2ede0":"getClientSettings","40c90a2a661f050c6dce5c9a5e45c581fa0007a736":"createUser","60126f85dffecf5e3f0995d92545bd920aa337c966":"updateClientFrequency"},"",""] */ __turbopack_context__.s([
+/* __next_internal_action_entry_do_not_use__ [{"007b6b4da807472b0f1f4707505b3cc78e44eb6eec":"listUsers","402fdfd96925c71836e30458c1a717694aaa2babc7":"deleteUser","40428b530bc87a1ef80d778be6363371befaa2ede0":"getClientSettings","40c90a2a661f050c6dce5c9a5e45c581fa0007a736":"createUser","60126f85dffecf5e3f0995d92545bd920aa337c966":"updateClientFrequency","606b771008244063b61704d4d1337b36e09484ab6d":"saveOnboardingDomain","78f5d44ca18c6bbe20761927963ea6bcf25e273dd0":"saveGoogleTokens"},"",""] */ __turbopack_context__.s([
     "createUser",
     ()=>createUser,
     "deleteUser",
@@ -218,6 +218,10 @@ function isTeamRole(role) {
     ()=>getClientSettings,
     "listUsers",
     ()=>listUsers,
+    "saveGoogleTokens",
+    ()=>saveGoogleTokens,
+    "saveOnboardingDomain",
+    ()=>saveOnboardingDomain,
     "updateClientFrequency",
     ()=>updateClientFrequency
 ]);
@@ -236,9 +240,6 @@ const createUserSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_mo
     email: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().email(),
     password: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(8, "Password must be at least 8 characters"),
     display_name: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
-    domain: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1, "Domain is required"),
-    ga_api_key: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
-    gcc_api_key: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
     frequency: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].enum([
         "daily",
         "weekly",
@@ -252,9 +253,6 @@ async function createUser(formData) {
         email: formData.get("email")?.toString().trim(),
         password: formData.get("password")?.toString(),
         display_name: formData.get("display_name")?.toString().trim() || undefined,
-        domain: formData.get("domain")?.toString().trim(),
-        ga_api_key: formData.get("ga_api_key")?.toString().trim() || undefined,
-        gcc_api_key: formData.get("gcc_api_key")?.toString().trim() || undefined,
         frequency: formData.get("frequency")?.toString() ?? "weekly"
     });
     if (!parsed.success) {
@@ -263,7 +261,7 @@ async function createUser(formData) {
             error: firstError ?? "Invalid input"
         };
     }
-    const { email, password, display_name, domain, ga_api_key, gcc_api_key, frequency } = parsed.data;
+    const { email, password, display_name, frequency } = parsed.data;
     const admin = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createAdminClient"])();
     // 1. Create auth user
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -287,18 +285,15 @@ async function createUser(formData) {
         role_id: "contributor"
     });
     if (roleError) {
-        // Roll back: delete the auth user
         await admin.auth.admin.deleteUser(userId);
         return {
             error: roleError.message
         };
     }
-    // 4. Create clients row
+    // 4. Create clients row — domain is null until onboarding completes
     const { error: clientError } = await admin.from("clients").insert({
         user_id: userId,
-        domain,
-        ga_api_key: ga_api_key ?? null,
-        gcc_api_key: gcc_api_key ?? null,
+        domain: null,
         frequency
     });
     if (clientError) {
@@ -315,8 +310,7 @@ async function createUser(formData) {
 async function listUsers() {
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const admin = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createAdminClient"])();
-    // Use admin client so RLS is bypassed and auth.admin is available
-    const { data, error } = await admin.from("clients").select("id, user_id, domain, ga_api_key, gcc_api_key, frequency, created_at, profiles(id, display_name)").order("created_at", {
+    const { data, error } = await admin.from("clients").select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, created_at, profiles(id, display_name)").order("created_at", {
         ascending: false
     });
     if (error) throw error;
@@ -334,9 +328,36 @@ async function listUsers() {
 }
 async function getClientSettings(userId) {
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
-    const { data, error } = await supabase.from("clients").select("id, domain, ga_api_key, gcc_api_key, frequency").eq("user_id", userId).maybeSingle();
+    const { data, error } = await supabase.from("clients").select("id, domain, google_access_token, google_connected_at, frequency").eq("user_id", userId).maybeSingle();
     if (error) throw error;
     return data;
+}
+async function saveOnboardingDomain(userId, domain) {
+    const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
+    const { error } = await supabase.from("clients").update({
+        domain: domain.trim()
+    }).eq("user_id", userId);
+    if (error) return {
+        error: error.message
+    };
+    return {
+        success: true
+    };
+}
+async function saveGoogleTokens(userId, accessToken, refreshToken, scope) {
+    const admin = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createAdminClient"])();
+    const { error } = await admin.from("clients").update({
+        google_access_token: accessToken,
+        google_refresh_token: refreshToken,
+        google_scope: scope,
+        google_connected_at: new Date().toISOString()
+    }).eq("user_id", userId);
+    if (error) return {
+        error: error.message
+    };
+    return {
+        success: true
+    };
 }
 async function updateClientFrequency(userId, frequency) {
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
@@ -367,12 +388,16 @@ async function deleteUser(userId) {
     createUser,
     listUsers,
     getClientSettings,
+    saveOnboardingDomain,
+    saveGoogleTokens,
     updateClientFrequency,
     deleteUser
 ]);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createUser, "40c90a2a661f050c6dce5c9a5e45c581fa0007a736", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(listUsers, "007b6b4da807472b0f1f4707505b3cc78e44eb6eec", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getClientSettings, "40428b530bc87a1ef80d778be6363371befaa2ede0", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(saveOnboardingDomain, "606b771008244063b61704d4d1337b36e09484ab6d", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(saveGoogleTokens, "78f5d44ca18c6bbe20761927963ea6bcf25e273dd0", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateClientFrequency, "60126f85dffecf5e3f0995d92545bd920aa337c966", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(deleteUser, "402fdfd96925c71836e30458c1a717694aaa2babc7", null);
 }),
@@ -649,6 +674,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin
 ;
 ;
 ;
+;
+;
 }),
 "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -669,7 +696,11 @@ __turbopack_context__.s([
     "600be81ccade5c543a772d336f94b0c4cd40131d2c",
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$data$2f$posts$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getPostsForDashboard"],
     "60126f85dffecf5e3f0995d92545bd920aa337c966",
-    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateClientFrequency"]
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateClientFrequency"],
+    "606b771008244063b61704d4d1337b36e09484ab6d",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["saveOnboardingDomain"],
+    "78f5d44ca18c6bbe20761927963ea6bcf25e273dd0",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["saveGoogleTokens"]
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f5b$locale$5d2f$dashboard$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$lib$2f$data$2f$posts$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29222c$__ACTIONS_MODULE1__$3d3e$__$225b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29222c$__ACTIONS_MODULE2__$3d3e$__$225b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$posts$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i('[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => "[project]/lib/data/posts.ts [app-rsc] (ecmascript)", ACTIONS_MODULE1 => "[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)", ACTIONS_MODULE2 => "[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)" } [app-rsc] (server actions loader, ecmascript) <locals>');
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$data$2f$posts$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/data/posts.ts [app-rsc] (ecmascript)");
@@ -934,7 +965,7 @@ async function DashboardPage() {
                                     style: {
                                         color: "var(--text)"
                                     },
-                                    children: "CMS"
+                                    children: t("common.appName")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/dashboard/page.tsx",
                                     lineNumber: 41,
@@ -1014,7 +1045,7 @@ async function DashboardPage() {
                                 style: {
                                     color: "var(--accent)"
                                 },
-                                children: isAdmin ? "Admin workspace" : "My workspace"
+                                children: isAdmin ? t("dashboard.workspaceAdmin") : t("dashboard.workspaceUser")
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/dashboard/page.tsx",
                                 lineNumber: 80,
@@ -1054,22 +1085,22 @@ async function DashboardPage() {
                         className: "grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10",
                         children: [
                             {
-                                label: "Total posts",
+                                label: t("dashboard.stats.total"),
                                 value: posts.length,
                                 accent: false
                             },
                             {
-                                label: "Published",
+                                label: t("dashboard.stats.published"),
                                 value: posts.filter((p)=>p.status === "published").length,
                                 accent: true
                             },
                             {
-                                label: "Draft",
+                                label: t("dashboard.stats.draft"),
                                 value: posts.filter((p)=>p.status === "draft").length,
                                 accent: false
                             },
                             {
-                                label: "Review",
+                                label: t("dashboard.stats.review"),
                                 value: posts.filter((p)=>p.status === "review").length,
                                 accent: false
                             }

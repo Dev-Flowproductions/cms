@@ -139,8 +139,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                   t("colUser"),
                   t("colDomain"),
                   t("colFrequency"),
-                  t("colGaKey"),
-                  t("colGccKey"),
+                  t("colGoogle"),
                   t("colCreated"),
                   "",
                 ].map((h, i) => (
@@ -161,6 +160,8 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                 const displayName = profileData?.display_name;
                 const initial = (displayName ?? u.email ?? "?")[0].toUpperCase();
                 const isDeleting = deletingId === u.user_id;
+                const googleConnected = !!u.google_connected_at;
+                const onboardingPending = !u.domain;
 
                 return (
                   <tr
@@ -201,9 +202,19 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-mono" style={{ color: "var(--text)" }}>
-                        {u.domain}
-                      </span>
+                      {onboardingPending ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ background: "rgba(245,166,35,0.1)", color: "#f5a623" }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#f5a623" }} />
+                          {t("onboardingPending")}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono" style={{ color: "var(--text)" }}>
+                          {u.domain}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -215,14 +226,17 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-mono" style={{ color: u.ga_api_key ? "var(--text-muted)" : "var(--text-faint)" }}>
-                        {u.ga_api_key ? `${u.ga_api_key.slice(0, 8)}…` : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-mono" style={{ color: u.gcc_api_key ? "var(--text-muted)" : "var(--text-faint)" }}>
-                        {u.gcc_api_key ? `${u.gcc_api_key.slice(0, 8)}…` : "—"}
-                      </span>
+                      {googleConnected ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ background: "rgba(34,211,160,0.1)", color: "#22d3a0" }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
+                          {t("googleConnected")}
+                        </span>
+                      ) : (
+                        <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                       {new Date(u.created_at).toLocaleDateString(undefined, {

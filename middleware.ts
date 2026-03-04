@@ -50,6 +50,7 @@ export default async function middleware(request: NextRequest) {
       const dest = new URL(`/${adminMatch[1]}/login`, request.url);
       return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
+    // Admins skip onboarding — let them through
   }
 
   const dashboardMatch = pathname.match(/^\/(en|pt|fr)\/dashboard(\/|$)/);
@@ -57,6 +58,34 @@ export default async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       const dest = new URL(`/${dashboardMatch[1]}/login`, request.url);
+      return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
+    }
+
+    // Onboarding gate: skip for admins, enforce for regular users
+    const onboardingDone = request.cookies.get("onboarding_done")?.value;
+    if (!onboardingDone) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role_id")
+        .eq("user_id", user.id)
+        .eq("role_id", "admin")
+        .maybeSingle();
+      const isAdmin = !!roleData;
+
+      if (!isAdmin) {
+        const locale = dashboardMatch[1];
+        const dest = new URL(`/${locale}/onboarding/domain`, request.url);
+        return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
+      }
+    }
+  }
+
+  // ── Protect onboarding routes (must be authed) ──────────────────────────────
+  const onboardingMatch = pathname.match(/^\/(en|pt|fr)\/onboarding(\/|$)/);
+  if (onboardingMatch) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const dest = new URL(`/${onboardingMatch[1]}/login`, request.url);
       return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
   }

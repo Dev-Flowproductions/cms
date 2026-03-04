@@ -40,7 +40,7 @@ export default async function AdminLayout({
               {t("common.appName")}
             </div>
             <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
-              {t("sidebarSubLabel")}
+              {t("admin.sidebarSubLabel")}
             </div>
           </div>
         </div>

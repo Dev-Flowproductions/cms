@@ -58,7 +58,7 @@ function ApproveRejectButtons(param) {
         else router.refresh();
     }
     async function handleReject() {
-        const reason = window.prompt("Reject reason (optional):");
+        const reason = window.prompt(t("reviewQueuePage.rejectPrompt"));
         const result = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$review$2d$queue$2f$data$3a$c9b8ec__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$text$2f$javascript$3e$__["rejectPost"])(postId, reason !== null && reason !== void 0 ? reason : undefined);
         if (result.error) alert(result.error);
         else router.refresh();

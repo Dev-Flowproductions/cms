@@ -164,10 +164,64 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/[locale]/onboarding/domain/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/[locale]/onboarding/domain">> = Specific
+  const handler = {} as typeof import("../../app/[locale]/onboarding/domain/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/[locale]/onboarding/google/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/[locale]/onboarding/google">> = Specific
+  const handler = {} as typeof import("../../app/[locale]/onboarding/google/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/auth/redirect-to-dashboard/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/auth/redirect-to-dashboard">> = Specific
   const handler = {} as typeof import("../../app/api/auth/redirect-to-dashboard/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/google/callback/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/google/callback">> = Specific
+  const handler = {} as typeof import("../../app/api/google/callback/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/google/oauth/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/google/oauth">> = Specific
+  const handler = {} as typeof import("../../app/api/google/oauth/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/onboarding/complete/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/onboarding/complete">> = Specific
+  const handler = {} as typeof import("../../app/api/onboarding/complete/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/onboarding/domain/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/onboarding/domain">> = Specific
+  const handler = {} as typeof import("../../app/api/onboarding/domain/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -208,6 +262,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends LayoutConfig<"/[locale]/login">> = Specific
   const handler = {} as typeof import("../../app/[locale]/login/layout.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/[locale]/onboarding/layout.tsx
+{
+  type __IsExpected<Specific extends LayoutConfig<"/[locale]/onboarding">> = Specific
+  const handler = {} as typeof import("../../app/[locale]/onboarding/layout.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

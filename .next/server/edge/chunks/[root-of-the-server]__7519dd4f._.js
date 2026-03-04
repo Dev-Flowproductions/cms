@@ -87,63 +87,61 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$middlewar
 ;
 ;
 const intlMiddleware = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$middleware$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["default"])(__TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"]);
-/** Matches /en, /en/, /pt, /pt/, /fr, /fr/ (next-intl may use trailing slash) */ function isLocaleRoot(pathname) {
+/** Matches /en, /en/, /pt, /pt/, /fr, /fr/ */ function isLocaleRoot(pathname) {
     return /^\/(en|pt|fr)\/?$/.test(pathname);
+}
+/**
+ * Copy Set-Cookie headers from `src` into `dest` so Supabase session
+ * cookies are always forwarded regardless of which response we return.
+ */ function copySupabaseCookies(src, dest) {
+    src.headers.getSetCookie().forEach((c)=>dest.headers.append("Set-Cookie", c));
+    return dest;
 }
 async function middleware(request) {
     const pathname = request.nextUrl.pathname;
-    // Supabase: refresh session and get response with updated cookies
-    const { supabase, response: responseWithCookies } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$middleware$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["updateSession"])(request);
-    // Redirect /admin and /admin/* to default locale
+    // Refresh Supabase session — must happen first so cookies are up to date
+    const { supabase, response: supabaseRes } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$middleware$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["updateSession"])(request);
+    // ── Hard redirects (no intl needed) ────────────────────────────────────────
+    // Redirect bare /admin/* to default locale
     if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-        const locale = __TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"].defaultLocale;
         const url = request.nextUrl.clone();
-        url.pathname = `/${locale}${pathname}`;
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(url);
+        url.pathname = `/${__TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"].defaultLocale}${pathname}`;
+        return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(url));
     }
-    // Root "/" always goes to login first (first screen = login)
+    // Root "/" → login
     if (pathname === "/") {
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL(`/${__TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"].defaultLocale}/login`, request.url));
+        const dest = new URL(`/${__TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"].defaultLocale}/login`, request.url);
+        return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
     }
-    // Admin: require auth in middleware so we never hit the layout without cookies (avoids redirect loop)
+    // ── Auth-gated routes ───────────────────────────────────────────────────────
     const adminMatch = pathname.match(/^\/(en|pt|fr)\/admin(\/|$)/);
     if (adminMatch) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            const locale = adminMatch[1];
-            const redirectRes = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL(`/${locale}/login`, request.url));
-            responseWithCookies.headers.getSetCookie().forEach((c)=>redirectRes.headers.append("Set-Cookie", c));
-            return redirectRes;
+            const dest = new URL(`/${adminMatch[1]}/login`, request.url);
+            return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
         }
     }
-    // Dashboard: require auth (any logged-in user)
     const dashboardMatch = pathname.match(/^\/(en|pt|fr)\/dashboard(\/|$)/);
     if (dashboardMatch) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            const locale = dashboardMatch[1];
-            const redirectRes = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL(`/${locale}/login`, request.url));
-            responseWithCookies.headers.getSetCookie().forEach((c)=>redirectRes.headers.append("Set-Cookie", c));
-            return redirectRes;
+            const dest = new URL(`/${dashboardMatch[1]}/login`, request.url);
+            return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
         }
     }
-    // First screen = login: redirect from locale root based on auth state
+    // Locale root → login (unauthed) or dashboard (authed)
     if (isLocaleRoot(pathname)) {
         const { data: { user } } = await supabase.auth.getUser();
         const locale = pathname.replace(/^\/|\/$/g, "") || __TURBOPACK__imported__module__$5b$project$5d2f$i18n$2f$routing$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["routing"].defaultLocale;
-        if (!user) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL(`/${locale}/login`, request.url));
-        }
-        // Authenticated: send to dashboard
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL(`/${locale}/dashboard`, request.url));
+        const dest = user ? new URL(`/${locale}/dashboard`, request.url) : new URL(`/${locale}/login`, request.url);
+        return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
     }
-    // Return response with refreshed cookies so client stays in sync (Supabase recommendation)
-    const intlResponse = intlMiddleware(request);
-    const isRedirect = intlResponse.status === 307 || intlResponse.status === 302;
-    if (isRedirect) {
-        return intlResponse;
-    }
-    return responseWithCookies;
+    // ── Normal page request: run intlMiddleware so locale cookie is always set ──
+    // intlMiddleware may itself redirect (e.g. unknown locale → default).
+    // In all cases we merge Supabase cookies into its response.
+    const intlRes = intlMiddleware(request);
+    return copySupabaseCookies(supabaseRes, intlRes);
 }
 const config = {
     matcher: [

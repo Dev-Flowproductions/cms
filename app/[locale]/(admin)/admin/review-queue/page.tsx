@@ -11,15 +11,15 @@ export default async function ReviewQueuePage() {
     <div>
       <h1 className="text-xl font-bold mb-6">{t("reviewQueue")}</h1>
       {posts.length === 0 ? (
-        <p className="text-gray-600 dark:text-gray-400">No posts in review.</p>
+        <p className="text-gray-600 dark:text-gray-400">{t("reviewQueuePage.empty")}</p>
       ) : (
         <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="text-left p-3 font-medium">Slug</th>
-                <th className="text-left p-3 font-medium">Locale</th>
-                <th className="text-left p-3 font-medium">Updated</th>
+                <th className="text-left p-3 font-medium">{t("table.slug")}</th>
+                <th className="text-left p-3 font-medium">{t("table.locale")}</th>
+                <th className="text-left p-3 font-medium">{t("table.updated")}</th>
                 <th className="p-3" />
               </tr>
             </thead>

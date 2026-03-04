@@ -3,7 +3,7 @@
     "40d45968520837d9b8debb37a21d7147fb5cc8fef7": {
       "workers": {
         "app/[locale]/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
           "exportedName": "getPostsForAdmin",
           "filename": "lib/data/posts.ts"
@@ -18,7 +18,7 @@
     "600be81ccade5c543a772d336f94b0c4cd40131d2c": {
       "workers": {
         "app/[locale]/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
           "exportedName": "getPostsForDashboard",
           "filename": "lib/data/posts.ts"
@@ -30,10 +30,85 @@
       "exportedName": "getPostsForDashboard",
       "filename": "lib/data/posts.ts"
     },
+    "007b6b4da807472b0f1f4707505b3cc78e44eb6eec": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "listUsers",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "exportedName": "listUsers",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
+    "402fdfd96925c71836e30458c1a717694aaa2babc7": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteUser",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "exportedName": "deleteUser",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
+    "40428b530bc87a1ef80d778be6363371befaa2ede0": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getClientSettings",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "exportedName": "getClientSettings",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
+    "40c90a2a661f050c6dce5c9a5e45c581fa0007a736": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createUser",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "exportedName": "createUser",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
+    "60126f85dffecf5e3f0995d92545bd920aa337c966": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "updateClientFrequency",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "action-browser"
+      },
+      "exportedName": "updateClientFrequency",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
     "4085ccf157ba5f88cc82d8729441d224b16cd3d2ab": {
       "workers": {
         "app/[locale]/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
           "exportedName": "deletePost",
           "filename": "app/[locale]/(admin)/admin/posts/actions.ts"

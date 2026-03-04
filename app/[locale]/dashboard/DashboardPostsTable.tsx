@@ -66,7 +66,7 @@ export function DashboardPostsTable({
   return (
     <div>
       {/* Section header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center mb-5">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
             {isAdmin ? t("dashboard.allPosts") : t("dashboard.myPosts")}
@@ -83,22 +83,6 @@ export function DashboardPostsTable({
             </span>
           )}
         </div>
-        {!isAdmin && (
-          <Link
-            href="/admin/posts/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: "var(--accent)",
-              color: "white",
-              boxShadow: "0 0 20px rgba(124,92,252,0.3)",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            {t("dashboard.newPost")}
-          </Link>
-        )}
       </div>
 
       {error && (
@@ -134,20 +118,8 @@ export function DashboardPostsTable({
             {t("dashboard.noPostsYet")}
           </p>
           <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
-            Start writing your first post.
+            {t("dashboard.postsAutoCreated")}
           </p>
-          {!isAdmin && (
-            <Link
-              href="/admin/posts/new"
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{
-                background: "var(--accent)",
-                color: "white",
-              }}
-            >
-              {t("dashboard.createFirst")}
-            </Link>
-          )}
         </div>
       ) : (
         <div
@@ -172,7 +144,7 @@ export function DashboardPostsTable({
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  Slug
+                  {t("dashboard.table.slug")}
                 </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
@@ -187,11 +159,11 @@ export function DashboardPostsTable({
                   {t("admin.primaryLocale")}
                 </th>
                 <th
-                  className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Updated
-                </th>
+                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {t("dashboard.table.updated")}
+                  </th>
                 {!isAdmin && <th className="px-6 py-4" />}
               </tr>
             </thead>
@@ -236,7 +208,7 @@ export function DashboardPostsTable({
                           </span>
                         ) : (
                           <span className="text-xs italic" style={{ color: "var(--text-faint)" }}>
-                            Unknown
+                            {t("dashboard.table.unknownAuthor")}
                           </span>
                         )}
                       </td>

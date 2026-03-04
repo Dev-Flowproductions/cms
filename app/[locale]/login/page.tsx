@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
-  const t = useTranslations("auth");
+  const t = useTranslations();
   const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +31,7 @@ export default function LoginPage() {
       }
       if (!data.session) {
         setLoading(false);
-        setError("Sign-in succeeded but no session was created. Try again.");
+        setError(t("auth.errors.noSession"));
         return;
       }
       setRedirecting(true);
@@ -44,7 +44,7 @@ export default function LoginPage() {
       const message = err instanceof Error ? err.message : String(err);
       if (message === "Failed to fetch" || message.toLowerCase().includes("fetch")) {
         setError(
-          "Network error. Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set for this environment."
+          t("auth.errors.networkError")
         );
       } else {
         setError(message);
@@ -87,7 +87,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <span className="font-bold text-lg" style={{ color: "var(--text)" }}>
-              CMS
+              {t("common.appName")}
             </span>
           </div>
         </div>
@@ -98,20 +98,20 @@ export default function LoginPage() {
             className="text-4xl font-bold leading-tight mb-4"
             style={{ color: "var(--text)" }}
           >
-            Content that{" "}
-            <span className="text-gradient">flows.</span>
+            {t("login.tagline")}{" "}
+            <span className="text-gradient">{t("login.taglineAccent")}</span>
           </h2>
           <p className="text-base leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            An AI-native editorial platform for structured, citation-worthy publishing. Every story, every voice — in motion.
+            {t("login.taglineSubtitle")}
           </p>
         </div>
 
         {/* Stats row */}
         <div className="relative z-10 flex gap-8">
           {[
-            { value: "3", label: "Locales" },
-            { value: "AI", label: "Assisted" },
-            { value: "∞", label: "Posts" },
+            { value: "3", label: t("login.stats.locales") },
+            { value: "AI", label: t("login.stats.assisted") },
+            { value: "∞", label: t("login.stats.posts") },
           ].map((stat) => (
             <div key={stat.label}>
               <div className="text-2xl font-bold" style={{ color: "var(--accent)" }}>
@@ -138,14 +138,14 @@ export default function LoginPage() {
                 <path d="M3 4.5h12M3 9h8M3 13.5h5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </div>
-            <span className="font-bold text-lg" style={{ color: "var(--text)" }}>CMS</span>
+            <span className="font-bold text-lg" style={{ color: "var(--text)" }}>{t("common.appName")}</span>
           </div>
 
           <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>
-            Welcome back
+            {t("login.title")}
           </h1>
           <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
-            Sign in to your editorial workspace.
+            {t("login.subtitle")}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 className="block text-xs font-semibold uppercase tracking-widest mb-2"
                 style={{ color: "var(--text-muted)" }}
               >
-                {t("email")}
+                {t("auth.email")}
               </label>
               <input
                 id="email"
@@ -178,7 +178,7 @@ export default function LoginPage() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("login.emailPlaceholder")}
               />
             </div>
 
@@ -188,7 +188,7 @@ export default function LoginPage() {
                 className="block text-xs font-semibold uppercase tracking-widest mb-2"
                 style={{ color: "var(--text-muted)" }}
               >
-                {t("password")}
+                {t("auth.password")}
               </label>
               <input
                 id="password"
@@ -251,10 +251,10 @@ export default function LoginPage() {
               }}
             >
               {redirecting
-                ? "Redirecting…"
+                ? t("login.redirecting")
                 : loading
-                ? "Signing in…"
-                : t("signIn")}
+                ? t("login.signingIn")
+                : t("auth.signIn")}
             </button>
           </form>
         </div>

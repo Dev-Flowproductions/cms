@@ -8,7 +8,11 @@
     "new": "New",
     "back": "Back",
     "submit": "Submit",
-    "preview": "Preview"
+    "preview": "Preview",
+    "deleting": "Deleting…",
+    "appName": "CMS",
+    "email": "Email",
+    "password": "Password"
   },
   "nav": {
     "home": "Home",
@@ -16,16 +20,66 @@
     "admin": "Admin",
     "login": "Log in",
     "logout": "Log out",
-    "signUp": "Sign up"
+    "signUp": "Sign up",
+    "footer": "AI-native CMS — Built to flow."
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your editorial workspace.",
+    "tagline": "Content that",
+    "taglineAccent": "flows.",
+    "taglineSubtitle": "An AI-native editorial platform for structured, citation-worthy publishing. Every story, every voice — in motion.",
+    "emailPlaceholder": "you@example.com",
+    "redirecting": "Redirecting…",
+    "signingIn": "Signing in…",
+    "stats": {
+      "locales": "Locales",
+      "assisted": "Assisted",
+      "posts": "Posts"
+    }
+  },
+  "userMenu": {
+    "signedInAs": "Signed in as",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
+  },
+  "settings": {
+    "account": "Account",
+    "title": "Settings",
+    "gaApiKey": "Google Analytics API key",
+    "gccApiKey": "Google Cloud Console API key",
+    "postingFrequency": "Posting frequency",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "saved": "Saved!",
+    "notConfigured": "Not configured",
+    "domain": "Domain",
+    "frequency": {
+      "daily": "Daily",
+      "dailySublabel": "1 post / day",
+      "weekly": "Weekly",
+      "weeklySublabel": "1 post / week",
+      "biweekly": "Bi-weekly",
+      "biweeklySublabel": "1 post / 2 weeks",
+      "monthly": "Monthly",
+      "monthlySublabel": "1 post / month"
+    }
   },
   "admin": {
     "title": "Admin",
     "dashboard": "Dashboard",
     "dashboardWelcome": "Welcome to the admin dashboard. Use the sidebar to manage content.",
+    "panelEyebrow": "Admin panel",
+    "sidebarSubLabel": "Admin",
+    "backToDashboard": "Back to dashboard",
+    "navigationLabel": "Navigation",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
     "posts": "Posts",
     "reviewQueue": "Review queue",
     "sources": "Sources",
     "settings": "Settings",
+    "users": "Users",
     "newPost": "New post",
     "editPost": "Edit post",
     "slug": "Slug",
@@ -51,7 +105,59 @@
     "claim": "Claim",
     "quote": "Quote",
     "sectionAnchor": "Section anchor",
-    "citationCoverage": "Citation coverage"
+    "citationCoverage": "Citation coverage",
+    "table": {
+      "slug": "Slug",
+      "locale": "Locale",
+      "updated": "Updated"
+    },
+    "postsPage": {
+      "filterAll": "All",
+      "noPosts": "No posts yet. Create one to get started."
+    },
+    "editPost": "Edit post",
+    "editPostPage": {
+      "postSettings": "Post settings",
+      "markdownHint": "(Markdown)",
+      "preview": "Preview"
+    },
+    "newPostPage": {
+      "slugPlaceholder": "my-post-slug"
+    },
+    "reviewQueuePage": {
+      "empty": "No posts in review.",
+      "rejectPrompt": "Reject reason (optional):"
+    },
+    "settingsPage": {
+      "placeholder": "Settings (placeholder)."
+    },
+    "usersPage": {
+      "title": "User accounts",
+      "subtitle": "Create and manage client accounts. Users cannot create accounts themselves.",
+      "createAccount": "Create account",
+      "creating": "Creating account…",
+      "empty": "No accounts yet",
+      "emptyHint": "Create the first client account above.",
+      "confirmDelete": "Delete account for {email}? This cannot be undone.",
+      "colUser": "User",
+      "colDomain": "Domain",
+      "colFrequency": "Frequency",
+      "colGaKey": "GA key",
+      "colGccKey": "GCC key",
+      "colCreated": "Created",
+      "createForm": {
+        "eyebrow": "New account",
+        "title": "Create user account",
+        "emailPlaceholder": "user@example.com",
+        "passwordPlaceholder": "Min. 8 characters",
+        "displayName": "Display name",
+        "displayNamePlaceholder": "Jane Doe",
+        "domain": "Domain",
+        "domainPlaceholder": "example.com",
+        "integrations": "Integrations",
+        "apiKeyPlaceholder": "AIza…"
+      }
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -59,6 +165,8 @@
     "adminWelcome": "Admin Dashboard",
     "adminSubtitle": "You're viewing all posts from all users.",
     "userSubtitle": "Manage your posts below.",
+    "workspaceAdmin": "Admin workspace",
+    "workspaceUser": "My workspace",
     "adminSectionTitle": "Admin access",
     "adminSectionDescription": "You have admin rights. Use the links below to manage content and settings.",
     "goToAdmin": "Admin panel",
@@ -74,8 +182,20 @@
     "newPost": "New post",
     "noPostsYet": "No posts yet.",
     "createFirst": "Create your first post",
+    "postsAutoCreated": "Posts will be created automatically by the system.",
     "author": "Author",
-    "confirmDelete": "Delete post \"{slug}\"? This cannot be undone."
+    "confirmDelete": "Delete post \"{slug}\"? This cannot be undone.",
+    "stats": {
+      "total": "Total posts",
+      "published": "Published",
+      "draft": "Draft",
+      "review": "Review"
+    },
+    "table": {
+      "slug": "Slug",
+      "updated": "Updated",
+      "unknownAuthor": "Unknown"
+    }
   },
   "auth": {
     "email": "Email",
@@ -85,7 +205,11 @@
     "signIn": "Sign in",
     "redirecting": "Redirecting…",
     "signUp": "Sign up",
-    "resetPassword": "Reset password"
+    "resetPassword": "Reset password",
+    "errors": {
+      "noSession": "Sign-in succeeded but no session was created. Try again.",
+      "networkError": "Network error. Check that NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set for this environment."
+    }
   },
   "post": {
     "status": {

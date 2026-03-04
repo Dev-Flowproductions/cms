@@ -24,11 +24,12 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: "sources",
-    href: "/admin/sources",
+    key: "users",
+    href: "/admin/users",
     icon: (
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M2 7.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0zM7.5 5v5M5 7.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="7.5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M2 13c0-3.314 2.462-6 5.5-6s5.5 2.686 5.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -54,7 +55,7 @@ export function AdminNav() {
         className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest"
         style={{ color: "var(--text-faint)" }}
       >
-        Navigation
+        {t("navigationLabel")}
       </p>
       {NAV_ITEMS.map((item) => {
         const isActive = pathname.includes(item.href);

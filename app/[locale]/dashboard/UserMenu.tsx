@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export function UserMenu({ email, initial }: { email: string; initial: string }) {
+  const t = useTranslations("userMenu");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -63,7 +64,7 @@ export function UserMenu({ email, initial }: { email: string; initial: string })
             style={{ borderBottom: "1px solid var(--border)" }}
           >
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-faint)" }}>
-              Signed in as
+              {t("signedInAs")}
             </p>
             <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
               {email}
@@ -93,7 +94,7 @@ export function UserMenu({ email, initial }: { email: string; initial: string })
                   strokeLinejoin="round"
                 />
               </svg>
-              {loading ? "Signing out…" : "Sign out"}
+              {loading ? t("signingOut") : t("signOut")}
             </button>
           </div>
         </div>

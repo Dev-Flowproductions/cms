@@ -5,12 +5,15 @@ import { Link } from "@/lib/navigation";
 import { DashboardPostsTable } from "./DashboardPostsTable";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { UserMenu } from "./UserMenu";
+import { AccountSettingsCard } from "./AccountSettingsCard";
+import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
 
 export default async function DashboardPage() {
   const { user, roles } = await getAuthUserWithRoles();
   const isAdmin = hasAdminRole(roles);
   const t = await getTranslations();
   const posts = await getPostsForDashboard(user.id, isAdmin);
+  const clientSettings = isAdmin ? null : await getClientSettings(user.id).catch(() => null);
 
   const initial = (user.email ?? "?")[0].toUpperCase();
 
@@ -36,7 +39,7 @@ export default async function DashboardPage() {
               </svg>
             </div>
             <span className="font-bold text-sm tracking-tight" style={{ color: "var(--text)" }}>
-              CMS
+              {t("common.appName")}
             </span>
           </div>
 
@@ -78,7 +81,7 @@ export default async function DashboardPage() {
             className="text-xs font-semibold uppercase tracking-widest mb-2"
             style={{ color: "var(--accent)" }}
           >
-            {isAdmin ? "Admin workspace" : "My workspace"}
+            {isAdmin ? t("dashboard.workspaceAdmin") : t("dashboard.workspaceUser")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
             {isAdmin
@@ -96,22 +99,22 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
           {[
             {
-              label: "Total posts",
+              label: t("dashboard.stats.total"),
               value: posts.length,
               accent: false,
             },
             {
-              label: "Published",
+              label: t("dashboard.stats.published"),
               value: posts.filter((p) => p.status === "published").length,
               accent: true,
             },
             {
-              label: "Draft",
+              label: t("dashboard.stats.draft"),
               value: posts.filter((p) => p.status === "draft").length,
               accent: false,
             },
             {
-              label: "Review",
+              label: t("dashboard.stats.review"),
               value: posts.filter((p) => p.status === "review").length,
               accent: false,
             },
@@ -140,6 +143,11 @@ export default async function DashboardPage() {
 
         {/* Posts table */}
         <DashboardPostsTable posts={posts} isAdmin={isAdmin} />
+
+        {/* Account settings — only for non-admin users who have a client row */}
+        {!isAdmin && clientSettings && (
+          <AccountSettingsCard userId={user.id} settings={clientSettings} />
+        )}
       </main>
     </div>
   );

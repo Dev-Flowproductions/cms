@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export function AdminLogoutButton() {
+  const t = useTranslations("admin");
   const [loading, setLoading] = useState(false);
   const locale = useLocale();
   const supabase = createClient();
@@ -37,7 +38,7 @@ export function AdminLogoutButton() {
           strokeLinejoin="round"
         />
       </svg>
-      {loading ? "Signing out…" : "Sign out"}
+      {loading ? t("signingOut") : t("signOut")}
     </button>
   );
 }

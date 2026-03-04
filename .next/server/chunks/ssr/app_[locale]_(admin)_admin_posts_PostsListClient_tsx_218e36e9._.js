@@ -23,7 +23,7 @@ function PostsListClient({ initialPosts, statusFilter }) {
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Link"], {
                         href: "/admin/posts",
                         className: `px-3 py-1.5 text-sm rounded ${!statusFilter ? "bg-gray-200 dark:bg-gray-700" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`,
-                        children: "All"
+                        children: t("postsPage.filterAll")
                     }, void 0, false, {
                         fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
                         lineNumber: 27,
@@ -91,7 +91,7 @@ function PostsListClient({ initialPosts, statusFilter }) {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                         className: "text-left p-3 font-medium",
-                                        children: "Updated"
+                                        children: t("table.updated")
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
                                         lineNumber: 51,
@@ -120,7 +120,7 @@ function PostsListClient({ initialPosts, statusFilter }) {
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                     colSpan: 6,
                                     className: "p-6 text-center text-gray-500",
-                                    children: "No posts yet. Create one to get started."
+                                    children: t("postsPage.noPosts")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
                                     lineNumber: 58,
@@ -178,7 +178,7 @@ function PostsListClient({ initialPosts, statusFilter }) {
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Link"], {
                                                 href: `/admin/posts/${post.id}`,
                                                 className: "text-blue-600 dark:text-blue-400 hover:underline",
-                                                children: "Edit"
+                                                children: t("editPost")
                                             }, void 0, false, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
                                                 lineNumber: 73,

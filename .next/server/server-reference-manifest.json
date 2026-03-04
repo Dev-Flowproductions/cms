@@ -154,6 +154,50 @@
       "filename": "app/[locale]/(admin)/admin/users/actions.ts",
       "exportedName": "updateClientFrequency"
     },
+    "606b771008244063b61704d4d1337b36e09484ab6d": {
+      "workers": {
+        "app/[locale]/(admin)/admin/users/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/users/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "saveOnboardingDomain",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        },
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "saveOnboardingDomain",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/users/page": "rsc",
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts",
+      "exportedName": "saveOnboardingDomain"
+    },
+    "78f5d44ca18c6bbe20761927963ea6bcf25e273dd0": {
+      "workers": {
+        "app/[locale]/(admin)/admin/users/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/(admin)/admin/users/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "saveGoogleTokens",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        },
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "saveGoogleTokens",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/(admin)/admin/users/page": "rsc",
+        "app/[locale]/dashboard/page": "rsc"
+      },
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts",
+      "exportedName": "saveGoogleTokens"
+    },
     "4085ccf157ba5f88cc82d8729441d224b16cd3d2ab": {
       "workers": {
         "app/[locale]/(admin)/admin/posts/new/page": {

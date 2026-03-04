@@ -355,7 +355,7 @@ async function AdminLayout({ children }) {
                                         style: {
                                             color: "var(--accent)"
                                         },
-                                        children: t("sidebarSubLabel")
+                                        children: t("admin.sidebarSubLabel")
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/layout.tsx",
                                         lineNumber: 42,

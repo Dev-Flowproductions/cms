@@ -2,20 +2,16 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { updateClientFrequency, type Frequency } from "@/app/[locale]/(admin)/admin/users/actions";
 
 type Settings = {
   id: string;
-  domain: string;
-  ga_api_key: string | null;
-  gcc_api_key: string | null;
+  domain: string | null;
+  google_access_token: string | null;
+  google_connected_at: string | null;
   frequency: Frequency;
 };
-
-function maskKey(key: string): string {
-  if (key.length <= 8) return "••••••••";
-  return `${key.slice(0, 6)}${"•".repeat(Math.min(key.length - 10, 12))}${key.slice(-4)}`;
-}
 
 export function AccountSettingsCard({
   userId,
@@ -25,6 +21,8 @@ export function AccountSettingsCard({
   settings: Settings | null;
 }) {
   const t = useTranslations("settings");
+  const tOnboarding = useTranslations("onboarding.google");
+  const locale = useLocale();
   const [frequency, setFrequency] = useState<Frequency>(settings?.frequency ?? "weekly");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,6 +36,8 @@ export function AccountSettingsCard({
   ];
 
   if (!settings) return null;
+
+  const googleConnected = !!settings.google_connected_at;
 
   async function handleSave() {
     setSaving(true);
@@ -73,31 +73,66 @@ export function AccountSettingsCard({
             {t("title")}
           </h2>
         </div>
-        <span
-          className="text-xs font-mono px-3 py-1 rounded-lg"
-          style={{
-            background: "var(--surface-raised)",
-            border: "1px solid var(--border)",
-            color: "var(--text-muted)",
-          }}
-        >
-          {settings.domain}
-        </span>
+        {settings.domain && (
+          <span
+            className="text-xs font-mono px-3 py-1 rounded-lg"
+            style={{
+              background: "var(--surface-raised)",
+              border: "1px solid var(--border)",
+              color: "var(--text-muted)",
+            }}
+          >
+            {settings.domain}
+          </span>
+        )}
       </div>
 
       <div className="px-6 py-6 space-y-6">
-        {/* Read-only API keys */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ReadOnlyField
-            label={t("gaApiKey")}
-            value={settings.ga_api_key ? maskKey(settings.ga_api_key) : null}
-            notConfiguredLabel={t("notConfigured")}
-          />
-          <ReadOnlyField
-            label={t("gccApiKey")}
-            value={settings.gcc_api_key ? maskKey(settings.gcc_api_key) : null}
-            notConfiguredLabel={t("notConfigured")}
-          />
+        {/* Google connection status */}
+        <div
+          className="flex items-center justify-between px-4 py-3 rounded-xl"
+          style={{
+            background: googleConnected ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
+            border: googleConnected ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            {/* Google G icon */}
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: googleConnected ? "rgba(34,211,160,0.12)" : "var(--surface)" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
+                <path d="M43.6 20.5H42V20H24v8h11.3C33.7 32.2 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7.1 28.9 5 24 5 13 5 4 14 4 25s9 20 20 20c11.1 0 20-8.9 20-20 0-1.2-.1-2.3-.4-3.5z" fill="#FFC107" />
+                <path d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7.1 28.9 5 24 5c-7.6 0-14.2 4.1-17.7 9.7z" fill="#FF3D00" />
+                <path d="M24 45c4.8 0 9.2-1.8 12.5-4.8l-6.1-5.1C28.5 36.8 26.3 37.5 24 37.5c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.8 40.8 16.4 45 24 45z" fill="#4CAF50" />
+                <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.1 5.1C36.9 37 44 31 44 24c0-1.2-.1-2.3-.4-3.5z" fill="#1976D2" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                {googleConnected ? t("googleConnected") : t("googleNotConnected")}
+              </p>
+              {googleConnected && settings.google_connected_at && (
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                  {new Date(settings.google_connected_at).toLocaleDateString(undefined, {
+                    day: "numeric", month: "short", year: "numeric",
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+          <a
+            href={`/api/google/oauth?locale=${locale}`}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            style={{
+              background: googleConnected ? "transparent" : "var(--accent)",
+              color: googleConnected ? "var(--text-muted)" : "white",
+              border: googleConnected ? "1px solid var(--border)" : "none",
+            }}
+          >
+            {googleConnected ? t("reconnectGoogle") : t("connectGoogle")}
+          </a>
         </div>
 
         {/* Frequency */}
@@ -161,37 +196,6 @@ export function AccountSettingsCard({
             </span>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ReadOnlyField({
-  label,
-  value,
-  notConfiguredLabel,
-}: {
-  label: string;
-  value: string | null;
-  notConfiguredLabel: string;
-}) {
-  return (
-    <div>
-      <p
-        className="text-xs font-semibold uppercase tracking-widest mb-1.5"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {label}
-      </p>
-      <div
-        className="px-4 py-2.5 rounded-xl text-xs font-mono"
-        style={{
-          background: "var(--surface-raised)",
-          border: "1px solid var(--border)",
-          color: value ? "var(--text-muted)" : "var(--text-faint)",
-        }}
-      >
-        {value ?? notConfiguredLabel}
       </div>
     </div>
   );

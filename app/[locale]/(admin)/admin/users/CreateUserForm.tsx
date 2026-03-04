@@ -127,35 +127,10 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit}>
-        {/* Credentials + profile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <Field label={tCommon("email")} name="email" type="email" required placeholder={t("createForm.emailPlaceholder")} />
           <Field label={tCommon("password")} name="password" type="password" required placeholder={t("createForm.passwordPlaceholder")} />
           <Field label={t("createForm.displayName")} name="display_name" placeholder={t("createForm.displayNamePlaceholder")} />
-          <Field label={t("createForm.domain")} name="domain" required placeholder={t("createForm.domainPlaceholder")} />
-        </div>
-
-        {/* API keys */}
-        <div
-          className="rounded-xl p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
-        >
-          <div>
-            <p
-              className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-              style={{ color: "var(--text-faint)" }}
-            >
-              {t("createForm.integrations")}
-            </p>
-            <div className="space-y-3">
-              <Field label={tSettings("gaApiKey")} name="ga_api_key" placeholder={t("createForm.apiKeyPlaceholder")} />
-            </div>
-          </div>
-          <div className="flex flex-col justify-end">
-            <div className="space-y-3">
-              <Field label={tSettings("gccApiKey")} name="gcc_api_key" placeholder={t("createForm.apiKeyPlaceholder")} />
-            </div>
-          </div>
         </div>
 
         {/* Frequency */}

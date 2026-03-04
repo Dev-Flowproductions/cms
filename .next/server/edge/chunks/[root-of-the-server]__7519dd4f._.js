@@ -121,12 +121,33 @@ async function middleware(request) {
             const dest = new URL(`/${adminMatch[1]}/login`, request.url);
             return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
         }
+    // Admins skip onboarding — let them through
     }
     const dashboardMatch = pathname.match(/^\/(en|pt|fr)\/dashboard(\/|$)/);
     if (dashboardMatch) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             const dest = new URL(`/${dashboardMatch[1]}/login`, request.url);
+            return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
+        }
+        // Onboarding gate: skip for admins, enforce for regular users
+        const onboardingDone = request.cookies.get("onboarding_done")?.value;
+        if (!onboardingDone) {
+            const { data: roleData } = await supabase.from("user_roles").select("role_id").eq("user_id", user.id).eq("role_id", "admin").maybeSingle();
+            const isAdmin = !!roleData;
+            if (!isAdmin) {
+                const locale = dashboardMatch[1];
+                const dest = new URL(`/${locale}/onboarding/domain`, request.url);
+                return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
+            }
+        }
+    }
+    // ── Protect onboarding routes (must be authed) ──────────────────────────────
+    const onboardingMatch = pathname.match(/^\/(en|pt|fr)\/onboarding(\/|$)/);
+    if (onboardingMatch) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            const dest = new URL(`/${onboardingMatch[1]}/login`, request.url);
             return copySupabaseCookies(supabaseRes, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dest));
         }
     }

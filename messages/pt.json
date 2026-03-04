@@ -46,14 +46,16 @@
   "settings": {
     "account": "Conta",
     "title": "Definições",
-    "gaApiKey": "Chave API do Google Analytics",
-    "gccApiKey": "Chave API do Google Cloud Console",
     "postingFrequency": "Frequência de publicação",
     "saving": "A guardar…",
     "saveChanges": "Guardar alterações",
     "saved": "Guardado!",
     "notConfigured": "Não configurado",
     "domain": "Domínio",
+    "googleConnected": "Google ligado",
+    "googleNotConnected": "Google não ligado",
+    "connectGoogle": "Ligar Google",
+    "reconnectGoogle": "Religar Google",
     "frequency": {
       "daily": "Diário",
       "dailySublabel": "1 artigo / dia",
@@ -63,6 +65,37 @@
       "biweeklySublabel": "1 artigo / 2 semanas",
       "monthly": "Mensal",
       "monthlySublabel": "1 artigo / mês"
+    }
+  },
+  "onboarding": {
+    "stepOf": "Passo {current} de {total}",
+    "domain": {
+      "eyebrow": "Bem-vindo",
+      "title": "Configure o seu espaço de trabalho",
+      "subtitle": "Introduza o domínio do website cujo conteúdo pretende gerir.",
+      "label": "Domínio do seu website",
+      "placeholder": "exemplo.com",
+      "hint": "Introduza apenas o domínio, sem https://",
+      "continue": "Continuar",
+      "saving": "A guardar…"
+    },
+    "google": {
+      "eyebrow": "Ligação",
+      "title": "Ligue a sua conta Google",
+      "subtitle": "Conceda acesso ao Google Analytics e ao Search Console para podermos monitorizar o desempenho e otimizar o seu conteúdo.",
+      "scopeAnalytics": "Google Analytics — ler os seus dados de tráfego",
+      "scopeSearch": "Google Search Console — acompanhar rankings e indexação",
+      "connectButton": "Ligar com Google",
+      "connecting": "A ligar…",
+      "skip": "Ignorar por agora",
+      "privacyNote": "Pedimos apenas acesso de leitura. Pode revogar o acesso a qualquer momento.",
+      "oauthError": {
+        "access_denied": "Negou o acesso. Por favor tente novamente.",
+        "invalid_state": "O pedido expirou ou foi inválido. Por favor tente novamente.",
+        "token_exchange": "Não foi possível concluir a ligação. Por favor tente novamente.",
+        "db_error": "A ligação foi bem-sucedida mas não pôde ser guardada. Por favor contacte o suporte.",
+        "generic": "Ocorreu um erro inesperado. Por favor tente novamente."
+      }
     }
   },
   "admin": {
@@ -141,9 +174,10 @@
       "colUser": "Utilizador",
       "colDomain": "Domínio",
       "colFrequency": "Frequência",
-      "colGaKey": "Chave GA",
-      "colGccKey": "Chave GCC",
+      "colGoogle": "Google",
       "colCreated": "Criado",
+      "googleConnected": "Ligado",
+      "onboardingPending": "Configuração pendente",
       "createForm": {
         "eyebrow": "Nova conta",
         "title": "Criar conta de utilizador",

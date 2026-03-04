@@ -46,14 +46,16 @@
   "settings": {
     "account": "Compte",
     "title": "Paramètres",
-    "gaApiKey": "Clé API Google Analytics",
-    "gccApiKey": "Clé API Google Cloud Console",
     "postingFrequency": "Fréquence de publication",
     "saving": "Enregistrement…",
     "saveChanges": "Enregistrer les modifications",
     "saved": "Enregistré !",
     "notConfigured": "Non configuré",
     "domain": "Domaine",
+    "googleConnected": "Google connecté",
+    "googleNotConnected": "Google non connecté",
+    "connectGoogle": "Connecter Google",
+    "reconnectGoogle": "Reconnecter Google",
     "frequency": {
       "daily": "Quotidien",
       "dailySublabel": "1 article / jour",
@@ -63,6 +65,37 @@
       "biweeklySublabel": "1 article / 2 semaines",
       "monthly": "Mensuel",
       "monthlySublabel": "1 article / mois"
+    }
+  },
+  "onboarding": {
+    "stepOf": "Étape {current} sur {total}",
+    "domain": {
+      "eyebrow": "Bienvenue",
+      "title": "Configurez votre espace de travail",
+      "subtitle": "Entrez le domaine du site web dont vous souhaitez gérer le contenu.",
+      "label": "Domaine de votre site",
+      "placeholder": "exemple.com",
+      "hint": "Entrez uniquement le domaine, sans https://",
+      "continue": "Continuer",
+      "saving": "Enregistrement…"
+    },
+    "google": {
+      "eyebrow": "Connexion",
+      "title": "Connectez votre compte Google",
+      "subtitle": "Accordez l'accès à Google Analytics et Search Console pour suivre les performances et optimiser votre contenu.",
+      "scopeAnalytics": "Google Analytics — lire vos données de trafic",
+      "scopeSearch": "Google Search Console — suivre les classements et l'indexation",
+      "connectButton": "Se connecter avec Google",
+      "connecting": "Connexion…",
+      "skip": "Passer pour l'instant",
+      "privacyNote": "Nous demandons uniquement un accès en lecture. Vous pouvez révoquer l'accès à tout moment.",
+      "oauthError": {
+        "access_denied": "Vous avez refusé l'accès. Veuillez réessayer.",
+        "invalid_state": "La demande a expiré ou était invalide. Veuillez réessayer.",
+        "token_exchange": "Impossible de finaliser la connexion. Veuillez réessayer.",
+        "db_error": "La connexion a réussi mais n'a pas pu être enregistrée. Veuillez contacter le support.",
+        "generic": "Une erreur inattendue s'est produite. Veuillez réessayer."
+      }
     }
   },
   "admin": {
@@ -141,9 +174,10 @@
       "colUser": "Utilisateur",
       "colDomain": "Domaine",
       "colFrequency": "Fréquence",
-      "colGaKey": "Clé GA",
-      "colGccKey": "Clé GCC",
+      "colGoogle": "Google",
       "colCreated": "Créé",
+      "googleConnected": "Connecté",
+      "onboardingPending": "Configuration en attente",
       "createForm": {
         "eyebrow": "Nouveau compte",
         "title": "Créer un compte utilisateur",

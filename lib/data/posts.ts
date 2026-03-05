@@ -28,7 +28,7 @@ export async function getPostsForDashboard(userId: string, isAdmin: boolean) {
   const supabase = await createClient();
   let query = supabase
     .from("posts")
-    .select("id, slug, status, primary_locale, author_id, updated_at, profiles(display_name)")
+    .select("id, slug, status, primary_locale, author_id, updated_at, webhook_status, profiles(display_name)")
     .order("updated_at", { ascending: false });
 
   if (!isAdmin) {

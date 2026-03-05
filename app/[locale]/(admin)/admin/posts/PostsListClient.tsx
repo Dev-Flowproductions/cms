@@ -20,6 +20,7 @@ type Row = {
   status: string;
   primary_locale: string;
   updated_at: string;
+  webhook_status?: string | null;
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
   post_localizations: Localization[] | null;
 };
@@ -130,7 +131,7 @@ export function PostsListClient({
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-              {[t("slug"), t("status"), t("primaryLocale"), t("author"), "Score", t("table.updated"), ""].map((h, i) => (
+              {[t("slug"), t("status"), "Webhook", t("primaryLocale"), t("author"), "Score", t("table.updated"), ""].map((h, i) => (
                 <th key={i}
                   className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "var(--text-muted)" }}
@@ -143,7 +144,7 @@ export function PostsListClient({
           <tbody>
             {initialPosts.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm"
+                <td colSpan={8} className="px-4 py-10 text-center text-sm"
                   style={{ color: "var(--text-faint)", background: "var(--surface)" }}
                 >
                   {t("postsPage.noPosts")}
@@ -171,6 +172,26 @@ export function PostsListClient({
                       >
                         {post.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {post.webhook_status === "success" && (
+                        <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(34,211,160,0.1)", color: "var(--success)" }}>
+                          ✓ Sent
+                        </span>
+                      )}
+                      {post.webhook_status === "failed" && (
+                        <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(239,68,68,0.1)", color: "var(--danger)" }}>
+                          ✗ Failed
+                        </span>
+                      )}
+                      {post.webhook_status === "pending" && (
+                        <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24" }}>
+                          Sending…
+                        </span>
+                      )}
+                      {!post.webhook_status && (
+                        <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                       {post.primary_locale}

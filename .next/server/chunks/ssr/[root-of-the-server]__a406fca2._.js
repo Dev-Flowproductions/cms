@@ -593,7 +593,7 @@ async function EditPostPage({ params }) {
     const { roles } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireTeamMember"])();
     const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$data$2f$post$2d$detail$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getPostWithLocalizations"])(id);
     if (!data) (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["notFound"])();
-    const canReview = roles.includes("reviewer") || roles.includes("admin");
+    const canReview = roles.includes("admin");
     const showChecklist = canReview && data.status === "review";
     const sources = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$sources$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getSourcesList"])();
     const citations = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$sources$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getCitationsForPost"])(id);
@@ -705,14 +705,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 ;
 ;
 async function getReviewChecklist(postId) {
-    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireReviewer"])();
+    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
     const { data, error } = await supabase.from("review_checklists").select("*").eq("post_id", postId).is("locale", null).maybeSingle();
     if (error) throw error;
     return data;
 }
 async function saveReviewChecklist(postId, items, status) {
-    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireReviewer"])();
+    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
     const { error } = await supabase.from("review_checklists").upsert({
         post_id: postId,
@@ -730,7 +730,7 @@ async function saveReviewChecklist(postId, items, status) {
     };
 }
 async function approvePost(postId) {
-    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireReviewer"])();
+    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
     const { data: checklist } = await supabase.from("review_checklists").select("status").eq("post_id", postId).is("locale", null).maybeSingle();
     if (!checklist || checklist.status !== "passed") {
@@ -755,7 +755,7 @@ async function approvePost(postId) {
     };
 }
 async function rejectPost(postId, reason) {
-    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireReviewer"])();
+    const { user } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
     const { error } = await supabase.from("posts").update({
         status: "draft"

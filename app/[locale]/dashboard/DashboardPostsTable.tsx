@@ -159,12 +159,12 @@ export function DashboardPostsTable({
                   {t("admin.primaryLocale")}
                 </th>
                 <th
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {t("dashboard.table.updated")}
-                  </th>
-                {!isAdmin && <th className="px-6 py-4" />}
+                  className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {t("dashboard.table.updated")}
+                </th>
+                <th className="px-6 py-4" />
               </tr>
             </thead>
             <tbody>
@@ -249,16 +249,16 @@ export function DashboardPostsTable({
                         year: "numeric",
                       })}
                     </td>
-                    {!isAdmin && (
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3 justify-end">
-                          <Link
-                            href={`/admin/posts/${post.id}`}
-                            className="text-xs font-semibold transition-colors"
-                            style={{ color: "var(--accent)" }}
-                          >
-                            {t("common.edit")}
-                          </Link>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3 justify-end">
+                        <Link
+                          href={`/admin/posts/${post.id}`}
+                          className="text-xs font-semibold transition-colors"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          {t("common.edit")}
+                        </Link>
+                        {!isAdmin && (
                           <button
                             onClick={() => handleDelete(post.id, post.slug)}
                             disabled={isDeleting || isPending}
@@ -273,9 +273,9 @@ export function DashboardPostsTable({
                           >
                             {isDeleting ? "…" : t("common.delete")}
                           </button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}

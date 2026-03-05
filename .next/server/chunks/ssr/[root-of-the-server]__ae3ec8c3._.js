@@ -45,7 +45,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 ;
 async function getPostsForAdmin(filters) {
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
-    let query = supabase.from("posts").select("id, slug, status, primary_locale, author_id, updated_at, profiles(display_name)").order("updated_at", {
+    let query = supabase.from("posts").select(`
+      id, slug, status, primary_locale, author_id, updated_at,
+      profiles(display_name),
+      post_localizations(locale, seo_title, focus_keyword, faq_blocks,
+        jsonld, seo_score)
+    `).order("updated_at", {
         ascending: false
     });
     if (filters?.status) {

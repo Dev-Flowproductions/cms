@@ -119,6 +119,7 @@ export async function POST(request: Request) {
       excerpt: string;
       content_md: string;
       faq_blocks: Array<{ question: string; answer: string }>;
+      seo_score?: { seo: number; aeo: number; geo: number; notes: string };
     };
 
     try {
@@ -128,36 +129,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Gemini returned invalid JSON. Try again." }, { status: 500 });
     }
 
-    // Build JSON-LD
-    const jsonld = generated.faq_blocks?.length > 0
+    // Build rich JSON-LD (Article + FAQPage + speakable + publisher)
+    const publisherEntity = {
+      "@type": "Organization",
+      "name": "Flow Productions",
+      "url": clientRow?.domain ? `https://${clientRow.domain}` : "https://flowproductions.pt",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://flowproductions.pt/logo.png",
+      },
+    };
+
+    const articleEntity = {
+      "@type": "BlogPosting",
+      "headline": generated.title,
+      "description": generated.seo_description,
+      "keywords": generated.focus_keyword,
+      "datePublished": new Date().toISOString(),
+      "dateModified": new Date().toISOString(),
+      "inLanguage": locale,
+      "author": publisherEntity,
+      "publisher": publisherEntity,
+      "speakable": {
+        "@type": "SpeakableSpecification",
+        "cssSelector": ["h1", "h2", ".intro"],
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": clientRow?.domain
+          ? `https://${clientRow.domain}/blog/${post.slug}`
+          : `https://flowproductions.pt/blog/${post.slug}`,
+      },
+    };
+
+    const faqEntity = generated.faq_blocks?.length > 0
       ? {
-          "@context": "https://schema.org",
-          "@graph": [
-            {
-              "@type": "Article",
-              "headline": generated.title,
-              "description": generated.seo_description,
-              "keywords": generated.focus_keyword,
-              "datePublished": new Date().toISOString(),
-            },
-            {
-              "@type": "FAQPage",
-              "mainEntity": generated.faq_blocks.map((f) => ({
-                "@type": "Question",
-                "name": f.question,
-                "acceptedAnswer": { "@type": "Answer", "text": f.answer },
-              })),
-            },
-          ],
+          "@type": "FAQPage",
+          "mainEntity": generated.faq_blocks.map((f) => ({
+            "@type": "Question",
+            "name": f.question,
+            "acceptedAnswer": { "@type": "Answer", "text": f.answer },
+          })),
         }
-      : {
-          "@context": "https://schema.org",
-          "@type": "Article",
-          "headline": generated.title,
-          "description": generated.seo_description,
-          "keywords": generated.focus_keyword,
-          "datePublished": new Date().toISOString(),
-        };
+      : null;
+
+    const jsonld = {
+      "@context": "https://schema.org",
+      "@graph": [articleEntity, ...(faqEntity ? [faqEntity] : [])],
+    };
 
     // Save to DB
     const { error: upsertError } = await admin
@@ -174,6 +193,7 @@ export async function POST(request: Request) {
           focus_keyword: generated.focus_keyword,
           faq_blocks: generated.faq_blocks,
           jsonld,
+          seo_score: generated.seo_score ?? null,
         },
         { onConflict: "post_id,locale" }
       );
@@ -185,7 +205,7 @@ export async function POST(request: Request) {
 
     if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
 
-    // ── Auto-generate cover image with Imagen ────────────────────────────────
+    // ── Auto-generate cover image with Imagen
     let coverPublicUrl: string | null = null;
     try {
       const coverPrompt =
@@ -220,7 +240,7 @@ export async function POST(request: Request) {
       console.warn("[generate] Auto-cover failed (non-fatal):", coverErr);
     }
 
-    return NextResponse.json({ success: true, data: generated, coverPublicUrl });
+    return NextResponse.json({ success: true, data: generated, coverPublicUrl, seoScore: generated.seo_score ?? null });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

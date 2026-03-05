@@ -57,10 +57,11 @@ export function MarkdownPreview({
             <em style={{ color: "var(--text-muted)" }}>{children}</em>
           ),
           img: ({ src, alt }) => {
-            if (!src || src === COVER_PLACEHOLDER || src.includes("COVER_IMAGE_PLACEHOLDER")) return null;
+            const srcStr = typeof src === "string" ? src : "";
+            if (!srcStr || srcStr === COVER_PLACEHOLDER || srcStr.includes("COVER_IMAGE_PLACEHOLDER")) return null;
             return (
               <img
-                src={src}
+                src={srcStr}
                 alt={alt ?? ""}
                 style={{
                   width: "100%",

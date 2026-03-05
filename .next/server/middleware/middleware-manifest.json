@@ -28,6 +28,10 @@
         {
           "regexp": "/:nextData(_next/data/[^/]{1,})?/(en|pt|fr)/:path*{(\\\\.json)}?",
           "originalSource": "/(en|pt|fr)/:path*"
+        },
+        {
+          "regexp": "/:nextData(_next/data/[^/]{1,})?/api/google/:path*{(\\\\.json)}?",
+          "originalSource": "/api/google/:path*"
         }
       ],
       "wasm": [],

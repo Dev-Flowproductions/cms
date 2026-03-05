@@ -101,6 +101,10 @@ async function middleware(request) {
     const pathname = request.nextUrl.pathname;
     // Refresh Supabase session — must happen first so cookies are up to date
     const { supabase, response: supabaseRes } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$middleware$2e$ts__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["updateSession"])(request);
+    // ── API routes: only need session refresh, no intl/redirects ───────────────
+    if (pathname.startsWith("/api/")) {
+        return supabaseRes;
+    }
     // ── Hard redirects (no intl needed) ────────────────────────────────────────
     // Redirect bare /admin/* to default locale
     if (pathname === "/admin" || pathname.startsWith("/admin/")) {
@@ -169,7 +173,8 @@ const config = {
         "/",
         "/admin",
         "/admin/:path*",
-        "/(en|pt|fr)/:path*"
+        "/(en|pt|fr)/:path*",
+        "/api/google/:path*"
     ]
 };
 }),

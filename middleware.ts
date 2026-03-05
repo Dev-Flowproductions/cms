@@ -26,6 +26,11 @@ export default async function middleware(request: NextRequest) {
   // Refresh Supabase session — must happen first so cookies are up to date
   const { supabase, response: supabaseRes } = await updateSession(request);
 
+  // ── API routes: only need session refresh, no intl/redirects ───────────────
+  if (pathname.startsWith("/api/")) {
+    return supabaseRes;
+  }
+
   // ── Hard redirects (no intl needed) ────────────────────────────────────────
 
   // Redirect bare /admin/* to default locale
@@ -113,5 +118,6 @@ export const config = {
     "/admin",
     "/admin/:path*",
     "/(en|pt|fr)/:path*",
+    "/api/google/:path*",
   ],
 };

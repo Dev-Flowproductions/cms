@@ -29,16 +29,8 @@ export default async function EditPostPage({
   const tContent = await getTranslations("post.contentType");
 
   const statusOptions = [
-    "idea",
-    "research",
     "draft",
-    "optimize",
-    "format",
-    "review",
-    "approved",
-    "scheduled",
     "published",
-    "archived",
   ] as const;
   const contentTypes = ["hero", "hub", "hygiene"] as const;
   const locales = ["pt", "en", "fr"] as const;

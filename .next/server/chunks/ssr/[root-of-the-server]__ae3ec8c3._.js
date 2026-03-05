@@ -552,7 +552,10 @@ const localizationSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_
     ]),
     title: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
     excerpt: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
-    content_md: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string()
+    content_md: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
+    seo_title: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
+    seo_description: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional(),
+    focus_keyword: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional()
 });
 async function upsertLocalization(postId, formData) {
     const user = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getUser"])();
@@ -563,7 +566,10 @@ async function upsertLocalization(postId, formData) {
         locale: formData.get("locale"),
         title: formData.get("title") ?? "",
         excerpt: formData.get("excerpt") ?? "",
-        content_md: formData.get("content_md") ?? ""
+        content_md: formData.get("content_md") ?? "",
+        seo_title: formData.get("seo_title")?.toString() || undefined,
+        seo_description: formData.get("seo_description")?.toString() || undefined,
+        focus_keyword: formData.get("focus_keyword")?.toString() || undefined
     });
     if (!parsed.success) return {
         error: "Invalid localization data"
@@ -574,7 +580,16 @@ async function upsertLocalization(postId, formData) {
         locale: parsed.data.locale,
         title: parsed.data.title,
         excerpt: parsed.data.excerpt,
-        content_md: parsed.data.content_md
+        content_md: parsed.data.content_md,
+        ...parsed.data.seo_title !== undefined && {
+            seo_title: parsed.data.seo_title
+        },
+        ...parsed.data.seo_description !== undefined && {
+            seo_description: parsed.data.seo_description
+        },
+        ...parsed.data.focus_keyword !== undefined && {
+            focus_keyword: parsed.data.focus_keyword
+        }
     }, {
         onConflict: "post_id,locale"
     });

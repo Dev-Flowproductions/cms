@@ -182,6 +182,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/agent/cover/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/agent/cover">> = Specific
+  const handler = {} as typeof import("../../app/api/agent/cover/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/agent/generate/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/agent/generate">> = Specific
+  const handler = {} as typeof import("../../app/api/agent/generate/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/auth/redirect-to-dashboard/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/auth/redirect-to-dashboard">> = Specific

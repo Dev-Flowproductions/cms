@@ -24,9 +24,7 @@ __turbopack_context__.s([
     ()=>metadata
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/rsc/react-jsx-dev-runtime.js [app-rsc] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$esm$2f$server$2f$react$2d$server$2f$getLocale$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__default__as__getLocale$3e$__ = __turbopack_context__.i("[project]/node_modules/next-intl/dist/esm/server/react-server/getLocale.js [app-rsc] (ecmascript) <export default as getLocale>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/navigation.ts [app-rsc] (ecmascript)");
-;
 ;
 ;
 const metadata = {
@@ -34,7 +32,6 @@ const metadata = {
     description: "Terms and conditions governing the use of the Flow Productions CMS platform."
 };
 async function TermsOfUsePage() {
-    const locale = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl$2f$dist$2f$esm$2f$server$2f$react$2d$server$2f$getLocale$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__default__as__getLocale$3e$__["getLocale"])();
     const lastUpdated = "March 4, 2026";
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen py-16 px-4",
@@ -46,7 +43,7 @@ async function TermsOfUsePage() {
             className: "max-w-3xl mx-auto",
             children: [
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["Link"], {
-                    href: `/${locale}/login`,
+                    href: "/login",
                     className: "inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest mb-10 transition-opacity hover:opacity-70",
                     style: {
                         color: "var(--text-faint)"
@@ -54,7 +51,7 @@ async function TermsOfUsePage() {
                     children: "← Back"
                 }, void 0, false, {
                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                    lineNumber: 21,
+                    lineNumber: 19,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -68,7 +65,7 @@ async function TermsOfUsePage() {
                             children: "Legal"
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 31,
+                            lineNumber: 29,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -79,7 +76,7 @@ async function TermsOfUsePage() {
                             children: "Terms of Use"
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 34,
+                            lineNumber: 32,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -93,13 +90,13 @@ async function TermsOfUsePage() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 37,
+                            lineNumber: 35,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                    lineNumber: 30,
+                    lineNumber: 28,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -118,20 +115,20 @@ async function TermsOfUsePage() {
                                     children: "1. Agreement to Terms"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 45,
+                                    lineNumber: 43,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "By accessing or using the Flow Productions CMS platform (“Platform”), you agree to be bound by these Terms of Use (“Terms”). If you do not agree, you must not use the Platform. These Terms apply to all users, including administrators and client accounts."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 46,
+                                    lineNumber: 44,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 44,
+                            lineNumber: 42,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -144,7 +141,7 @@ async function TermsOfUsePage() {
                                     children: "2. The Service"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 52,
+                                    lineNumber: 50,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -152,7 +149,7 @@ async function TermsOfUsePage() {
                                     children: "Flow Productions provides a content management system that enables:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 53,
+                                    lineNumber: 51,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -172,25 +169,25 @@ async function TermsOfUsePage() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 64,
+                                                    lineNumber: 62,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: item
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 65,
+                                                    lineNumber: 63,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, item, true, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 63,
+                                            lineNumber: 61,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 56,
+                                    lineNumber: 54,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -198,13 +195,13 @@ async function TermsOfUsePage() {
                                     children: "Access to the Platform is granted solely by Flow Productions. Accounts are created by Flow Productions administrators on behalf of clients. Self-registration is not available."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 69,
+                                    lineNumber: 67,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 51,
+                            lineNumber: 49,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -217,7 +214,7 @@ async function TermsOfUsePage() {
                                     children: "3. Account Responsibilities"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 75,
+                                    lineNumber: 73,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -225,7 +222,7 @@ async function TermsOfUsePage() {
                                     children: "You are responsible for:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 76,
+                                    lineNumber: 74,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -245,31 +242,31 @@ async function TermsOfUsePage() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 85,
+                                                    lineNumber: 83,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: item
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 86,
+                                                    lineNumber: 84,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, item, true, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 84,
+                                            lineNumber: 82,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 77,
+                                    lineNumber: 75,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 74,
+                            lineNumber: 72,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -282,7 +279,7 @@ async function TermsOfUsePage() {
                                     children: "4. AI-Generated Content"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 93,
+                                    lineNumber: 91,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -290,7 +287,7 @@ async function TermsOfUsePage() {
                                     children: "The Platform uses Google's Gemini AI to generate blog posts and cover images. You acknowledge that:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 94,
+                                    lineNumber: 92,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -311,31 +308,31 @@ async function TermsOfUsePage() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 106,
+                                                    lineNumber: 104,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: item
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 107,
+                                                    lineNumber: 105,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, item, true, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 105,
+                                            lineNumber: 103,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 97,
+                                    lineNumber: 95,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 92,
+                            lineNumber: 90,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -348,7 +345,7 @@ async function TermsOfUsePage() {
                                     children: "5. Google Account Connection"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 114,
+                                    lineNumber: 112,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -365,20 +362,20 @@ async function TermsOfUsePage() {
                                             children: "Google Account permissions"
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 117,
+                                            lineNumber: 115,
                                             columnNumber: 15
                                         }, this),
                                         "."
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 115,
+                                    lineNumber: 113,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 113,
+                            lineNumber: 111,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -391,7 +388,7 @@ async function TermsOfUsePage() {
                                     children: "6. Intellectual Property"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 129,
+                                    lineNumber: 127,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -399,20 +396,20 @@ async function TermsOfUsePage() {
                                     children: "All content generated through the Platform on your behalf — including blog posts and cover images — is provided to you for use on your website. Flow Productions retains no ownership over your published content."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 130,
+                                    lineNumber: 128,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "The Platform itself, including its design, code, and branding, is the exclusive intellectual property of Flow Productions and may not be copied, reverse-engineered, or redistributed without written permission."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 133,
+                                    lineNumber: 131,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 128,
+                            lineNumber: 126,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -425,7 +422,7 @@ async function TermsOfUsePage() {
                                     children: "7. Acceptable Use"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 139,
+                                    lineNumber: 137,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -433,7 +430,7 @@ async function TermsOfUsePage() {
                                     children: "You agree not to:"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 140,
+                                    lineNumber: 138,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -454,31 +451,31 @@ async function TermsOfUsePage() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 150,
+                                                    lineNumber: 148,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: item
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                                    lineNumber: 151,
+                                                    lineNumber: 149,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, item, true, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 149,
+                                            lineNumber: 147,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 141,
+                                    lineNumber: 139,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 138,
+                            lineNumber: 136,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -491,20 +488,20 @@ async function TermsOfUsePage() {
                                     children: "8. Availability & Modifications"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 158,
+                                    lineNumber: 156,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "Flow Productions will endeavour to maintain Platform availability but does not guarantee uninterrupted access. We reserve the right to modify, suspend, or discontinue any part of the Platform at any time, with or without notice. We will make reasonable efforts to notify active users of significant changes."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 159,
+                                    lineNumber: 157,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 157,
+                            lineNumber: 155,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -517,20 +514,20 @@ async function TermsOfUsePage() {
                                     children: "9. Limitation of Liability"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 165,
+                                    lineNumber: 163,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "To the maximum extent permitted by applicable law, Flow Productions shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform, including but not limited to loss of revenue, data, or business opportunities resulting from AI-generated content. Our total liability shall not exceed the amount paid by you for the service in the three months preceding the claim."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 166,
+                                    lineNumber: 164,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 164,
+                            lineNumber: 162,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -543,20 +540,20 @@ async function TermsOfUsePage() {
                                     children: "10. Termination"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 172,
+                                    lineNumber: 170,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "Flow Productions may suspend or terminate your account at any time if you breach these Terms or if the service relationship between Flow Productions and your business ends. Upon termination, your access to the Platform will be revoked. Content already published to your website remains yours."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 173,
+                                    lineNumber: 171,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 171,
+                            lineNumber: 169,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -569,20 +566,20 @@ async function TermsOfUsePage() {
                                     children: "11. Governing Law"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 179,
+                                    lineNumber: 177,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "These Terms are governed by the laws of Portugal. Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the courts of Lisbon, Portugal, unless otherwise required by applicable consumer protection law."
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 180,
+                                    lineNumber: 178,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 178,
+                            lineNumber: 176,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -595,7 +592,7 @@ async function TermsOfUsePage() {
                                     children: "12. Contact"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 186,
+                                    lineNumber: 184,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -610,7 +607,7 @@ async function TermsOfUsePage() {
                                             children: "legal@flowproductions.pt"
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 189,
+                                            lineNumber: 187,
                                             columnNumber: 15
                                         }, this),
                                         " ",
@@ -626,26 +623,26 @@ async function TermsOfUsePage() {
                                             children: "flowproductions.pt"
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                            lineNumber: 193,
+                                            lineNumber: 191,
                                             columnNumber: 15
                                         }, this),
                                         "."
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                                    lineNumber: 187,
+                                    lineNumber: 185,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 185,
+                            lineNumber: 183,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                    lineNumber: 42,
+                    lineNumber: 40,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -655,7 +652,7 @@ async function TermsOfUsePage() {
                     },
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["Link"], {
-                            href: `/${locale}/privacy`,
+                            href: "/privacy",
                             className: "text-xs hover:opacity-70 transition-opacity",
                             style: {
                                 color: "var(--text-faint)"
@@ -663,11 +660,11 @@ async function TermsOfUsePage() {
                             children: "Privacy Policy"
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 203,
+                            lineNumber: 201,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["Link"], {
-                            href: `/${locale}/login`,
+                            href: "/login",
                             className: "text-xs hover:opacity-70 transition-opacity",
                             style: {
                                 color: "var(--text-faint)"
@@ -675,24 +672,24 @@ async function TermsOfUsePage() {
                             children: "Back to Login"
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                            lineNumber: 206,
+                            lineNumber: 204,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-                    lineNumber: 202,
+                    lineNumber: 200,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-            lineNumber: 18,
+            lineNumber: 16,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/[locale]/(public)/terms/page.tsx",
-        lineNumber: 14,
+        lineNumber: 12,
         columnNumber: 5
     }, this);
 }

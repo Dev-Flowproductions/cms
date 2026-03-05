@@ -1,4 +1,3 @@
-import { getLocale } from "next-intl/server";
 import { Link } from "@/lib/navigation";
 
 export const metadata = {
@@ -7,7 +6,6 @@ export const metadata = {
 };
 
 export default async function TermsOfUsePage() {
-  const locale = await getLocale();
   const lastUpdated = "March 4, 2026";
 
   return (
@@ -19,7 +17,7 @@ export default async function TermsOfUsePage() {
 
         {/* Back */}
         <Link
-          href={`/${locale}/login`}
+          href="/login"
           className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest mb-10 transition-opacity hover:opacity-70"
           style={{ color: "var(--text-faint)" }}
         >
@@ -200,10 +198,10 @@ export default async function TermsOfUsePage() {
 
         {/* Footer links */}
         <div className="mt-16 pt-8 flex gap-6" style={{ borderTop: "1px solid var(--border)" }}>
-          <Link href={`/${locale}/privacy`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
+          <Link href="/privacy" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
             Privacy Policy
           </Link>
-          <Link href={`/${locale}/login`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
+          <Link href="/login" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
             Back to Login
           </Link>
         </div>

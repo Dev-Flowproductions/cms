@@ -45,7 +45,7 @@ function OnboardingDomainPage() {
         const result = await saveDomain(trimmed);
         setLoading(false);
         if (result.error) {
-            setError(result.error);
+            setError(result.error === "domain_taken" ? t("errorDomainTaken") : result.error);
             return;
         }
         router.push(`/${locale}/onboarding/google`);

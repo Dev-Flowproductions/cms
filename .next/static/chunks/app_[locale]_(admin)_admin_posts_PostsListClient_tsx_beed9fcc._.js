@@ -14,6 +14,20 @@ var _s = __turbopack_context__.k.signature();
 "use client";
 ;
 ;
+const STATUS_COLORS = {
+    published: {
+        bg: "rgba(34,211,160,0.1)",
+        color: "var(--success)"
+    },
+    draft: {
+        bg: "rgba(124,92,252,0.1)",
+        color: "var(--accent)"
+    },
+    review: {
+        bg: "rgba(251,191,36,0.1)",
+        color: "#fbbf24"
+    }
+};
 function PostsListClient(param) {
     let { initialPosts, statusFilter } = param;
     _s();
@@ -21,207 +35,229 @@ function PostsListClient(param) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "mb-4 flex gap-2",
+                className: "mb-4 flex gap-2 flex-wrap",
                 children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Link"], {
-                        href: "/admin/posts",
-                        className: "px-3 py-1.5 text-sm rounded ".concat(!statusFilter ? "bg-gray-200 dark:bg-gray-700" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"),
-                        children: t("postsPage.filterAll")
-                    }, void 0, false, {
-                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                        lineNumber: 27,
-                        columnNumber: 9
-                    }, this),
-                    [
+                    {
+                        key: undefined,
+                        label: t("postsPage.filterAll")
+                    },
+                    ...[
                         "draft",
                         "review",
                         "published"
-                    ].map((s)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Link"], {
-                            href: "/admin/posts?status=".concat(s),
-                            className: "px-3 py-1.5 text-sm rounded ".concat(statusFilter === s ? "bg-gray-200 dark:bg-gray-700" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"),
-                            children: s
-                        }, s, false, {
-                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                            lineNumber: 34,
-                            columnNumber: 11
-                        }, this))
-                ]
-            }, void 0, true, {
+                    ].map((s)=>({
+                            key: s,
+                            label: s
+                        }))
+                ].map((param)=>{
+                    let { key, label } = param;
+                    const active = statusFilter === key;
+                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Link"], {
+                        href: key ? "/admin/posts?status=".concat(key) : "/admin/posts",
+                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all",
+                        style: {
+                            background: active ? "var(--accent)" : "var(--surface-raised)",
+                            color: active ? "white" : "var(--text-muted)",
+                            border: active ? "none" : "1px solid var(--border)"
+                        },
+                        children: label
+                    }, label, false, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                        lineNumber: 37,
+                        columnNumber: 13
+                    }, this);
+                })
+            }, void 0, false, {
                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                lineNumber: 26,
+                lineNumber: 33,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "border border-gray-200 dark:border-gray-700 rounded overflow-hidden",
+                className: "rounded-2xl overflow-hidden",
+                style: {
+                    border: "1px solid var(--border)"
+                },
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
                     className: "w-full text-sm",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("thead", {
-                            className: "bg-gray-50 dark:bg-gray-800",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                style: {
+                                    background: "var(--surface)",
+                                    borderBottom: "1px solid var(--border)"
+                                },
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "text-left p-3 font-medium",
-                                        children: t("slug")
-                                    }, void 0, false, {
+                                    t("slug"),
+                                    t("status"),
+                                    t("primaryLocale"),
+                                    t("author"),
+                                    t("table.updated"),
+                                    ""
+                                ].map((h, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                        className: "text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider",
+                                        style: {
+                                            color: "var(--text-muted)"
+                                        },
+                                        children: h
+                                    }, i, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 47,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "text-left p-3 font-medium",
-                                        children: t("status")
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 48,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "text-left p-3 font-medium",
-                                        children: t("primaryLocale")
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 49,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "text-left p-3 font-medium",
-                                        children: t("author")
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 50,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "text-left p-3 font-medium",
-                                        children: t("table.updated")
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 51,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
-                                        className: "p-3"
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                        lineNumber: 52,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                        lineNumber: 62,
+                                        columnNumber: 17
+                                    }, this))
+                            }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                lineNumber: 46,
+                                lineNumber: 60,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                            lineNumber: 45,
+                            lineNumber: 59,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
                             children: initialPosts.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                     colSpan: 6,
-                                    className: "p-6 text-center text-gray-500",
+                                    className: "px-4 py-10 text-center text-sm",
+                                    style: {
+                                        color: "var(--text-faint)",
+                                        background: "var(--surface)"
+                                    },
                                     children: t("postsPage.noPosts")
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                    lineNumber: 58,
+                                    lineNumber: 75,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                lineNumber: 57,
+                                lineNumber: 74,
                                 columnNumber: 15
-                            }, this) : initialPosts.map((post)=>{
+                            }, this) : initialPosts.map((post, idx)=>{
                                 var _post_profiles_, _post_profiles;
-                                var _post_profiles_display_name;
+                                var _STATUS_COLORS_post_status;
+                                const statusStyle = (_STATUS_COLORS_post_status = STATUS_COLORS[post.status]) !== null && _STATUS_COLORS_post_status !== void 0 ? _STATUS_COLORS_post_status : {
+                                    bg: "var(--surface-raised)",
+                                    color: "var(--text-muted)"
+                                };
+                                const author = Array.isArray(post.profiles) ? (_post_profiles_ = post.profiles[0]) === null || _post_profiles_ === void 0 ? void 0 : _post_profiles_.display_name : (_post_profiles = post.profiles) === null || _post_profiles === void 0 ? void 0 : _post_profiles.display_name;
                                 return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
-                                    className: "border-t border-gray-200 dark:border-gray-700",
+                                    style: {
+                                        background: idx % 2 === 0 ? "var(--surface)" : "var(--surface-raised)",
+                                        borderTop: "1px solid var(--border)"
+                                    },
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3 font-mono",
+                                            className: "px-4 py-3 font-mono text-xs",
+                                            style: {
+                                                color: "var(--text)"
+                                            },
                                             children: post.slug
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 65,
-                                            columnNumber: 19
+                                            lineNumber: 98,
+                                            columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3",
-                                            children: post.status
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 66,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3",
-                                            children: post.primary_locale
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 67,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3",
-                                            children: Array.isArray(post.profiles) ? (_post_profiles_ = post.profiles[0]) === null || _post_profiles_ === void 0 ? void 0 : _post_profiles_.display_name : (_post_profiles_display_name = (_post_profiles = post.profiles) === null || _post_profiles === void 0 ? void 0 : _post_profiles.display_name) !== null && _post_profiles_display_name !== void 0 ? _post_profiles_display_name : "—"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 68,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3 text-gray-500",
-                                            children: new Date(post.updated_at).toLocaleDateString()
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 69,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                            className: "p-3",
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Link"], {
-                                                href: "/admin/posts/".concat(post.id),
-                                                className: "text-blue-600 dark:text-blue-400 hover:underline",
-                                                children: t("editPost")
+                                            className: "px-4 py-3",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "px-2 py-0.5 rounded-md text-xs font-semibold capitalize",
+                                                style: {
+                                                    background: statusStyle.bg,
+                                                    color: statusStyle.color
+                                                },
+                                                children: post.status
                                             }, void 0, false, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                                lineNumber: 73,
-                                                columnNumber: 21
+                                                lineNumber: 102,
+                                                columnNumber: 23
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                            lineNumber: 72,
-                                            columnNumber: 19
+                                            lineNumber: 101,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                            className: "px-4 py-3 text-xs uppercase tracking-wider",
+                                            style: {
+                                                color: "var(--text-muted)"
+                                            },
+                                            children: post.primary_locale
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                                            lineNumber: 109,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                            className: "px-4 py-3 text-sm",
+                                            style: {
+                                                color: "var(--text-muted)"
+                                            },
+                                            children: author !== null && author !== void 0 ? author : "—"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                                            lineNumber: 112,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                            className: "px-4 py-3 text-xs",
+                                            style: {
+                                                color: "var(--text-faint)"
+                                            },
+                                            children: new Date(post.updated_at).toLocaleDateString()
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                                            lineNumber: 115,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                            className: "px-4 py-3",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$navigation$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Link"], {
+                                                href: "/admin/posts/".concat(post.id),
+                                                className: "text-xs font-semibold px-3 py-1.5 rounded-lg transition-all",
+                                                style: {
+                                                    background: "var(--surface-raised)",
+                                                    color: "var(--accent)",
+                                                    border: "1px solid var(--border)"
+                                                },
+                                                children: t("editPost")
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                                                lineNumber: 119,
+                                                columnNumber: 23
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
+                                            lineNumber: 118,
+                                            columnNumber: 21
                                         }, this)
                                     ]
                                 }, post.id, true, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                                    lineNumber: 64,
-                                    columnNumber: 17
+                                    lineNumber: 91,
+                                    columnNumber: 19
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                            lineNumber: 55,
+                            lineNumber: 72,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                    lineNumber: 44,
+                    lineNumber: 58,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-                lineNumber: 43,
+                lineNumber: 54,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/[locale]/(admin)/admin/posts/PostsListClient.tsx",
-        lineNumber: 25,
+        lineNumber: 31,
         columnNumber: 5
     }, this);
 }

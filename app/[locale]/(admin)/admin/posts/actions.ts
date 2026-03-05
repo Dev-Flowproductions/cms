@@ -107,6 +107,9 @@ const localizationSchema = z.object({
   title: z.string(),
   excerpt: z.string(),
   content_md: z.string(),
+  seo_title: z.string().optional(),
+  seo_description: z.string().optional(),
+  focus_keyword: z.string().optional(),
 });
 
 export async function upsertLocalization(postId: string, formData: FormData) {
@@ -117,6 +120,9 @@ export async function upsertLocalization(postId: string, formData: FormData) {
     title: formData.get("title") ?? "",
     excerpt: formData.get("excerpt") ?? "",
     content_md: formData.get("content_md") ?? "",
+    seo_title: formData.get("seo_title")?.toString() || undefined,
+    seo_description: formData.get("seo_description")?.toString() || undefined,
+    focus_keyword: formData.get("focus_keyword")?.toString() || undefined,
   });
   if (!parsed.success) return { error: "Invalid localization data" };
 
@@ -128,6 +134,9 @@ export async function upsertLocalization(postId: string, formData: FormData) {
       title: parsed.data.title,
       excerpt: parsed.data.excerpt,
       content_md: parsed.data.content_md,
+      ...(parsed.data.seo_title !== undefined && { seo_title: parsed.data.seo_title }),
+      ...(parsed.data.seo_description !== undefined && { seo_description: parsed.data.seo_description }),
+      ...(parsed.data.focus_keyword !== undefined && { focus_keyword: parsed.data.focus_keyword }),
     },
     { onConflict: "post_id,locale" }
   );

@@ -77,10 +77,10 @@
       "placeholder": "exemple.com",
       "hint": "Entrez uniquement le domaine, sans https://",
       "continue": "Continuer",
-      "saving": "Enregistrement…"
+      "saving": "Enregistrement…",
+      "errorDomainTaken": "Ce domaine est déjà associé à un autre compte. Veuillez contacter le support si vous pensez qu'il s'agit d'une erreur."
     },
     "google": {
-      "eyebrow": "Connexion",
       "title": "Connectez votre compte Google",
       "subtitle": "Accordez l'accès à Google Analytics et Search Console pour suivre les performances et optimiser votre contenu.",
       "scopeAnalytics": "Google Analytics — lire vos données de trafic",

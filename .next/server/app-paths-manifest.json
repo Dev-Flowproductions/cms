@@ -1,18 +1,17 @@
 {
   "/[locale]/(admin)/admin/page": "app/[locale]/(admin)/admin/page.js",
-  "/[locale]/(admin)/admin/posts/new/page": "app/[locale]/(admin)/admin/posts/new/page.js",
+  "/[locale]/(admin)/admin/posts/[id]/page": "app/[locale]/(admin)/admin/posts/[id]/page.js",
   "/[locale]/(admin)/admin/posts/page": "app/[locale]/(admin)/admin/posts/page.js",
   "/[locale]/(admin)/admin/review-queue/page": "app/[locale]/(admin)/admin/review-queue/page.js",
   "/[locale]/(admin)/admin/settings/page": "app/[locale]/(admin)/admin/settings/page.js",
-  "/[locale]/(admin)/admin/sources/page": "app/[locale]/(admin)/admin/sources/page.js",
   "/[locale]/(admin)/admin/users/page": "app/[locale]/(admin)/admin/users/page.js",
-  "/[locale]/(public)/blog/page": "app/[locale]/(public)/blog/page.js",
-  "/[locale]/(public)/page": "app/[locale]/(public)/page.js",
   "/[locale]/dashboard/page": "app/[locale]/dashboard/page.js",
   "/[locale]/login/page": "app/[locale]/login/page.js",
   "/[locale]/onboarding/domain/page": "app/[locale]/onboarding/domain/page.js",
   "/[locale]/onboarding/google/page": "app/[locale]/onboarding/google/page.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/onboarding/complete/route": "app/api/onboarding/complete/route.js",
+  "/api/agent/cover/route": "app/api/agent/cover/route.js",
+  "/api/agent/generate/route": "app/api/agent/generate/route.js",
+  "/api/google/oauth/route": "app/api/google/oauth/route.js",
   "/api/onboarding/domain/route": "app/api/onboarding/domain/route.js"
 }

@@ -77,7 +77,8 @@
       "placeholder": "example.com",
       "hint": "Enter just the domain, without https://",
       "continue": "Continue",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "errorDomainTaken": "This domain is already linked to another account. Please contact support if you believe this is a mistake."
     },
     "google": {
       "eyebrow": "Connect",

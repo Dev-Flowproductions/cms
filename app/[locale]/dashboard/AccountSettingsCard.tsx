@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
-import { updateClientFrequency, type Frequency } from "@/app/[locale]/(admin)/admin/users/actions";
+import { updateClientFrequency, updateClientWebhook, type Frequency } from "@/app/[locale]/(admin)/admin/users/actions";
 
 type Settings = {
   id: string;
@@ -11,6 +11,9 @@ type Settings = {
   google_access_token: string | null;
   google_connected_at: string | null;
   frequency: Frequency;
+  webhook_url: string | null;
+  webhook_secret: string | null;
+  auto_publish: boolean;
 };
 
 export function AccountSettingsCard({
@@ -27,6 +30,15 @@ export function AccountSettingsCard({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Webhook state
+  const [webhookUrl, setWebhookUrl] = useState(settings?.webhook_url ?? "");
+  const [webhookSecret, setWebhookSecret] = useState(settings?.webhook_secret ?? "");
+  const [autoPublish, setAutoPublish] = useState(settings?.auto_publish ?? false);
+  const [webhookSaved, setWebhookSaved] = useState(false);
+  const [webhookSaving, setWebhookSaving] = useState(false);
+  const [webhookError, setWebhookError] = useState<string | null>(null);
+  const [showSecret, setShowSecret] = useState(false);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
     { value: "daily",    label: t("frequency.daily"),    sublabel: t("frequency.dailySublabel") },
@@ -49,6 +61,26 @@ export function AccountSettingsCard({
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
+
+  async function handleWebhookSave() {
+    setWebhookSaving(true);
+    setWebhookError(null);
+    setWebhookSaved(false);
+    const result = await updateClientWebhook(userId, {
+      webhook_url: webhookUrl.trim() || null,
+      webhook_secret: webhookSecret.trim() || null,
+      auto_publish: autoPublish,
+    });
+    setWebhookSaving(false);
+    if (result.error) { setWebhookError(result.error); return; }
+    setWebhookSaved(true);
+    setTimeout(() => setWebhookSaved(false), 3000);
+  }
+
+  const webhookChanged =
+    (webhookUrl.trim() || null) !== (settings?.webhook_url ?? null) ||
+    (webhookSecret.trim() || null) !== (settings?.webhook_secret ?? null) ||
+    autoPublish !== (settings?.auto_publish ?? false);
 
   const changed = frequency !== settings.frequency;
 
@@ -173,7 +205,7 @@ export function AccountSettingsCard({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer — frequency save */}
         {error && (
           <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>
         )}
@@ -195,6 +227,128 @@ export function AccountSettingsCard({
               {t("saved")}
             </span>
           )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: "1px", background: "var(--border)" }} />
+
+        {/* Webhook / Publishing */}
+        <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {t("webhook.title")}
+          </p>
+          <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>
+            {t("webhook.description")}
+          </p>
+
+          {/* Webhook URL */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                {t("webhook.urlLabel")}
+              </label>
+              <input
+                type="url"
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+                placeholder="https://yoursite.com/api/cms-webhook"
+                className="w-full px-3 py-2 rounded-lg text-sm font-mono transition-all outline-none"
+                style={{
+                  background: "var(--surface-raised)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                }}
+              />
+            </div>
+
+            {/* Webhook Secret */}
+            <div>
+              <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                {t("webhook.secretLabel")}
+              </label>
+              <div className="relative">
+                <input
+                  type={showSecret ? "text" : "password"}
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder={t("webhook.secretPlaceholder")}
+                  className="w-full px-3 py-2 pr-16 rounded-lg text-sm font-mono transition-all outline-none"
+                  style={{
+                    background: "var(--surface-raised)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {showSecret ? t("webhook.hide") : t("webhook.show")}
+                </button>
+              </div>
+            </div>
+
+            {/* Auto-publish toggle */}
+            <div
+              className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{
+                background: autoPublish ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
+                border: autoPublish ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+              }}
+            >
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                  {t("webhook.autoPublishLabel")}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                  {autoPublish ? t("webhook.autoPublishOn") : t("webhook.autoPublishOff")}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoPublish}
+                onClick={() => setAutoPublish((v) => !v)}
+                className="relative w-10 h-5 rounded-full transition-all flex-shrink-0"
+                style={{
+                  background: autoPublish ? "var(--success)" : "var(--border)",
+                }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform"
+                  style={{ transform: autoPublish ? "translateX(20px)" : "translateX(0)" }}
+                />
+              </button>
+            </div>
+          </div>
+
+          {webhookError && (
+            <p className="text-sm mt-3" style={{ color: "var(--danger)" }}>{webhookError}</p>
+          )}
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              onClick={handleWebhookSave}
+              disabled={webhookSaving || !webhookChanged}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                boxShadow: (!webhookSaving && webhookChanged) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+              }}
+            >
+              {webhookSaving ? t("saving") : t("saveChanges")}
+            </button>
+            {webhookSaved && (
+              <span className="text-xs font-medium" style={{ color: "var(--success)" }}>
+                {t("saved")}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

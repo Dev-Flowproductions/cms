@@ -65,6 +65,18 @@
       "biweeklySublabel": "1 article / 2 semaines",
       "monthly": "Mensuel",
       "monthlySublabel": "1 article / mois"
+    },
+    "webhook": {
+      "title": "Webhook de publication",
+      "description": "Configurez un webhook pour que les articles publiés soient automatiquement envoyés à votre site. Votre site doit disposer d'un endpoint acceptant des requêtes POST avec le contenu de l'article.",
+      "urlLabel": "URL du Webhook",
+      "secretLabel": "Jeton secret",
+      "secretPlaceholder": "Optionnel — envoyé dans l'en-tête x-webhook-secret",
+      "show": "Afficher",
+      "hide": "Masquer",
+      "autoPublishLabel": "Publication automatique",
+      "autoPublishOn": "Les articles sont envoyés sur votre site dès leur publication",
+      "autoPublishOff": "L'administrateur devra confirmer avant d'envoyer sur votre site"
     }
   },
   "onboarding": {

@@ -53,6 +53,10 @@ type Props = {
     section_anchor: string | null;
     sources: unknown;
   }>;
+  publishConfig?: {
+    hasWebhook: boolean;
+    autoPublish: boolean;
+  };
 };
 
 function InputField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -95,6 +99,7 @@ export function EditPostForm({
   supabaseUrl,
   sources,
   citations,
+  publishConfig,
 }: Props) {
   const [postState, setPostState] = useActionState(
     async (_: unknown, formData: FormData) => updatePostAction(formData),
@@ -135,6 +140,12 @@ export function EditPostForm({
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState(false);
   const [seoScore, setSeoScore] = useState<{ seo: number; aeo: number; geo: number; notes?: string } | null>(null);
+
+  // Publish state
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -187,6 +198,33 @@ export function EditPostForm({
     }
   }
 
+  async function doPublish() {
+    setPublishing(true);
+    setPublishError(null);
+    setPublishSuccess(false);
+    setShowPublishConfirm(false);
+    try {
+      const res = await fetch(`/api/publish/${post.id}`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) { setPublishError(json.error ?? "Publish failed"); return; }
+      setPublishSuccess(true);
+      setTimeout(() => setPublishSuccess(false), 5000);
+      router.refresh();
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  function handlePublishClick() {
+    if (publishConfig?.autoPublish) {
+      doPublish();
+    } else {
+      setShowPublishConfirm(true);
+    }
+  }
+
   const sectionStyle = {
     background: "var(--surface)",
     border: "1px solid var(--border)",
@@ -205,6 +243,64 @@ export function EditPostForm({
 
   return (
     <div className="space-y-6">
+
+      {/* ── Publish confirmation modal ── */}
+      {showPublishConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl p-6 space-y-4"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(124,92,252,0.12)" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="var(--accent)" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                  Publish to client website?
+                </h3>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                  This will push the post content to the client&apos;s configured webhook endpoint and set the status to <strong>published</strong>. This action cannot be undone automatically.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={doPublish}
+                disabled={publishing}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(135deg, #7c5cfc, #a78bfa)",
+                  color: "white",
+                  boxShadow: "0 0 16px rgba(124,92,252,0.3)",
+                }}
+              >
+                {publishing ? "Publishing…" : "Yes, publish"}
+              </button>
+              <button
+                onClick={() => setShowPublishConfirm(false)}
+                disabled={publishing}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: "var(--surface-raised)",
+                  color: "var(--text-muted)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Post settings ── */}
       <section style={sectionStyle}>
@@ -284,12 +380,72 @@ export function EditPostForm({
           {postState?.error && (
             <p className="text-sm" style={{ color: "var(--danger)" }}>{postState.error}</p>
           )}
-          <button type="submit"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: "var(--accent)", color: "white" }}
-          >
-            {labels.save}
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button type="submit"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: "var(--accent)", color: "white" }}
+            >
+              {labels.save}
+            </button>
+
+            {/* Publish to website button — only shown when the author has a webhook configured */}
+            {publishConfig?.hasWebhook && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePublishClick}
+                  disabled={publishing}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{
+                    background: publishing
+                      ? "var(--surface-raised)"
+                      : "linear-gradient(135deg, #22d3a0, #34d399)",
+                    color: publishing ? "var(--text-muted)" : "#0a0a0f",
+                    border: publishing ? "1px solid var(--border)" : "none",
+                    boxShadow: publishing ? "none" : "0 0 16px rgba(34,211,160,0.25)",
+                  }}
+                >
+                  {publishing ? (
+                    <>
+                      <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                      </svg>
+                      Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {publishConfig.autoPublish ? "Publish to website" : "Publish to website…"}
+                    </>
+                  )}
+                </button>
+                {!publishConfig.autoPublish && (
+                  <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                    Will ask for confirmation
+                  </span>
+                )}
+              </>
+            )}
+
+            {!publishConfig?.hasWebhook && (
+              <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                No webhook configured for this author
+              </span>
+            )}
+
+            {publishError && (
+              <span className="text-xs font-medium" style={{ color: "var(--danger)" }}>
+                {publishError}
+              </span>
+            )}
+            {publishSuccess && (
+              <span className="text-xs font-medium" style={{ color: "var(--success)" }}>
+                ✓ Published to website
+              </span>
+            )}
+          </div>
         </form>
       </section>
 

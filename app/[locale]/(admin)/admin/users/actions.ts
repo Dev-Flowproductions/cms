@@ -111,7 +111,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency")
+    .select("id, domain, google_access_token, google_connected_at, frequency, webhook_url, webhook_secret, auto_publish")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -153,6 +153,19 @@ export async function updateClientFrequency(userId: string, frequency: Frequency
   const { error } = await supabase
     .from("clients")
     .update({ frequency, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientWebhook(
+  userId: string,
+  data: { webhook_url: string | null; webhook_secret: string | null; auto_publish: boolean }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ ...data, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };

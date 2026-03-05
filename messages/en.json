@@ -65,6 +65,18 @@
       "biweeklySublabel": "1 post / 2 weeks",
       "monthly": "Monthly",
       "monthlySublabel": "1 post / month"
+    },
+    "webhook": {
+      "title": "Publishing webhook",
+      "description": "Configure a webhook so published posts are automatically pushed to your website. Your site needs an endpoint that accepts POST requests with the post content.",
+      "urlLabel": "Webhook URL",
+      "secretLabel": "Secret token",
+      "secretPlaceholder": "Optional — sent as x-webhook-secret header",
+      "show": "Show",
+      "hide": "Hide",
+      "autoPublishLabel": "Auto-publish",
+      "autoPublishOn": "Posts are pushed to your website immediately on publish",
+      "autoPublishOff": "Admin will be asked to confirm before pushing to your website"
     }
   },
   "onboarding": {

@@ -6,6 +6,7 @@ import { getSourcesList, getCitationsForPost } from "../../sources/actions";
 import { EditPostForm } from "./EditPostForm";
 import { updatePost, upsertLocalization, uploadCoverImage } from "../actions";
 import { ReviewChecklistBlock } from "./ReviewChecklistBlock";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function EditPostPage({
   params,
@@ -27,6 +28,14 @@ export default async function EditPostPage({
   const tCommon = await getTranslations("common");
   const tPost = await getTranslations("post.status");
   const tContent = await getTranslations("post.contentType");
+
+  // Fetch the author's webhook config so the UI knows whether auto-publish is on
+  const adminClient = createAdminClient();
+  const { data: authorClient } = await adminClient
+    .from("clients")
+    .select("webhook_url, auto_publish")
+    .eq("user_id", data.author_id)
+    .maybeSingle();
 
   const statusOptions = [
     "draft",
@@ -80,6 +89,10 @@ export default async function EditPostPage({
         supabaseUrl={supabaseUrl}
         sources={sources}
         citations={citations}
+        publishConfig={{
+          hasWebhook: !!authorClient?.webhook_url,
+          autoPublish: authorClient?.auto_publish ?? false,
+        }}
       />
       {showChecklist && <ReviewChecklistBlock postId={id} />}
     </div>

@@ -901,6 +901,246 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
 }),
+"[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "SeoScorePanel",
+    ()=>SeoScorePanel
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+"use client";
+;
+function StarBar(param) {
+    let { score, max = 10 } = param;
+    const filled = Math.round(score / max * 5);
+    const color = score >= 9 ? "var(--success)" : score >= 7 ? "#f59e0b" : score >= 5 ? "#f97316" : "var(--danger)";
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "flex items-center gap-1.5",
+        children: [
+            Array.from({
+                length: 5
+            }).map((_, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                    width: "14",
+                    height: "14",
+                    viewBox: "0 0 24 24",
+                    fill: i < filled ? color : "none",
+                    stroke: color,
+                    strokeWidth: "2",
+                    style: {
+                        opacity: i < filled ? 1 : 0.3
+                    },
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                        d: "M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"
+                    }, void 0, false, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                        lineNumber: 31,
+                        columnNumber: 11
+                    }, this)
+                }, i, false, {
+                    fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                    lineNumber: 21,
+                    columnNumber: 9
+                }, this)),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                className: "text-xs font-bold tabular-nums",
+                style: {
+                    color
+                },
+                children: [
+                    score,
+                    "/10"
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                lineNumber: 34,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+        lineNumber: 19,
+        columnNumber: 5
+    }, this);
+}
+_c = StarBar;
+function SeoScorePanel(param) {
+    let { score } = param;
+    const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
+    const avgColor = avg >= 9 ? "var(--success)" : avg >= 7 ? "#f59e0b" : avg >= 5 ? "#f97316" : "var(--danger)";
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "rounded-xl p-4 space-y-3",
+        style: {
+            background: "rgba(124,92,252,0.04)",
+            border: "1px solid rgba(124,92,252,0.15)"
+        },
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "flex items-center justify-between",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        className: "text-xs font-semibold uppercase tracking-wider",
+                        style: {
+                            color: "var(--accent)"
+                        },
+                        children: "Content Score"
+                    }, void 0, false, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                        lineNumber: 59,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex items-center gap-1.5",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-xs font-semibold",
+                                style: {
+                                    color: "var(--text-faint)"
+                                },
+                                children: "avg"
+                            }, void 0, false, {
+                                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                lineNumber: 66,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-sm font-bold tabular-nums",
+                                style: {
+                                    color: avgColor
+                                },
+                                children: [
+                                    avg,
+                                    "/10"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                lineNumber: 69,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                        lineNumber: 65,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                lineNumber: 58,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "grid grid-cols-3 gap-3",
+                children: [
+                    {
+                        label: "SEO",
+                        value: score.seo,
+                        hint: "Search engine ranking signals"
+                    },
+                    {
+                        label: "AEO",
+                        value: score.aeo,
+                        hint: "Answer engine / featured snippets"
+                    },
+                    {
+                        label: "GEO",
+                        value: score.geo,
+                        hint: "Generative AI citation readiness"
+                    }
+                ].map((param)=>{
+                    let { label, value, hint } = param;
+                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "rounded-lg p-3 space-y-1.5",
+                        style: {
+                            background: "var(--surface-raised)",
+                            border: "1px solid var(--border)"
+                        },
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center justify-between",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "text-xs font-semibold uppercase tracking-wider",
+                                    style: {
+                                        color: "var(--text-muted)"
+                                    },
+                                    children: label
+                                }, void 0, false, {
+                                    fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                    lineNumber: 93,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                lineNumber: 92,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StarBar, {
+                                score: value
+                            }, void 0, false, {
+                                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                lineNumber: 100,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "text-[10px] leading-tight",
+                                style: {
+                                    color: "var(--text-faint)"
+                                },
+                                children: hint
+                            }, void 0, false, {
+                                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                                lineNumber: 101,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, label, true, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                        lineNumber: 87,
+                        columnNumber: 11
+                    }, this);
+                })
+            }, void 0, false, {
+                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                lineNumber: 79,
+                columnNumber: 7
+            }, this),
+            score.notes && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "rounded-lg px-3 py-2",
+                style: {
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)"
+                },
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                    className: "text-xs leading-relaxed whitespace-pre-line",
+                    style: {
+                        color: "var(--text-muted)"
+                    },
+                    children: score.notes
+                }, void 0, false, {
+                    fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                    lineNumber: 114,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+                lineNumber: 110,
+                columnNumber: 9
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx",
+        lineNumber: 50,
+        columnNumber: 5
+    }, this);
+}
+_c1 = SeoScorePanel;
+var _c, _c1;
+__turbopack_context__.k.register(_c, "StarBar");
+__turbopack_context__.k.register(_c1, "SeoScorePanel");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
 "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
@@ -914,9 +1154,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navi
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$MarkdownPreview$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/MarkdownPreview.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$posts$2f5b$id$5d2f$CoverImageUpload$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/[locale]/(admin)/admin/posts/[id]/CoverImageUpload.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$posts$2f5b$id$5d2f$CitationsBlock$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/[locale]/(admin)/admin/posts/[id]/CitationsBlock.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$posts$2f5b$id$5d2f$SeoScorePanel$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/[locale]/(admin)/admin/posts/[id]/SeoScorePanel.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
+;
 ;
 ;
 ;
@@ -1479,6 +1721,20 @@ function EditPostForm(param) {
                         lineNumber: 299,
                         columnNumber: 9
                     }, this),
+                    seoScore && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "mt-4",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$posts$2f5b$id$5d2f$SeoScorePanel$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SeoScorePanel"], {
+                            score: seoScore
+                        }, void 0, false, {
+                            fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
+                            lineNumber: 353,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
+                        lineNumber: 352,
+                        columnNumber: 11
+                    }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
                         action: setLocState,
                         className: "space-y-5",
@@ -1489,7 +1745,7 @@ function EditPostForm(param) {
                                 value: activeLocale
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 351,
+                                lineNumber: 358,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1505,12 +1761,12 @@ function EditPostForm(param) {
                                     onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                 }, "kw-".concat(activeLocale), false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                    lineNumber: 355,
+                                    lineNumber: 362,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 354,
+                                lineNumber: 361,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1524,12 +1780,12 @@ function EditPostForm(param) {
                                     onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                 }, "title-".concat(activeLocale), false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                    lineNumber: 368,
+                                    lineNumber: 375,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 367,
+                                lineNumber: 374,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1547,12 +1803,12 @@ function EditPostForm(param) {
                                     onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                 }, "excerpt-".concat(activeLocale), false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                    lineNumber: 378,
+                                    lineNumber: 385,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 377,
+                                lineNumber: 384,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1570,7 +1826,7 @@ function EditPostForm(param) {
                                         children: "SEO / AEO"
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 393,
+                                        lineNumber: 400,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1587,7 +1843,7 @@ function EditPostForm(param) {
                                                 onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                             }, "seo_title-".concat(activeLocale), false, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                lineNumber: 397,
+                                                lineNumber: 404,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1601,13 +1857,13 @@ function EditPostForm(param) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                lineNumber: 405,
+                                                lineNumber: 412,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 396,
+                                        lineNumber: 403,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1628,7 +1884,7 @@ function EditPostForm(param) {
                                                 onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                             }, "seo_desc-".concat(activeLocale), false, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                lineNumber: 410,
+                                                lineNumber: 417,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1642,19 +1898,19 @@ function EditPostForm(param) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                lineNumber: 419,
+                                                lineNumber: 426,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 409,
+                                        lineNumber: 416,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 389,
+                                lineNumber: 396,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(InputField, {
@@ -1675,12 +1931,12 @@ function EditPostForm(param) {
                                     onBlur: (e)=>Object.assign(e.currentTarget.style, blurStyle)
                                 }, "content-".concat(activeLocale), false, {
                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                    lineNumber: 427,
+                                    lineNumber: 434,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 426,
+                                lineNumber: 433,
                                 columnNumber: 11
                             }, this),
                             draft.content_md && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1698,7 +1954,7 @@ function EditPostForm(param) {
                                         children: labels.preview
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 443,
+                                        lineNumber: 450,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$MarkdownPreview$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["MarkdownPreview"], {
@@ -1706,13 +1962,13 @@ function EditPostForm(param) {
                                         coverImageUrl: coverUrl
                                     }, void 0, false, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 446,
+                                        lineNumber: 453,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 439,
+                                lineNumber: 446,
                                 columnNumber: 13
                             }, this),
                             draft.faq_blocks && draft.faq_blocks.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1734,7 +1990,7 @@ function EditPostForm(param) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                        lineNumber: 456,
+                                        lineNumber: 463,
                                         columnNumber: 15
                                     }, this),
                                     draft.faq_blocks.map((faq, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1751,7 +2007,7 @@ function EditPostForm(param) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                    lineNumber: 461,
+                                                    lineNumber: 468,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1765,19 +2021,19 @@ function EditPostForm(param) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                                    lineNumber: 462,
+                                                    lineNumber: 469,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, i, true, {
                                             fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                            lineNumber: 460,
+                                            lineNumber: 467,
                                             columnNumber: 17
                                         }, this))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 452,
+                                lineNumber: 459,
                                 columnNumber: 13
                             }, this),
                             (locState === null || locState === void 0 ? void 0 : locState.error) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1788,7 +2044,7 @@ function EditPostForm(param) {
                                 children: locState.error
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 469,
+                                lineNumber: 476,
                                 columnNumber: 13
                             }, this),
                             (locState === null || locState === void 0 ? void 0 : locState.success) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1799,7 +2055,7 @@ function EditPostForm(param) {
                                 children: "Saved!"
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 472,
+                                lineNumber: 479,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1812,13 +2068,13 @@ function EditPostForm(param) {
                                 children: labels.save
                             }, void 0, false, {
                                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                                lineNumber: 475,
+                                lineNumber: 482,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                        lineNumber: 350,
+                        lineNumber: 357,
                         columnNumber: 9
                     }, this)
                 ]
@@ -1834,7 +2090,7 @@ function EditPostForm(param) {
                 citations: citations
             }, void 0, false, {
                 fileName: "[project]/app/[locale]/(admin)/admin/posts/[id]/EditPostForm.tsx",
-                lineNumber: 484,
+                lineNumber: 491,
                 columnNumber: 7
             }, this)
         ]
@@ -2127,4 +2383,4 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 }),
 ]);
 
-//# sourceMappingURL=_b88fede8._.js.map
+//# sourceMappingURL=_36d7da31._.js.map

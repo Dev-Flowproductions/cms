@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { CoverImageUpload } from "./CoverImageUpload";
 import { CitationsBlock } from "./CitationsBlock";
+import { SeoScorePanel } from "./SeoScorePanel";
 
 type Option = { value: string; label: string };
 
@@ -133,6 +134,7 @@ export function EditPostForm({
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState(false);
+  const [seoScore, setSeoScore] = useState<{ seo: number; aeo: number; geo: number; notes?: string } | null>(null);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -171,6 +173,10 @@ export function EditPostForm({
       // If the API auto-generated a cover image, update the preview immediately
       if (json.coverPublicUrl) {
         setCoverUrl(json.coverPublicUrl);
+      }
+      // Show self-assessed scores from Gemini
+      if (json.seoScore) {
+        setSeoScore(json.seoScore);
       }
       setTimeout(() => setGenSuccess(false), 4000);
       router.refresh();
@@ -340,6 +346,13 @@ export function EditPostForm({
             </button>
           </div>
         </div>
+
+        {/* SEO Score panel — shown after generation */}
+        {seoScore && (
+          <div className="mt-4">
+            <SeoScorePanel score={seoScore} />
+          </div>
+        )}
 
         <form action={setLocState} className="space-y-5">
           <input type="hidden" name="locale" value={activeLocale} />

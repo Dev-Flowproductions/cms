@@ -7,7 +7,12 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus }) {
   const supabase = await createClient();
   let query = supabase
     .from("posts")
-    .select("id, slug, status, primary_locale, author_id, updated_at, profiles(display_name)")
+    .select(`
+      id, slug, status, primary_locale, author_id, updated_at,
+      profiles(display_name),
+      post_localizations(locale, seo_title, focus_keyword, faq_blocks,
+        jsonld, seo_score)
+    `)
     .order("updated_at", { ascending: false });
 
   if (filters?.status) {

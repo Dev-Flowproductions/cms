@@ -7,7 +7,11 @@
   "/[locale]/(admin)/admin/users/page": "app/[locale]/(admin)/admin/users/page.js",
   "/[locale]/dashboard/page": "app/[locale]/dashboard/page.js",
   "/[locale]/login/page": "app/[locale]/login/page.js",
+  "/[locale]/onboarding/domain/page": "app/[locale]/onboarding/domain/page.js",
+  "/[locale]/onboarding/google/page": "app/[locale]/onboarding/google/page.js",
   "/_not-found/page": "app/_not-found/page.js",
   "/api/agent/cover/route": "app/api/agent/cover/route.js",
-  "/api/agent/generate/route": "app/api/agent/generate/route.js"
+  "/api/agent/generate/route": "app/api/agent/generate/route.js",
+  "/api/google/oauth/route": "app/api/google/oauth/route.js",
+  "/api/onboarding/domain/route": "app/api/onboarding/domain/route.js"
 }

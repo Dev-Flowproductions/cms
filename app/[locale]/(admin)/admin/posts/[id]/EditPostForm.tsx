@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { CoverImageUpload } from "./CoverImageUpload";
 import { CitationsBlock } from "./CitationsBlock";
@@ -128,6 +129,7 @@ export function EditPostForm({
   }
 
   // AI generation state
+  const router = useRouter();
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState(false);

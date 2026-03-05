@@ -13,6 +13,13 @@ const SCOPES = [
 ].join(" ");
 
 export async function GET(request: Request) {
+  if (!GOOGLE_CLIENT_ID || !APP_URL) {
+    return new Response(
+      "Google OAuth is not configured. Set GOOGLE_CLIENT_ID and NEXT_PUBLIC_APP_URL in your environment variables.",
+      { status: 500 }
+    );
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

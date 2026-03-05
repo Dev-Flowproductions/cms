@@ -77,10 +77,10 @@
       "placeholder": "exemplo.com",
       "hint": "Introduza apenas o domínio, sem https://",
       "continue": "Continuar",
-      "saving": "A guardar…"
+      "saving": "A guardar…",
+      "errorDomainTaken": "Este domínio já está associado a outra conta. Contacte o suporte se acreditar que isto é um erro."
     },
     "google": {
-      "eyebrow": "Ligação",
       "title": "Ligue a sua conta Google",
       "subtitle": "Conceda acesso ao Google Analytics e ao Search Console para podermos monitorizar o desempenho e otimizar o seu conteúdo.",
       "scopeAnalytics": "Google Analytics — ler os seus dados de tráfego",

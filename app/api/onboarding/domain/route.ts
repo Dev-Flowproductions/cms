@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -10,10 +11,25 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const domain = body?.domain?.toString().trim();
+  const domain = body?.domain?.toString().trim().toLowerCase().replace(/^https?:\/\//, "");
 
   if (!domain) {
     return NextResponse.json({ error: "Domain is required" }, { status: 400 });
+  }
+
+  // Check if another client already registered this domain
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("clients")
+    .select("user_id")
+    .eq("domain", domain)
+    .maybeSingle();
+
+  if (existing && existing.user_id !== user.id) {
+    return NextResponse.json(
+      { error: "domain_taken" },
+      { status: 409 }
+    );
   }
 
   const { error } = await supabase

@@ -1,11 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireReviewer, getUser } from "@/lib/auth";
+import { requireAdmin, getUser } from "@/lib/auth";
 
 
 export async function getReviewChecklist(postId: string) {
-  await requireReviewer();
+  await requireAdmin();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("review_checklists")
@@ -22,7 +22,7 @@ export async function saveReviewChecklist(
   items: Array<{ key: string; label: string; passed: boolean; notes?: string }>,
   status: "pending" | "passed" | "failed"
 ) {
-  const { user } = await requireReviewer();
+  const { user } = await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("review_checklists").upsert(
     {
@@ -40,7 +40,7 @@ export async function saveReviewChecklist(
 }
 
 export async function approvePost(postId: string) {
-  const { user } = await requireReviewer();
+  const { user } = await requireAdmin();
   const supabase = await createClient();
 
   const { data: checklist } = await supabase
@@ -72,7 +72,7 @@ export async function approvePost(postId: string) {
 }
 
 export async function rejectPost(postId: string, reason?: string) {
-  const { user } = await requireReviewer();
+  const { user } = await requireAdmin();
   const supabase = await createClient();
 
   const { error } = await supabase

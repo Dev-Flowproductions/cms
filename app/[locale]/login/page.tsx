@@ -257,6 +257,25 @@ export default function LoginPage() {
                 : t("auth.signIn")}
             </button>
           </form>
+
+          {/* Legal links */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <a
+              href={`/${locale}/privacy`}
+              className="text-xs transition-opacity hover:opacity-70"
+              style={{ color: "var(--text-faint)" }}
+            >
+              Privacy Policy
+            </a>
+            <span style={{ color: "var(--border)" }}>·</span>
+            <a
+              href={`/${locale}/terms`}
+              className="text-xs transition-opacity hover:opacity-70"
+              style={{ color: "var(--text-faint)" }}
+            >
+              Terms of Use
+            </a>
+          </div>
         </div>
       </div>
     </div>

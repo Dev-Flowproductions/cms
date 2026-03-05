@@ -123,8 +123,6 @@ __turbopack_context__.s([
     ()=>requireAdmin,
     "requireAuth",
     ()=>requireAuth,
-    "requireReviewer",
-    ()=>requireReviewer,
     "requireRole",
     ()=>requireRole,
     "requireTeamMember",
@@ -139,13 +137,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$intl
 ;
 const TEAM_ROLES = [
     "admin",
-    "editor",
-    "reviewer",
-    "contributor"
-];
-const REVIEWER_ROLES = [
-    "admin",
-    "reviewer"
+    "user"
 ];
 const ADMIN_ROLES = [
     "admin"
@@ -189,9 +181,6 @@ async function requireRole(allowedRoles) {
 }
 async function requireTeamMember() {
     return requireRole(TEAM_ROLES);
-}
-async function requireReviewer() {
-    return requireRole(REVIEWER_ROLES);
 }
 async function requireAdmin() {
     return requireRole(ADMIN_ROLES);
@@ -287,7 +276,7 @@ async function createUser(formData) {
     // 3. Assign contributor role
     const { error: roleError } = await admin.from("user_roles").insert({
         user_id: userId,
-        role_id: "contributor"
+        role_id: "user"
     });
     if (roleError) {
         await admin.auth.admin.deleteUser(userId);

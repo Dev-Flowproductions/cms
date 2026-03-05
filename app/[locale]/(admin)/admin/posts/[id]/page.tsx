@@ -17,7 +17,7 @@ export default async function EditPostPage({
   const data = await getPostWithLocalizations(id);
   if (!data) notFound();
 
-  const canReview = roles.includes("reviewer") || roles.includes("admin");
+  const canReview = roles.includes("admin");
   const showChecklist = canReview && data.status === "review";
   const sources = await getSourcesList();
   const citations = await getCitationsForPost(id);

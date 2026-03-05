@@ -94,7 +94,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$head
 ;
 ;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+const APP_URL = ("TURBOPACK compile-time value", "http://localhost:3000");
 const SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
     "https://www.googleapis.com/auth/webmasters.readonly",
@@ -102,6 +102,11 @@ const SCOPES = [
     "email"
 ].join(" ");
 async function GET(request) {
+    if (!GOOGLE_CLIENT_ID || !APP_URL) {
+        return new Response("Google OAuth is not configured. Set GOOGLE_CLIENT_ID and NEXT_PUBLIC_APP_URL in your environment variables.", {
+            status: 500
+        });
+    }
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createClient"])();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

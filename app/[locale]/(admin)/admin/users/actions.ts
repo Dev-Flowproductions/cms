@@ -49,7 +49,7 @@ export async function createUser(formData: FormData) {
   // 3. Assign contributor role
   const { error: roleError } = await admin
     .from("user_roles")
-    .insert({ user_id: userId, role_id: "contributor" });
+    .insert({ user_id: userId, role_id: "user" });
   if (roleError) {
     await admin.auth.admin.deleteUser(userId);
     return { error: roleError.message };

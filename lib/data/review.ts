@@ -1,10 +1,10 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireReviewer } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 export async function getReviewQueuePosts() {
-  await requireReviewer();
+  await requireAdmin();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")

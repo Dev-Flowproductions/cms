@@ -2,10 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
-export type Role = "admin" | "editor" | "reviewer" | "contributor";
+export type Role = "admin" | "user";
 
-const TEAM_ROLES: Role[] = ["admin", "editor", "reviewer", "contributor"];
-const REVIEWER_ROLES: Role[] = ["admin", "reviewer"];
+const TEAM_ROLES: Role[] = ["admin", "user"];
 const ADMIN_ROLES: Role[] = ["admin"];
 
 /** Prefer getUser() for server-side checks; getSession() reads from cookie only and is not validated. */
@@ -60,10 +59,6 @@ export async function requireRole(allowedRoles: Role[]) {
 
 export async function requireTeamMember() {
   return requireRole(TEAM_ROLES);
-}
-
-export async function requireReviewer() {
-  return requireRole(REVIEWER_ROLES);
 }
 
 export async function requireAdmin() {

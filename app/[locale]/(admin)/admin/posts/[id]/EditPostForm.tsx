@@ -400,7 +400,7 @@ export function EditPostForm({
                     background: publishing
                       ? "var(--surface-raised)"
                       : "linear-gradient(135deg, #22d3a0, #34d399)",
-                    color: publishing ? "var(--text-muted)" : "#0a0a0f",
+                    color: publishing ? "var(--text-muted)" : "var(--bg)",
                     border: publishing ? "1px solid var(--border)" : "none",
                     boxShadow: publishing ? "none" : "0 0 16px rgba(34,211,160,0.25)",
                   }}

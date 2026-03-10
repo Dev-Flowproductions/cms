@@ -22,7 +22,7 @@ function getDisplayName(profiles: PostRow["profiles"]): string | null {
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  idea:       { bg: "rgba(120,120,160,0.12)", text: "#7878a0", dot: "#7878a0" },
+  idea:       { bg: "rgba(120,120,160,0.12)", text: "var(--text-muted)", dot: "var(--text-muted)" },
   research:   { bg: "rgba(99,179,237,0.1)",   text: "#63b3ed", dot: "#63b3ed" },
   draft:      { bg: "rgba(245,166,35,0.1)",   text: "#f5a623", dot: "#f5a623" },
   optimize:   { bg: "rgba(255,128,72,0.1)",   text: "#ff8048", dot: "#ff8048" },

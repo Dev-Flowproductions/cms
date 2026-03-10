@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { AdminNav } from "./AdminNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { AdminLogoutButton } from "./AdminLogoutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function AdminLayout({
   children,
@@ -35,7 +36,7 @@ export default async function AdminLayout({
               <path d="M2.5 4h11M2.5 8h7M2.5 12h4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="font-bold text-sm leading-tight" style={{ color: "var(--text)" }}>
               {t("common.appName")}
             </div>
@@ -43,6 +44,7 @@ export default async function AdminLayout({
               {t("admin.sidebarSubLabel")}
             </div>
           </div>
+          <ThemeToggle />
         </div>
 
         {/* Nav */}
@@ -72,7 +74,7 @@ export default async function AdminLayout({
         <div
           className="sticky top-0 z-30 flex items-center justify-between px-8 h-14 backdrop-blur-xl"
           style={{
-            background: "rgba(17,17,24,0.85)",
+            background: "color-mix(in srgb, var(--surface) 85%, transparent)",
             borderBottom: "1px solid var(--border)",
           }}
         >

@@ -7,6 +7,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { UserMenu } from "./UserMenu";
 import { AccountSettingsCard } from "./AccountSettingsCard";
 import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function DashboardPage() {
   const { user, roles } = await getAuthUserWithRoles();
@@ -23,7 +24,7 @@ export default async function DashboardPage() {
       <header
         className="sticky top-0 z-40 backdrop-blur-xl"
         style={{
-          background: "rgba(17,17,24,0.85)",
+          background: "color-mix(in srgb, var(--surface) 85%, transparent)",
           borderBottom: "1px solid var(--border)",
         }}
       >
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <LocaleSwitcher />
 
             {isAdmin && (

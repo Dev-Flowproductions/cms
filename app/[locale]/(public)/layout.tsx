@@ -13,7 +13,7 @@ export default async function PublicLayout({
       <header
         className="sticky top-0 z-40 backdrop-blur-xl"
         style={{
-          background: "rgba(17,17,24,0.85)",
+          background: "color-mix(in srgb, var(--surface) 85%, transparent)",
           borderBottom: "1px solid var(--border)",
         }}
       >

@@ -105,6 +105,21 @@
       "exportedName": "updateClientFrequency",
       "filename": "app/[locale]/(admin)/admin/users/actions.ts"
     },
+    "601932a68d8035745e555c31803f0ac52896b2f6a2": {
+      "workers": {
+        "app/[locale]/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "updateClientWebhook",
+          "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+        }
+      },
+      "layer": {
+        "app/[locale]/dashboard/page": "action-browser"
+      },
+      "exportedName": "updateClientWebhook",
+      "filename": "app/[locale]/(admin)/admin/users/actions.ts"
+    },
     "606b771008244063b61704d4d1337b36e09484ab6d": {
       "workers": {
         "app/[locale]/dashboard/page": {

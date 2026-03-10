@@ -62,7 +62,7 @@ async function getPostsForAdmin(filters) {
 }
 async function getPostsForDashboard(userId, isAdmin) {
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
-    let query = supabase.from("posts").select("id, slug, status, primary_locale, author_id, updated_at, profiles(display_name)").order("updated_at", {
+    let query = supabase.from("posts").select("id, slug, status, primary_locale, author_id, updated_at, webhook_status, profiles(display_name)").order("updated_at", {
         ascending: false
     });
     if (!isAdmin) {
@@ -203,7 +203,7 @@ function isTeamRole(role) {
 "[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-/* __next_internal_action_entry_do_not_use__ [{"007b6b4da807472b0f1f4707505b3cc78e44eb6eec":"listUsers","402fdfd96925c71836e30458c1a717694aaa2babc7":"deleteUser","40428b530bc87a1ef80d778be6363371befaa2ede0":"getClientSettings","40c90a2a661f050c6dce5c9a5e45c581fa0007a736":"createUser","60126f85dffecf5e3f0995d92545bd920aa337c966":"updateClientFrequency","606b771008244063b61704d4d1337b36e09484ab6d":"saveOnboardingDomain","78f5d44ca18c6bbe20761927963ea6bcf25e273dd0":"saveGoogleTokens"},"",""] */ __turbopack_context__.s([
+/* __next_internal_action_entry_do_not_use__ [{"007b6b4da807472b0f1f4707505b3cc78e44eb6eec":"listUsers","402fdfd96925c71836e30458c1a717694aaa2babc7":"deleteUser","40428b530bc87a1ef80d778be6363371befaa2ede0":"getClientSettings","40c90a2a661f050c6dce5c9a5e45c581fa0007a736":"createUser","60126f85dffecf5e3f0995d92545bd920aa337c966":"updateClientFrequency","601932a68d8035745e555c31803f0ac52896b2f6a2":"updateClientWebhook","606b771008244063b61704d4d1337b36e09484ab6d":"saveOnboardingDomain","78f5d44ca18c6bbe20761927963ea6bcf25e273dd0":"saveGoogleTokens"},"",""] */ __turbopack_context__.s([
     "createUser",
     ()=>createUser,
     "deleteUser",
@@ -217,7 +217,9 @@ function isTeamRole(role) {
     "saveOnboardingDomain",
     ()=>saveOnboardingDomain,
     "updateClientFrequency",
-    ()=>updateClientFrequency
+    ()=>updateClientFrequency,
+    "updateClientWebhook",
+    ()=>updateClientWebhook
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/server-reference.js [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/admin.ts [app-rsc] (ecmascript)");
@@ -322,7 +324,7 @@ async function listUsers() {
 }
 async function getClientSettings(userId) {
     const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
-    const { data, error } = await supabase.from("clients").select("id, domain, google_access_token, google_connected_at, frequency").eq("user_id", userId).maybeSingle();
+    const { data, error } = await supabase.from("clients").select("id, domain, google_access_token, google_connected_at, frequency, webhook_url, webhook_secret, auto_publish").eq("user_id", userId).maybeSingle();
     if (error) throw error;
     return data;
 }
@@ -366,6 +368,19 @@ async function updateClientFrequency(userId, frequency) {
         success: true
     };
 }
+async function updateClientWebhook(userId, data) {
+    const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createClient"])();
+    const { error } = await supabase.from("clients").update({
+        ...data,
+        updated_at: new Date().toISOString()
+    }).eq("user_id", userId);
+    if (error) return {
+        error: error.message
+    };
+    return {
+        success: true
+    };
+}
 async function deleteUser(userId) {
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["requireAdmin"])();
     const admin = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createAdminClient"])();
@@ -385,6 +400,7 @@ async function deleteUser(userId) {
     saveOnboardingDomain,
     saveGoogleTokens,
     updateClientFrequency,
+    updateClientWebhook,
     deleteUser
 ]);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createUser, "40c90a2a661f050c6dce5c9a5e45c581fa0007a736", null);
@@ -393,6 +409,7 @@ async function deleteUser(userId) {
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(saveOnboardingDomain, "606b771008244063b61704d4d1337b36e09484ab6d", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(saveGoogleTokens, "78f5d44ca18c6bbe20761927963ea6bcf25e273dd0", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateClientFrequency, "60126f85dffecf5e3f0995d92545bd920aa337c966", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateClientWebhook, "601932a68d8035745e555c31803f0ac52896b2f6a2", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(deleteUser, "402fdfd96925c71836e30458c1a717694aaa2babc7", null);
 }),
 "[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
@@ -685,6 +702,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin
 ;
 ;
 ;
+;
 }),
 "[project]/.next-internal/server/app/[locale]/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/data/posts.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/[locale]/(admin)/admin/users/actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/app/[locale]/(admin)/admin/posts/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -706,6 +724,8 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$data$2f$posts$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getPostsForDashboard"],
     "60126f85dffecf5e3f0995d92545bd920aa337c966",
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateClientFrequency"],
+    "601932a68d8035745e555c31803f0ac52896b2f6a2",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateClientWebhook"],
     "606b771008244063b61704d4d1337b36e09484ab6d",
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f5b$locale$5d2f28$admin$292f$admin$2f$users$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["saveOnboardingDomain"],
     "78f5d44ca18c6bbe20761927963ea6bcf25e273dd0",

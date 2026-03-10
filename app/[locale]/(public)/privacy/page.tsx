@@ -40,7 +40,7 @@ export default async function PrivacyPolicyPage() {
         <div className="space-y-10 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Who We Are</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Who we are</h2>
             <p>
               Flow Productions (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is a creative studio based in Lisbon, Portugal, operating the CMS platform available at this domain. We provide brand strategy, web design, content management, and digital marketing services. Our registered contact address is available at{" "}
               <a href="https://flowproductions.pt" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
@@ -50,7 +50,7 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>2. What Data We Collect</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>2. What data we collect</h2>
             <p className="mb-3">We collect the following categories of personal data:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -69,7 +69,7 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>3. How We Use Your Data</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>3. How we use your data</h2>
             <p className="mb-3">We use your data to:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -91,7 +91,7 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>4. Legal Basis (GDPR)</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>4. Legal basis (GDPR)</h2>
             <p>
               We process your data under the following legal bases as defined by the General Data Protection Regulation (GDPR):
             </p>
@@ -110,14 +110,14 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>5. Data Storage & Security</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>5. Data storage & security</h2>
             <p>
               Your data is stored on Supabase infrastructure (PostgreSQL), hosted in the European Union. Media files are stored in Supabase Storage. We use industry-standard encryption in transit (TLS) and at rest. Google OAuth tokens are stored encrypted and accessed only for authorised API calls.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>6. Third-Party Services</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>6. Third-party services</h2>
             <p className="mb-3">We use the following third-party processors:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -135,7 +135,7 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>7. Your Rights</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>7. Your rights</h2>
             <p className="mb-3">Under GDPR, you have the right to:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -160,14 +160,14 @@ export default async function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>8. Data Retention</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>8. Data retention</h2>
             <p>
               We retain your account data for as long as your account is active. If you request deletion, we will remove your personal data within 30 days, except where retention is required by law. Generated content you have published remains on your website under your own responsibility.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>9. Changes to This Policy</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>9. Changes to this policy</h2>
             <p>
               We may update this Privacy Policy from time to time. We will notify active users of material changes via email. Continued use of the platform after changes constitutes acceptance of the updated policy.
             </p>
@@ -192,10 +192,10 @@ export default async function PrivacyPolicyPage() {
         {/* Footer links */}
         <div className="mt-16 pt-8 flex gap-6" style={{ borderTop: "1px solid var(--border)" }}>
           <Link href="/terms" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
-            Terms of Use
+            Terms of use
           </Link>
           <Link href="/login" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
-            Back to Login
+            Back to login
           </Link>
         </div>
 

@@ -139,7 +139,7 @@
     "title": "Title",
     "excerpt": "Excerpt",
     "content": "Content",
-    "localizations": "Localizations",
+    "localizations": "Localisations",
     "approve": "Approve",
     "reject": "Reject",
     "checklist": "Review checklist",
@@ -161,7 +161,6 @@
       "filterAll": "All",
       "noPosts": "No posts yet. Create one to get started."
     },
-    "editPost": "Edit post",
     "editPostPage": {
       "postSettings": "Post settings",
       "markdownHint": "(Markdown)",
@@ -209,7 +208,7 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back, {email}",
-    "adminWelcome": "Admin Dashboard",
+    "adminWelcome": "Admin dashboard",
     "adminSubtitle": "You're viewing all posts from all users.",
     "userSubtitle": "Manage your posts below.",
     "workspaceAdmin": "Admin workspace",
@@ -263,7 +262,7 @@
       "idea": "Idea",
       "research": "Research",
       "draft": "Draft",
-      "optimize": "Optimize",
+      "optimize": "Optimise",
       "format": "Format",
       "review": "Review",
       "approved": "Approved",

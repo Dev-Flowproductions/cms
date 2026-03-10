@@ -265,7 +265,7 @@ export default function LoginPage() {
               className="text-xs transition-opacity hover:opacity-70"
               style={{ color: "var(--text-faint)" }}
             >
-              Privacy Policy
+              Privacy policy
             </a>
             <span style={{ color: "var(--border)" }}>·</span>
             <a
@@ -273,7 +273,7 @@ export default function LoginPage() {
               className="text-xs transition-opacity hover:opacity-70"
               style={{ color: "var(--text-faint)" }}
             >
-              Terms of Use
+              Terms of use
             </a>
           </div>
         </div>

@@ -24,9 +24,10 @@ REQUIRED POST STRUCTURE (in this exact order)
    Do NOT guess, invent, or use a date from your training data.
 
 2. H1 — TITLE
-   # {Title with focus keyword}
+   # {Title with focus keyword — sentence case}
    - Must include the focus keyword naturally.
    - Compelling, clear, under 70 characters.
+   - Sentence case: only first word and proper nouns capitalised.
    - Do NOT add any text or paragraph directly under the H1.
    - The H1 is immediately followed by the cover image — nothing in between.
 
@@ -43,7 +44,7 @@ REQUIRED POST STRUCTURE (in this exact order)
    - End with a clear promise of what the reader will learn.
 
 5. SECTION 1 — H2 + BODY TEXT
-   ## {First section heading — include a semantic variant of the focus keyword}
+   ## {First section heading — sentence case, semantic variant of focus keyword}
    - 2-4 paragraphs of substantive, expert-level content.
    - Use **bold** for key terms on first use.
    - Include at least one H3 subheading (###) with a specific sub-topic.
@@ -52,7 +53,7 @@ REQUIRED POST STRUCTURE (in this exact order)
    - REQUIRED: Name at least one real organisation, tool, or framework with accurate context.
 
 6. SECTION 2 — H2 + BODY TEXT
-   ## {Second section heading — different angle, semantic keyword variant}
+   ## {Second section heading — sentence case, different angle, semantic keyword variant}
    - 2-4 paragraphs. Different angle from section 1.
    - Include at least one H3 subheading (###).
    - Include a bullet list (3-5 items) for scannability.
@@ -60,7 +61,7 @@ REQUIRED POST STRUCTURE (in this exact order)
    - Use comparison or contrast to add depth ("Unlike X, Y approach...").
 
 7. SECTION 3 — H2 + BODY TEXT
-   ## {Third section heading — practical/actionable angle}
+   ## {Third section heading — sentence case, practical/actionable angle}
    - 2-4 paragraphs. Practical, actionable content with real examples.
    - Include at least one H3 subheading (###).
    - REQUIRED: Include a numbered step list (3-5 steps) for structured how-to content.
@@ -68,7 +69,7 @@ REQUIRED POST STRUCTURE (in this exact order)
    - Use attribution language at least once: "Research by...", "Studies show...", "Experts at..."
 
 8. FAQ SECTION — H2 + Q&A BLOCKS
-   ## Frequently Asked Questions
+   ## Frequently asked questions
    Use this exact format for each FAQ item:
    **{question}**
    {answer}
@@ -81,7 +82,7 @@ REQUIRED POST STRUCTURE (in this exact order)
    - At least one answer must include a specific number or fact.
 
 9. CONCLUSION — H2
-   ## {Conclusion heading — action-oriented}
+   ## {Conclusion heading — sentence case, action-oriented}
    - 2 paragraphs wrapping up the key points with a clear synthesis.
    - Reinforce the focus keyword naturally.
    - End with a strong, specific call-to-action relevant to the client's business (not generic).
@@ -175,6 +176,28 @@ BRAND & TONE RULES
 - Never use filler openers: "In today's fast-paced world", "It's no secret that", "As we all know".
 - Never use weak closers: "In conclusion, it's clear that", "To sum up".
 - Write as an expert, not as a content farm. Every sentence must earn its place.
+
+════════════════════════════════════════
+CAPITALISATION RULES (EUROPEAN STYLE — MANDATORY)
+════════════════════════════════════════
+
+Use SENTENCE CASE throughout the entire post — not Title Case.
+
+- H1: Capitalise only the first word and proper nouns. Example: "What is SEO in 2026?" ✓ / "What Is SEO In 2026?" ✗
+- H2: Same rule. "How to improve your search ranking" ✓ / "How To Improve Your Search Ranking" ✗
+- H3: Same rule. "Using Google Search Console effectively" ✓ / "Using Google Search Console Effectively" ✗
+- FAQ questions: Sentence case. "What is the difference between SEO and AEO?" ✓
+- SEO title: Sentence case. Exception: brand names and proper nouns always capitalised.
+- Meta description: Sentence case.
+- Bullet list items: Capitalise only the first word of each item.
+- Numbered list items: Capitalise only the first word of each item.
+
+EXCEPTIONS (always capitalised regardless of position):
+- Proper nouns: brand names, product names, people's names, country/city names.
+- Acronyms: SEO, AEO, GEO, AI, CMS, GDPR, API, etc.
+- The word "I".
+
+Do NOT capitalise every major word in a heading. This is American style and must be avoided.
 
 ════════════════════════════════════════
 MARKDOWN RULES
@@ -300,6 +323,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
   lines.push("  ✓ H1 → H2 → H3 hierarchy used (at least one H3 per section)");
   lines.push("  ✓ 1200+ words (hero: 1800+)");
   lines.push("  ✓ SEO title 50-60 chars, meta description 145-158 chars");
+  lines.push("  ✓ ALL headings in sentence case (only first word + proper nouns capitalised)");
   lines.push("");
   lines.push("AEO 10/10 checklist:");
   lines.push("  ✓ Definition block in intro: '**{term}** is...'");

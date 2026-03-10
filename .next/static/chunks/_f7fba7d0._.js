@@ -502,7 +502,7 @@ function LoginPage() {
                                     style: {
                                         color: "var(--text-faint)"
                                     },
-                                    children: "Privacy Policy"
+                                    children: "Privacy policy"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/login/page.tsx",
                                     lineNumber: 263,
@@ -524,7 +524,7 @@ function LoginPage() {
                                     style: {
                                         color: "var(--text-faint)"
                                     },
-                                    children: "Terms of Use"
+                                    children: "Terms of use"
                                 }, void 0, false, {
                                     fileName: "[project]/app/[locale]/login/page.tsx",
                                     lineNumber: 271,

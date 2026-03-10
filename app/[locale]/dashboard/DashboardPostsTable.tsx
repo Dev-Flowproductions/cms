@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePost } from "@/app/[locale]/(admin)/admin/posts/actions";
 
+type SeoScore = { seo: number; aeo: number; geo: number };
+
 type PostRow = {
   id: string;
   slug: string;
@@ -13,12 +15,56 @@ type PostRow = {
   primary_locale: string;
   updated_at: string;
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
+  post_localizations?: { locale: string; seo_score: SeoScore | null }[] | null;
 };
 
 function getDisplayName(profiles: PostRow["profiles"]): string | null {
   if (!profiles) return null;
   if (Array.isArray(profiles)) return profiles[0]?.display_name ?? null;
   return profiles.display_name ?? null;
+}
+
+function extractScore(
+  locs: PostRow["post_localizations"],
+  primaryLocale: string
+): SeoScore | null {
+  if (!locs?.length) return null;
+  const loc = locs.find((l) => l.locale === primaryLocale) ?? locs[0];
+  const s = loc?.seo_score;
+  if (s && typeof s.seo === "number") return s as SeoScore;
+  return null;
+}
+
+function ScoreDots({ score }: { score: SeoScore }) {
+  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
+  const color =
+    avg >= 9 ? "var(--success)" :
+    avg >= 7 ? "#f59e0b" :
+    avg >= 5 ? "#f97316" :
+    "var(--danger)";
+  const filled = Math.round((avg / 10) * 5);
+
+  return (
+    <div className="flex items-center gap-1" title={`SEO ${score.seo} · AEO ${score.aeo} · GEO ${score.geo}`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <svg
+          key={i}
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill={i < filled ? color : "none"}
+          stroke={color}
+          strokeWidth="2"
+          style={{ opacity: i < filled ? 1 : 0.25 }}
+        >
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
+        </svg>
+      ))}
+      <span className="text-[10px] font-semibold tabular-nums ml-0.5" style={{ color }}>
+        {avg}/10
+      </span>
+    </div>
+  );
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
@@ -162,6 +208,12 @@ export function DashboardPostsTable({
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
                   style={{ color: "var(--text-muted)" }}
                 >
+                  Score
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   {t("dashboard.table.updated")}
                 </th>
                 <th className="px-6 py-4" />
@@ -173,6 +225,7 @@ export function DashboardPostsTable({
                 const cfg = STATUS_CONFIG[post.status] ?? STATUS_CONFIG.idea;
                 const isDeleting = deletingId === post.id;
                 const isLast = i === posts.length - 1;
+                const score = extractScore(post.post_localizations, post.primary_locale);
 
                 return (
                   <tr
@@ -238,6 +291,15 @@ export function DashboardPostsTable({
                       style={{ color: "var(--text-muted)" }}
                     >
                       {post.primary_locale}
+                    </td>
+                    <td
+                      className="px-6 py-4 hidden sm:table-cell"
+                    >
+                      {score ? (
+                        <ScoreDots score={score} />
+                      ) : (
+                        <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
+                      )}
                     </td>
                     <td
                       className="px-6 py-4 text-xs whitespace-nowrap hidden sm:table-cell"

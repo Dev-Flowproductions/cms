@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/carlo/Desktop/work/cms/app/%5Blocale%5D/login/RedirectToAdmin.tsx"],"sourcesContent":["\"use client\";\n\nimport { useEffect } from \"react\";\n\n/**\n * Client-side redirect so the browser receives the response (and any Set-Cookie\n * from middleware) before navigating. Server-side redirect() can drop those\n * headers and cause a redirect loop when GET /admin has no session.\n */\nexport default function RedirectToAdmin({ locale }: { locale: string }) {\n  useEffect(() => {\n    const segment = locale || \"en\";\n    window.location.replace(`${window.location.origin}/${segment}/admin`);\n  }, [locale]);\n  return null;\n}\n"],"names":[],"mappings":";;;;AAEA;;AAFA;;AASe,SAAS,gBAAgB,KAA8B;QAA9B,EAAE,MAAM,EAAsB,GAA9B;;IACtC,IAAA,0KAAS;qCAAC;YACR,MAAM,UAAU,UAAU;YAC1B,OAAO,QAAQ,CAAC,OAAO,CAAC,AAAC,GAA4B,OAA1B,OAAO,QAAQ,CAAC,MAAM,EAAC,KAAW,OAAR,SAAQ;QAC/D;oCAAG;QAAC;KAAO;IACX,OAAO;AACT;GANwB;KAAA","debugId":null}}]
-}

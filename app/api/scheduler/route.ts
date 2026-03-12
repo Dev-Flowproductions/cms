@@ -149,13 +149,11 @@ async function generatePostForClient(
   const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
   const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
 
-  // Auto-generate a URL-safe slug from the domain + date
+  // Auto-generate a URL-safe slug from the domain + date + short random suffix to guarantee uniqueness
   const datePart = new Date().toISOString().slice(0, 10);
-  const slugBase = `${domainSlug.replace(/\s+/g, "-")}-${datePart}`.toLowerCase().slice(0, 70);
-
-  let slug = slugBase;
-  const { data: existing } = await admin.from("posts").select("id").eq("slug", slug).maybeSingle();
-  if (existing) slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
+  const randomSuffix = Math.random().toString(36).slice(2, 6);
+  const slugBase = `${domainSlug.replace(/\s+/g, "-")}-${datePart}`.toLowerCase().slice(0, 64);
+  const slug = `${slugBase}-${randomSuffix}`;
 
   // Create the post row (primary locale = pt)
   const { data: post, error: postError } = await admin

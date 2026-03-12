@@ -8,6 +8,8 @@ import { UserMenu } from "./UserMenu";
 import { AccountSettingsCard } from "./AccountSettingsCard";
 import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { getUserReviewPosts } from "./review/actions";
+import { UserReviewQueue } from "./review/UserReviewQueue";
 
 export default async function DashboardPage() {
   const { user, roles } = await getAuthUserWithRoles();
@@ -15,6 +17,7 @@ export default async function DashboardPage() {
   const t = await getTranslations();
   const posts = await getPostsForDashboard(user.id, isAdmin);
   const clientSettings = isAdmin ? null : await getClientSettings(user.id).catch(() => null);
+  const reviewPosts = isAdmin ? [] : await getUserReviewPosts().catch(() => []);
 
   const initial = (user.email ?? "?")[0].toUpperCase();
 
@@ -142,6 +145,11 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* User review queue — AI-generated posts waiting for approval */}
+        {!isAdmin && reviewPosts.length > 0 && (
+          <UserReviewQueue posts={reviewPosts as Parameters<typeof UserReviewQueue>[0]["posts"]} />
+        )}
 
         {/* Posts table */}
         <DashboardPostsTable posts={posts} isAdmin={isAdmin} />

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -104,6 +104,8 @@ async function generatePostForClient(
     frequency: string;
     google_access_token: string | null;
     google_scope: string | null;
+    auto_publish?: boolean | null;
+    webhook_url?: string | null;
   },
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
@@ -297,8 +299,35 @@ async function generatePostForClient(
     console.warn(`[scheduler] Cover generation failed for ${client.domain} (non-fatal):`, coverErr);
   }
 
-  // Move to "review" status so admin can approve before publishing
-  await admin.from("posts").update({ status: "review" }).eq("id", post.id);
+  // Auto-publish: if client has auto_publish on, publish immediately and fire webhook.
+  // Otherwise put in "review" so the user can approve/edit in their dashboard.
+  if (client.auto_publish && client.webhook_url) {
+    await admin.from("posts").update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      webhook_status: "pending",
+      webhook_sent_at: new Date().toISOString(),
+      webhook_error: null,
+    }).eq("id", post.id);
+
+    // Fire webhook
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      const webhookRes = await fetch(`${appUrl}/api/publish/${post.id}`, {
+        method: "POST",
+        headers: { "x-scheduler-internal": "1" },
+      });
+      if (!webhookRes.ok) {
+        const err = await webhookRes.text().catch(() => "");
+        console.warn(`[scheduler] Webhook failed for ${client.domain}: ${err.slice(0, 200)}`);
+      }
+    } catch (webhookErr) {
+      console.warn(`[scheduler] Webhook error for ${client.domain}:`, webhookErr);
+    }
+  } else {
+    // No auto-publish — put in user's review queue
+    await admin.from("posts").update({ status: "review" }).eq("id", post.id);
+  }
 
   // Update last_post_generated_at on the client
   await admin.from("clients").update({ last_post_generated_at: new Date().toISOString() }).eq("id", client.id);

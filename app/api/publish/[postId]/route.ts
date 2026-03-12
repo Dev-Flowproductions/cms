@@ -7,22 +7,28 @@ export async function POST(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   const { postId } = await params;
-  const supabase = await createClient();
 
-  // Verify the caller is authenticated
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Allow internal scheduler calls (no user session needed)
+  const isInternalCall = _req.headers.get("x-scheduler-internal") === "1";
 
-  // Only admins may push
-  const { data: roleRow } = await supabase
-    .from("user_roles")
-    .select("role_id")
-    .eq("user_id", user.id)
-    .single();
-  if (roleRow?.role_id !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isInternalCall) {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Only admins may push manually
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", user.id)
+      .single();
+    if (roleRow?.role_id !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // Fetch the post + its active localization + the owner's client webhook config

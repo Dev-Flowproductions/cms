@@ -30,10 +30,11 @@ export async function POST(request: Request) {
   // ── Imagen via Gemini API ──────────────────────────────────────────────────
   try {
     const imagePrompt =
-      `Professional hero cover image for a blog post about: "${query}". ` +
-      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (≈1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
-      `Keep the main subject centred both horizontally and vertically — safe zone is the central 60% of the frame. ` +
-      `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
+      `Editorial photography: a professional scene related to "${query}". ` +
+      `4:3 aspect ratio, full-width hero image. ` +
+      `High quality, cinematic lighting, sharp focus, photorealistic. ` +
+      `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
+      `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
 
     const response = await genai.models.generateImages({
       model: "imagen-4.0-generate-001",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
@@ -7,7 +7,7 @@ import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext 
 const MODEL = "gemini-3.1-pro-preview";
 
 /**
- * Frequency → minimum interval in milliseconds before a new post should be generated.
+ * Frequency â†’ minimum interval in milliseconds before a new post should be generated.
  */
 const FREQUENCY_INTERVAL_MS: Record<string, number> = {
   daily:    1  * 24 * 60 * 60 * 1000,
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ?force=true bypasses the frequency interval check — useful for testing
+  // ?force=true bypasses the frequency interval check â€” useful for testing
   const force = new URL(req.url).searchParams.get("force") === "true";
 
   const admin = createAdminClient();
@@ -72,11 +72,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Process due clients with a random stagger (0–30 s per client) to spread API load
+  // Process due clients with a random stagger (0â€“30 s per client) to spread API load
   for (let i = 0; i < dueClients.length; i++) {
     const client = dueClients[i];
     if (i > 0) {
-      // Random delay 5–30 s between each client
+      // Random delay 5â€“30 s between each client
       const jitterMs = 5_000 + Math.floor(Math.random() * 25_000);
       await new Promise((r) => setTimeout(r, jitterMs));
     }
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   const skipped   = results.filter((r) => r.status === "skipped_not_due").length;
   const errors    = results.filter((r) => r.status === "error").length;
 
-  console.log(`[scheduler] Done — generated: ${generated}, skipped: ${skipped}, errors: ${errors}`);
+  console.log(`[scheduler] Done â€” generated: ${generated}, skipped: ${skipped}, errors: ${errors}`);
 
   return NextResponse.json({ ok: true, generated, skipped, errors, results });
 }
@@ -109,7 +109,7 @@ export async function GET() {
   });
 }
 
-// ─── Core generation logic ───────────────────────────────────────────────────
+// â”€â”€â”€ Core generation logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ALL_LOCALES = ["pt", "en", "fr"] as const;
 type SupportedLocale = (typeof ALL_LOCALES)[number];
@@ -152,7 +152,7 @@ async function generatePostForClient(
   const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
   const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
 
-  // Use a temporary placeholder slug — will be replaced with the title-derived slug after PT generation
+  // Use a temporary placeholder slug â€” will be replaced with the title-derived slug after PT generation
   const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
 
   // Create the post row with a temp slug
@@ -192,7 +192,7 @@ async function generatePostForClient(
     systemInstruction: SYSTEM_INSTRUCTIONS,
   });
 
-  // ── Generate content for each locale sequentially ──────────────────────────
+  // â”€â”€ Generate content for each locale sequentially â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // PT is generated first so we can derive the slug from its title.
   let slug = tempSlug;
   let titleForCoverPrompt = focusKeyword;
@@ -231,15 +231,15 @@ async function generatePostForClient(
       generated = JSON.parse(clean);
     } catch (err) {
       if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Invalid JSON from Gemini" }).eq("id", runId);
-      console.warn(`[scheduler] Gemini failed for locale ${locale}, client ${client.domain} — skipping`);
+      console.warn(`[scheduler] Gemini failed for locale ${locale}, client ${client.domain} â€” skipping`);
       continue;
     }
 
     if (locale === primaryLocale) {
       titleForCoverPrompt = generated.title;
 
-      // Derive the final slug from the PT title — short, clean, no date
-      // e.g. "Visão da flowproductions 2026: o futuro da produção" → "visao-da-flowproductions-2026-o-futuro-da-producao"
+      // Derive the final slug from the PT title â€” short, clean, no date
+      // e.g. "VisÃ£o da flowproductions 2026: o futuro da produÃ§Ã£o" â†’ "visao-da-flowproductions-2026-o-futuro-da-producao"
       const titleSlug = generated.title
         .toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
@@ -310,13 +310,13 @@ async function generatePostForClient(
 
   void firstRunId; // suppress unused warning
 
-  // ── Generate cover image (once, shared across all locales) ─────────────────
+  // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
     const coverPrompt =
       `Professional hero cover image for a blog post titled: "${titleForCoverPrompt}". ` +
       `Topic: ${focusKeyword}. ` +
-      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (≈1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
-      `Keep the main subject centred both horizontally and vertically — safe zone is the central 60% of the frame. ` +
+      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (â‰ˆ1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
+      `Keep the main subject centred both horizontally and vertically â€” safe zone is the central 60% of the frame. ` +
       `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
     const imgResponse = await imagenAI.models.generateImages({
@@ -344,28 +344,117 @@ async function generatePostForClient(
     console.warn(`[scheduler] Cover generation failed for ${client.domain} (non-fatal):`, coverErr);
   }
 
-  // ── Auto-publish or send to review queue ───────────────────────────────────
-  if (client.auto_publish && client.webhook_url) {
-    await admin.from("posts").update({
-      status: "published",
-      published_at: new Date().toISOString(),
-      webhook_status: "pending",
-      webhook_sent_at: new Date().toISOString(),
-      webhook_error: null,
-    }).eq("id", post.id);
 
+  // Auto-publish or send to review queue
+  if (client.auto_publish && client.webhook_url) {
+    // Inline publish — no self-fetch to avoid cold-start timeouts on Vercel
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-      const webhookRes = await fetch(`${appUrl}/api/publish/${post.id}`, {
-        method: "POST",
-        headers: { "x-scheduler-internal": "1" },
-      });
-      if (!webhookRes.ok) {
-        const err = await webhookRes.text().catch(() => "");
-        console.warn(`[scheduler] Webhook failed for ${client.domain}: ${err.slice(0, 200)}`);
+      const { data: freshPost } = await admin
+        .from("posts")
+        .select("cover_image_path, slug, post_localizations(locale, title, excerpt, content_md, seo_title, seo_description, jsonld)")
+        .eq("id", post.id)
+        .single();
+
+      let coverImageUrl: string | null = null;
+      if (freshPost?.cover_image_path) {
+        const { data: urlData } = admin.storage.from("covers").getPublicUrl(freshPost.cover_image_path);
+        coverImageUrl = urlData?.publicUrl ?? null;
       }
-    } catch (webhookErr) {
-      console.warn(`[scheduler] Webhook error for ${client.domain}:`, webhookErr);
+
+      const localizations = (freshPost?.post_localizations ?? []) as Array<{
+        locale: string;
+        title: string | null;
+        excerpt: string | null;
+        content_md: string | null;
+        seo_title: string | null;
+        seo_description: string | null;
+        jsonld: unknown;
+      }>;
+
+      const COVER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
+      const cleaned = localizations.map((l) => ({
+        ...l,
+        content_md: (l.content_md ?? "")
+          .replace(COVER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+          .trim(),
+      }));
+
+      const primary =
+        cleaned.find((l) => l.locale === "pt") ??
+        cleaned.find((l) => l.locale === "en") ??
+        cleaned[0];
+
+      if (!primary) throw new Error("No localizations found after generation");
+
+      const { data: clientConfig } = await admin
+        .from("clients")
+        .select("webhook_secret")
+        .eq("user_id", client.user_id)
+        .maybeSingle();
+
+      const webhookHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (clientConfig?.webhook_secret) webhookHeaders["x-webhook-secret"] = clientConfig.webhook_secret;
+
+      const webhookPayload = {
+        event: "cms.post.published",
+        post: {
+          id: post.id,
+          slug: freshPost?.slug ?? slug,
+          cover_image_url: coverImageUrl,
+          title: primary.title,
+          excerpt: primary.excerpt,
+          content_md: primary.content_md,
+          seo_title: primary.seo_title,
+          meta_description: primary.seo_description,
+          json_ld: primary.jsonld ?? null,
+          locale: primary.locale,
+          translations: Object.fromEntries(
+            cleaned.map((l) => [l.locale, {
+              title: l.title,
+              excerpt: l.excerpt,
+              content_md: l.content_md,
+              seo_title: l.seo_title,
+              meta_description: l.seo_description,
+              json_ld: l.jsonld ?? null,
+            }])
+          ),
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      await admin.from("posts").update({
+        status: "published",
+        published_at: new Date().toISOString(),
+        webhook_status: "pending",
+        webhook_sent_at: new Date().toISOString(),
+        webhook_error: null,
+      }).eq("id", post.id);
+
+      const webhookRes = await fetch(client.webhook_url, {
+        method: "POST",
+        headers: webhookHeaders,
+        body: JSON.stringify(webhookPayload),
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (!webhookRes.ok) {
+        const errText = await webhookRes.text().catch(() => "");
+        const errMsg = `Webhook responded with ${webhookRes.status}: ${errText.slice(0, 200)}`;
+        await admin.from("posts").update({ webhook_status: "failed", webhook_error: errMsg }).eq("id", post.id);
+        console.warn(`[scheduler] Webhook failed for ${client.domain}: ${errMsg}`);
+      } else {
+        await admin.from("posts").update({ webhook_status: "success" }).eq("id", post.id);
+        console.log(`[scheduler] Auto-published to ${client.webhook_url}`);
+      }
+    } catch (publishErr) {
+      const msg = publishErr instanceof Error ? publishErr.message : "Unknown error";
+      await admin.from("posts").update({
+        status: "published",
+        published_at: new Date().toISOString(),
+        webhook_status: "failed",
+        webhook_error: msg,
+      }).eq("id", post.id);
+      console.warn(`[scheduler] Auto-publish error for ${client.domain}:`, msg);
     }
   } else {
     await admin.from("posts").update({ status: "review" }).eq("id", post.id);
@@ -373,6 +462,6 @@ async function generatePostForClient(
 
   await admin.from("clients").update({ last_post_generated_at: new Date().toISOString() }).eq("id", client.id);
 
-  console.log(`[scheduler] Generated post (3 locales) for ${client.domain} → post id ${post.id}`);
+  console.log(`[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id}`);
   return post.id;
 }

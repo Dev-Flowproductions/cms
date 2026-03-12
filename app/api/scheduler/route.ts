@@ -218,20 +218,32 @@ async function generatePostForClient(
     if (locale === primaryLocale) firstRunId = runId;
 
     const prompt = buildPrompt(postCtx, clientCtx);
-    let generated: GeneratedContent;
+    let generated: GeneratedContent | null = null;
+    const MAX_RETRIES = 3;
 
-    try {
-      const result = await geminiModel.generateContent(prompt);
-      const text = result.response.text().trim();
-      const clean = text
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
-      generated = JSON.parse(clean);
-    } catch (err) {
-      if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Invalid JSON from Gemini" }).eq("id", runId);
-      console.warn(`[scheduler] Gemini failed for locale ${locale}, client ${client.domain} â€” skipping`);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const result = await geminiModel.generateContent(prompt);
+        const text = result.response.text().trim();
+        const clean = text
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim();
+        generated = JSON.parse(clean);
+        break;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for locale ${locale} (${client.domain}): ${msg}`);
+        if (attempt < MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 5_000 * attempt));
+        }
+      }
+    }
+
+    if (!generated) {
+      if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Gemini failed after 3 attempts" }).eq("id", runId);
+      console.warn(`[scheduler] Giving up on locale ${locale} for ${client.domain} after ${MAX_RETRIES} attempts`);
       continue;
     }
 

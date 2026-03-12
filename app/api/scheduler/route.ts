@@ -108,6 +108,20 @@ export async function GET() {
 
 // ─── Core generation logic ───────────────────────────────────────────────────
 
+const ALL_LOCALES = ["pt", "en", "fr"] as const;
+type SupportedLocale = (typeof ALL_LOCALES)[number];
+
+type GeneratedContent = {
+  title: string;
+  seo_title: string;
+  seo_description: string;
+  focus_keyword: string;
+  excerpt: string;
+  content_md: string;
+  faq_blocks: Array<{ question: string; answer: string }>;
+  seo_score?: { seo: number; aeo: number; geo: number; notes: string };
+};
+
 async function generatePostForClient(
   client: {
     id: string;
@@ -124,30 +138,31 @@ async function generatePostForClient(
   genAI: GoogleGenerativeAI,
   imagenAI: GoogleGenAI,
 ): Promise<string> {
-  const locale = (client.post_locale ?? "en") as string;
+  // Always generate in all three locales; primary is Portuguese (main site language)
+  const primaryLocale: SupportedLocale = "pt";
+
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());
 
-  // Derive a focus keyword from the domain (simple heuristic — works well for agency clients)
+  // Derive a focus keyword from the domain
   const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
   const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
 
   // Auto-generate a URL-safe slug from the domain + date
-  const datePart = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const datePart = new Date().toISOString().slice(0, 10);
   const slugBase = `${domainSlug.replace(/\s+/g, "-")}-${datePart}`.toLowerCase().slice(0, 70);
 
-  // Ensure unique slug
   let slug = slugBase;
   const { data: existing } = await admin.from("posts").select("id").eq("slug", slug).maybeSingle();
   if (existing) slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
-  // Create the post row in "draft" first
+  // Create the post row (primary locale = pt)
   const { data: post, error: postError } = await admin
     .from("posts")
     .insert({
       slug,
-      primary_locale: locale,
+      primary_locale: primaryLocale,
       content_type: "hero",
       status: "draft",
       author_id: client.user_id,
@@ -157,16 +172,7 @@ async function generatePostForClient(
 
   if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
 
-  // Create empty localization so we have a record to upsert into
-  await admin.from("post_localizations").insert({
-    post_id: post.id,
-    locale,
-    title: "",
-    excerpt: "",
-    content_md: "",
-  });
-
-  // Build generation contexts
+  // Build shared context
   const clientCtx: ClientContext = {
     domain: client.domain,
     websiteSummary: null,
@@ -176,115 +182,118 @@ async function generatePostForClient(
     searchConsoleQueries: null,
   };
 
-  const postCtx: PostContext = {
-    slug,
-    content_type: "hero",
-    locale,
-    focus_keyword: focusKeyword,
-    publication_date: publicationDate,
-    existing_title: null,
-    existing_draft: null,
-  };
-
-  // Log agent run
-  const { data: run } = await admin
-    .from("agent_runs")
-    .insert({ post_id: post.id, locale, status: "running", model: MODEL, input: { postCtx, clientCtx } })
-    .select("id")
-    .single();
-  const runId = run?.id;
-
-  // Generate content with Gemini
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: SYSTEM_INSTRUCTIONS,
-  });
-
-  const prompt = buildPrompt(postCtx, clientCtx);
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
-
-  const clean = text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
-
-  let generated: {
-    title: string;
-    seo_title: string;
-    seo_description: string;
-    focus_keyword: string;
-    excerpt: string;
-    content_md: string;
-    faq_blocks: Array<{ question: string; answer: string }>;
-    seo_score?: { seo: number; aeo: number; geo: number; notes: string };
-  };
-
-  try {
-    generated = JSON.parse(clean);
-  } catch {
-    if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Invalid JSON from Gemini" }).eq("id", runId);
-    throw new Error("Gemini returned invalid JSON");
-  }
-
-  // Build JSON-LD
   const publisherEntity = {
     "@type": "Organization",
     "name": "Flow Productions",
     "url": `https://${client.domain}`,
     "logo": { "@type": "ImageObject", "url": "https://flowproductions.pt/logo.png" },
   };
-  const jsonld = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BlogPosting",
-        "headline": generated.title,
-        "description": generated.seo_description,
-        "keywords": generated.focus_keyword,
-        "datePublished": new Date().toISOString(),
-        "inLanguage": locale,
-        "author": publisherEntity,
-        "publisher": publisherEntity,
-        "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/blog/${slug}` },
-      },
-      ...(generated.faq_blocks?.length > 0 ? [{
-        "@type": "FAQPage",
-        "mainEntity": generated.faq_blocks.map((f) => ({
-          "@type": "Question",
-          "name": f.question,
-          "acceptedAnswer": { "@type": "Answer", "text": f.answer },
-        })),
-      }] : []),
-    ],
-  };
 
-  // Save generated content
-  await admin.from("post_localizations").upsert(
-    {
-      post_id: post.id,
+  const geminiModel = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: SYSTEM_INSTRUCTIONS,
+  });
+
+  // ── Generate content for each locale sequentially ──────────────────────────
+  let titleForCoverPrompt = focusKeyword;
+  let firstRunId: string | undefined;
+
+  for (const locale of ALL_LOCALES) {
+    const postCtx: PostContext = {
+      slug,
+      content_type: "hero",
       locale,
-      title: generated.title,
-      excerpt: generated.excerpt,
-      content_md: generated.content_md,
-      seo_title: generated.seo_title,
-      seo_description: generated.seo_description,
-      focus_keyword: generated.focus_keyword,
-      faq_blocks: generated.faq_blocks,
-      jsonld,
-      seo_score: generated.seo_score ?? null,
-    },
-    { onConflict: "post_id,locale" }
-  );
+      focus_keyword: focusKeyword,
+      publication_date: publicationDate,
+      existing_title: null,
+      existing_draft: null,
+    };
 
-  if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
+    const { data: run } = await admin
+      .from("agent_runs")
+      .insert({ post_id: post.id, locale, status: "running", model: MODEL, input: { postCtx, clientCtx } })
+      .select("id")
+      .single();
+    const runId = run?.id;
+    if (locale === primaryLocale) firstRunId = runId;
 
-  // Generate cover image
+    const prompt = buildPrompt(postCtx, clientCtx);
+    let generated: GeneratedContent;
+
+    try {
+      const result = await geminiModel.generateContent(prompt);
+      const text = result.response.text().trim();
+      const clean = text
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+      generated = JSON.parse(clean);
+    } catch (err) {
+      if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Invalid JSON from Gemini" }).eq("id", runId);
+      console.warn(`[scheduler] Gemini failed for locale ${locale}, client ${client.domain} — skipping`);
+      continue;
+    }
+
+    if (locale === primaryLocale) titleForCoverPrompt = generated.title;
+
+    const jsonld = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BlogPosting",
+          "headline": generated.title,
+          "description": generated.seo_description,
+          "keywords": generated.focus_keyword,
+          "datePublished": new Date().toISOString(),
+          "inLanguage": locale,
+          "author": publisherEntity,
+          "publisher": publisherEntity,
+          "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/${locale}/blog/${slug}` },
+        },
+        ...(generated.faq_blocks?.length > 0 ? [{
+          "@type": "FAQPage",
+          "mainEntity": generated.faq_blocks.map((f) => ({
+            "@type": "Question",
+            "name": f.question,
+            "acceptedAnswer": { "@type": "Answer", "text": f.answer },
+          })),
+        }] : []),
+      ],
+    };
+
+    await admin.from("post_localizations").upsert(
+      {
+        post_id: post.id,
+        locale,
+        title: generated.title,
+        excerpt: generated.excerpt,
+        content_md: generated.content_md,
+        seo_title: generated.seo_title,
+        seo_description: generated.seo_description,
+        focus_keyword: generated.focus_keyword,
+        faq_blocks: generated.faq_blocks,
+        jsonld,
+        seo_score: generated.seo_score ?? null,
+      },
+      { onConflict: "post_id,locale" }
+    );
+
+    if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
+
+    // Small pause between locale generations to respect rate limits
+    if (locale !== ALL_LOCALES[ALL_LOCALES.length - 1]) {
+      await new Promise((r) => setTimeout(r, 3_000));
+    }
+  }
+
+  void firstRunId; // suppress unused warning
+
+  // ── Generate cover image (once, shared across all locales) ─────────────────
   try {
     const coverPrompt =
-      `Professional hero cover image for a blog post titled: "${generated.title}". ` +
-      `Topic: ${generated.focus_keyword}. ` +
+      `Professional hero cover image for a blog post titled: "${titleForCoverPrompt}". ` +
+      `Topic: ${focusKeyword}. ` +
       `Wide landscape, 16:9 aspect ratio. Keep the main subject centred — avoid placing key elements near the top or bottom edges, as the image will be cropped to 1200×630 for display. ` +
       `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
@@ -313,8 +322,7 @@ async function generatePostForClient(
     console.warn(`[scheduler] Cover generation failed for ${client.domain} (non-fatal):`, coverErr);
   }
 
-  // Auto-publish: if client has auto_publish on, publish immediately and fire webhook.
-  // Otherwise put in "review" so the user can approve/edit in their dashboard.
+  // ── Auto-publish or send to review queue ───────────────────────────────────
   if (client.auto_publish && client.webhook_url) {
     await admin.from("posts").update({
       status: "published",
@@ -324,7 +332,6 @@ async function generatePostForClient(
       webhook_error: null,
     }).eq("id", post.id);
 
-    // Fire webhook
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
       const webhookRes = await fetch(`${appUrl}/api/publish/${post.id}`, {
@@ -339,13 +346,11 @@ async function generatePostForClient(
       console.warn(`[scheduler] Webhook error for ${client.domain}:`, webhookErr);
     }
   } else {
-    // No auto-publish — put in user's review queue
     await admin.from("posts").update({ status: "review" }).eq("id", post.id);
   }
 
-  // Update last_post_generated_at on the client
   await admin.from("clients").update({ last_post_generated_at: new Date().toISOString() }).eq("id", client.id);
 
-  console.log(`[scheduler] Generated post "${generated.title}" for ${client.domain} → post id ${post.id}`);
+  console.log(`[scheduler] Generated post (3 locales) for ${client.domain} → post id ${post.id}`);
   return post.id;
 }

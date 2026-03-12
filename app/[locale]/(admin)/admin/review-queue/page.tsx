@@ -1,5 +1,6 @@
 import { Link } from "@/lib/navigation";
 import { getReviewQueuePosts } from "@/lib/data/review";
+import { ScorePill } from "@/components/ScoreDisplay";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 type Localization = { locale: string; title: string | null; seo_score: SeoScore | null };
@@ -22,19 +23,6 @@ function getDisplayName(profiles: Post["profiles"]): string | null {
 function getTitle(locs: Localization[] | null | undefined, locale: string): string | null {
   if (!locs?.length) return null;
   return locs.find((l) => l.locale === locale)?.title ?? locs[0]?.title ?? null;
-}
-
-function ScorePill({ score }: { score: SeoScore }) {
-  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
-  const color = avg >= 9 ? "var(--success)" : avg >= 7 ? "#f59e0b" : avg >= 5 ? "#f97316" : "var(--danger)";
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-      style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}
-    >
-      ★ {avg}/10
-    </span>
-  );
 }
 
 export default async function ReviewQueuePage() {

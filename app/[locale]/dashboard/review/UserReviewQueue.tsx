@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Link } from "@/lib/navigation";
 import { userApprovePost, userRejectPost } from "./actions";
+import { ScorePill } from "@/components/ScoreDisplay";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 type Localization = { locale: string; title: string | null; excerpt: string | null; seo_score: SeoScore | null };
@@ -15,19 +16,6 @@ type Post = {
   updated_at: string;
   post_localizations?: Localization[] | null;
 };
-
-function ScorePill({ score }: { score: SeoScore }) {
-  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
-  const color = avg >= 9 ? "var(--success)" : avg >= 7 ? "#f59e0b" : avg >= 5 ? "#f97316" : "var(--danger)";
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-      style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}
-    >
-      ★ {avg}/10
-    </span>
-  );
-}
 
 function PostReviewCard({ post, onDone }: { post: Post; onDone: () => void }) {
   const [approving, setApproving] = useState(false);

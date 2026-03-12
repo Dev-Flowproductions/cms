@@ -2,6 +2,7 @@
 
 import { Link } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
+import { ScoreBadge } from "@/components/ScoreDisplay";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 
@@ -39,61 +40,6 @@ function extractScore(locs: Localization[] | null, primaryLocale: string): SeoSc
   return null;
 }
 
-function StarMini({ score }: { score: number }) {
-  const filled = Math.round((score / 10) * 5);
-  const color =
-    score >= 9 ? "var(--success)" :
-    score >= 7 ? "#f59e0b" :
-    score >= 5 ? "#f97316" :
-    "var(--danger)";
-
-  return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} width="10" height="10" viewBox="0 0 24 24"
-          fill={i < filled ? color : "none"}
-          stroke={color} strokeWidth="2.5"
-          style={{ opacity: i < filled ? 1 : 0.25 }}
-        >
-          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
-        </svg>
-      ))}
-      <span className="text-[10px] font-bold tabular-nums ml-0.5" style={{ color }}>
-        {score}
-      </span>
-    </div>
-  );
-}
-
-function ScoreBadge({ score }: { score: SeoScore }) {
-  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
-  return (
-    <div className="flex flex-col gap-1 min-w-[72px]">
-      <div className="flex items-center justify-between gap-1.5">
-        <span className="text-[9px] font-semibold uppercase tracking-wider w-6" style={{ color: "var(--text-faint)" }}>SEO</span>
-        <StarMini score={score.seo} />
-      </div>
-      <div className="flex items-center justify-between gap-1.5">
-        <span className="text-[9px] font-semibold uppercase tracking-wider w-6" style={{ color: "var(--text-faint)" }}>AEO</span>
-        <StarMini score={score.aeo} />
-      </div>
-      <div className="flex items-center justify-between gap-1.5">
-        <span className="text-[9px] font-semibold uppercase tracking-wider w-6" style={{ color: "var(--text-faint)" }}>GEO</span>
-        <StarMini score={score.geo} />
-      </div>
-      <div
-        className="mt-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold text-center tabular-nums"
-        style={{
-          background: avg >= 9 ? "rgba(34,211,160,0.12)" : avg >= 7 ? "rgba(245,158,11,0.12)" : "rgba(255,92,106,0.12)",
-          color: avg >= 9 ? "var(--success)" : avg >= 7 ? "#f59e0b" : "var(--danger)",
-        }}
-      >
-        avg {avg}/10
-      </div>
-    </div>
-  );
-}
-
 export function PostsListClient({
   initialPosts,
   statusFilter,
@@ -113,7 +59,7 @@ export function PostsListClient({
             <Link
               key={label}
               href={key ? `/admin/posts?status=${key}` : "/admin/posts"}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl capitalize transition-all"
               style={{
                 background: active ? "var(--accent)" : "var(--surface-raised)",
                 color: active ? "white" : "var(--text-muted)",
@@ -210,7 +156,7 @@ export function PostsListClient({
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/admin/posts/${post.id}`}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
                         style={{
                           background: "var(--surface-raised)",
                           color: "var(--accent)",

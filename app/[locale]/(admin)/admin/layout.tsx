@@ -6,6 +6,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { AdminLogoutButton } from "./AdminLogoutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RunSchedulerButton } from "./RunSchedulerButton";
+import { AdminSidebarShell } from "./AdminSidebarShell";
 
 export default async function AdminLayout({
   children,
@@ -16,14 +17,8 @@ export default async function AdminLayout({
   const t = await getTranslations();
   return (
     <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
-      {/* Sidebar */}
-      <aside
-        className="w-60 flex-shrink-0 flex flex-col sticky top-0 h-screen"
-        style={{
-          background: "var(--surface)",
-          borderRight: "1px solid var(--border)",
-        }}
-      >
+      {/* Sidebar — desktop sticky / mobile drawer. Hamburger button rendered by shell. */}
+      <AdminSidebarShell>
         {/* Sidebar header */}
         <div
           className="px-5 py-5 flex items-center gap-3"
@@ -68,13 +63,13 @@ export default async function AdminLayout({
           </Link>
           <AdminLogoutButton />
         </div>
-      </aside>
+      </AdminSidebarShell>
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <div
-          className="sticky top-0 z-30 flex items-center justify-between px-8 h-14 backdrop-blur-xl"
+          className="sticky top-0 z-30 flex items-center justify-between px-6 lg:px-8 h-14 backdrop-blur-xl"
           style={{
             background: "color-mix(in srgb, var(--surface) 85%, transparent)",
             borderBottom: "1px solid var(--border)",
@@ -83,10 +78,12 @@ export default async function AdminLayout({
           <h1 className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
             {t("admin.title")}
           </h1>
-          <LocaleSwitcher />
+          <div className="flex items-center gap-3">
+            <LocaleSwitcher />
+          </div>
         </div>
 
-        <main className="flex-1 px-8 py-8">{children}</main>
+        <main className="flex-1 px-6 lg:px-8 py-8">{children}</main>
       </div>
     </div>
   );

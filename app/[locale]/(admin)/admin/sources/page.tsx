@@ -7,35 +7,66 @@ export default async function SourcesPage() {
   const sources = await getSourcesList();
 
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-6">{t("sources")}</h1>
+    <div className="max-w-3xl">
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
+          Admin
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+          {t("sources")}
+        </h1>
+      </div>
+
       <AddSourceForm />
-      <div className="mt-6 border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+
+      <div
+        className="mt-6 rounded-2xl overflow-hidden"
+        style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+      >
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="text-left p-3 font-medium">URL</th>
-              <th className="text-left p-3 font-medium">{t("title")}</th>
-              <th className="text-left p-3 font-medium">{t("publisher")}</th>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+                URL
+              </th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+                {t("title")}
+              </th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+                {t("publisher")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {sources.length === 0 ? (
               <tr>
-                <td colSpan={3} className="p-6 text-center text-gray-500">
+                <td colSpan={3} className="px-5 py-10 text-center text-sm" style={{ color: "var(--text-faint)" }}>
                   No sources yet.
                 </td>
               </tr>
             ) : (
-              sources.map((s: { id: string; url: string; title: string | null; publisher: string | null }) => (
-                <tr key={s.id} className="border-t border-gray-200 dark:border-gray-700">
-                  <td className="p-3">
-                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline truncate max-w-xs block">
+              sources.map((s: { id: string; url: string; title: string | null; publisher: string | null }, i: number) => (
+                <tr
+                  key={s.id}
+                  style={{ borderTop: i > 0 ? "1px solid var(--border-subtle)" : "none" }}
+                >
+                  <td className="px-5 py-3">
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-mono hover:underline truncate max-w-xs block"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {s.url}
                     </a>
                   </td>
-                  <td className="p-3">{s.title ?? "—"}</td>
-                  <td className="p-3">{s.publisher ?? "—"}</td>
+                  <td className="px-5 py-3 text-sm" style={{ color: "var(--text)" }}>
+                    {s.title ?? "—"}
+                  </td>
+                  <td className="px-5 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
+                    {s.publisher ?? "—"}
+                  </td>
                 </tr>
               ))
             )}

@@ -117,7 +117,44 @@ body::before {
   border-radius: 12px;
 }
 
+/* Table row hover */
+tr.group:hover td { background: var(--surface-raised); }
+
+/* Danger hover utility */
+.hover\:text-danger:hover { color: var(--danger) !important; }
+
 .admin-panel-link:hover {
   border-color: var(--accent) !important;
   color: var(--accent) !important;
+}
+
+/* Shared input field — consistent focus ring across all forms */
+.input-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-field::placeholder { color: var(--text-faint); }
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.input-field[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Semantic tinted backgrounds (used for banners, badges, etc.) */
+:root,
+[data-theme="dark"],
+[data-theme="light"] {
+  --success-bg: rgba(34, 211, 160, 0.08);
+  --warning-bg: rgba(245, 166, 35, 0.10);
+  --danger-bg:  rgba(255, 92, 106, 0.08);
+  --accent-bg:  rgba(124, 92, 252, 0.10);
+  --gradient-accent:  linear-gradient(135deg, #7c5cfc 0%, #a78bfa 100%);
+  --gradient-success: linear-gradient(135deg, #22d3a0 0%, #34d399 100%);
 }

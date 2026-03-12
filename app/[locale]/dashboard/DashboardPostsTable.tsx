@@ -5,6 +5,7 @@ import { Link } from "@/lib/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePost } from "@/app/[locale]/(admin)/admin/posts/actions";
+import { ScoreDots } from "@/components/ScoreDisplay";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 
@@ -33,38 +34,6 @@ function extractScore(
   const s = loc?.seo_score;
   if (s && typeof s.seo === "number") return s as SeoScore;
   return null;
-}
-
-function ScoreDots({ score }: { score: SeoScore }) {
-  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
-  const color =
-    avg >= 9 ? "var(--success)" :
-    avg >= 7 ? "#f59e0b" :
-    avg >= 5 ? "#f97316" :
-    "var(--danger)";
-  const filled = Math.round((avg / 10) * 5);
-
-  return (
-    <div className="flex items-center gap-1" title={`SEO ${score.seo} · AEO ${score.aeo} · GEO ${score.geo}`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg
-          key={i}
-          width="11"
-          height="11"
-          viewBox="0 0 24 24"
-          fill={i < filled ? color : "none"}
-          stroke={color}
-          strokeWidth="2"
-          style={{ opacity: i < filled ? 1 : 0.25 }}
-        >
-          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
-        </svg>
-      ))}
-      <span className="text-[10px] font-semibold tabular-nums ml-0.5" style={{ color }}>
-        {avg}/10
-      </span>
-    </div>
-  );
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
@@ -262,15 +231,9 @@ export function DashboardPostsTable({
                 return (
                   <tr
                     key={post.id}
+                    className="group transition-colors"
                     style={{
                       borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLTableRowElement).style.background = "var(--surface-raised)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLTableRowElement).style.background = "transparent";
                     }}
                   >
                     {isAdmin && (
@@ -356,14 +319,8 @@ export function DashboardPostsTable({
                           <button
                             onClick={() => handleDelete(post.id, post.slug)}
                             disabled={isDeleting || isPending}
-                            className="text-xs font-semibold transition-colors disabled:opacity-40"
+                            className="text-xs font-semibold transition-colors disabled:opacity-40 hover:text-danger"
                             style={{ color: "var(--text-muted)" }}
-                            onMouseEnter={(e) => {
-                              (e.currentTarget as HTMLButtonElement).style.color = "var(--danger)";
-                            }}
-                            onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)";
-                            }}
                           >
                             {isDeleting ? "…" : t("common.delete")}
                           </button>

@@ -22,6 +22,12 @@ type Settings = {
   auto_publish: boolean;
 };
 
+const LOCALE_OPTIONS: { value: PostLocale; label: string; flag: string }[] = [
+  { value: "en", label: "English", flag: "🇬🇧" },
+  { value: "pt", label: "Português", flag: "🇵🇹" },
+  { value: "fr", label: "Français", flag: "🇫🇷" },
+];
+
 export function AccountSettingsCard({
   userId,
   settings,
@@ -31,19 +37,16 @@ export function AccountSettingsCard({
 }) {
   const t = useTranslations("settings");
   const locale = useLocale();
+
   const [frequency, setFrequency] = useState<Frequency>(settings?.frequency ?? "weekly");
-  const [saved, setSaved] = useState(false);
+  const [postLocale, setPostLocale] = useState<PostLocale>(settings?.post_locale ?? "en");
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [postLocale, setPostLocale] = useState<PostLocale>(settings?.post_locale ?? "en");
-  const [localeSaved, setLocaleSaved] = useState(false);
-  const [localeSaving, setLocaleSaving] = useState(false);
-  const [localeError, setLocaleError] = useState<string | null>(null);
-
   const [autoPublish, setAutoPublish] = useState(settings?.auto_publish ?? false);
-  const [autoSaved, setAutoSaved] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
   const [autoError, setAutoError] = useState<string | null>(null);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
@@ -57,29 +60,20 @@ export function AccountSettingsCard({
 
   const googleConnected = !!settings.google_connected_at;
   const hasWebhook = !!settings.webhook_url;
-  const changed = frequency !== settings.frequency;
-  const localeChanged = postLocale !== settings.post_locale;
+  const changed = frequency !== settings.frequency || postLocale !== settings.post_locale;
 
   async function handleSave() {
     setSaving(true);
     setError(null);
     setSaved(false);
-    const result = await updateClientFrequency(userId, frequency);
+    const [r1, r2] = await Promise.all([
+      updateClientFrequency(userId, frequency),
+      updateClientPostLocale(userId, postLocale),
+    ]);
     setSaving(false);
-    if (result.error) { setError(result.error); return; }
+    if (r1.error || r2.error) { setError(r1.error ?? r2.error ?? "Error"); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
-  }
-
-  async function handleLocaleSave() {
-    setLocaleSaving(true);
-    setLocaleError(null);
-    setLocaleSaved(false);
-    const result = await updateClientPostLocale(userId, postLocale);
-    setLocaleSaving(false);
-    if (result.error) { setLocaleError(result.error); return; }
-    setLocaleSaved(true);
-    setTimeout(() => setLocaleSaved(false), 3000);
   }
 
   async function handleAutoPublishToggle() {
@@ -129,12 +123,13 @@ export function AccountSettingsCard({
         )}
       </div>
 
-      <div className="px-6 py-6 space-y-6">
-        {/* Google connection status */}
+      <div className="px-6 py-6 space-y-8">
+
+        {/* Google connection */}
         <div
           className="flex items-center justify-between px-4 py-3 rounded-xl"
           style={{
-            background: googleConnected ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
+            background: googleConnected ? "var(--success-bg)" : "var(--surface-raised)",
             border: googleConnected ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
           }}
         >
@@ -176,122 +171,103 @@ export function AccountSettingsCard({
           </a>
         </div>
 
-        {/* Posting frequency */}
-        <div>
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-3"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {t("postingFrequency")}
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {FREQUENCY_OPTIONS.map((opt) => {
-              const active = frequency === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFrequency(opt.value)}
-                  className="px-4 py-3 rounded-xl text-left transition-all"
-                  style={{
-                    background: active ? "rgba(124,92,252,0.12)" : "var(--surface-raised)",
-                    border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                    boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
-                  }}
-                >
-                  <div className="text-sm font-semibold" style={{ color: active ? "var(--accent)" : "var(--text)" }}>
+        {/* Post settings group — frequency + language, single save */}
+        <div
+          className="rounded-xl p-5 space-y-6"
+          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+        >
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-3"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("postingFrequency")}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {FREQUENCY_OPTIONS.map((opt) => {
+                const active = frequency === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFrequency(opt.value)}
+                    className="px-4 py-3 rounded-xl text-left transition-all"
+                    style={{
+                      background: active ? "rgba(124,92,252,0.12)" : "var(--surface)",
+                      border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
+                      boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
+                    }}
+                  >
+                    <div className="text-sm font-semibold" style={{ color: active ? "var(--accent)" : "var(--text)" }}>
+                      {opt.label}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      {opt.sublabel}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ height: "1px", background: "var(--border)" }} />
+
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("postLanguage")}
+            </p>
+            <p className="text-xs mb-3" style={{ color: "var(--text-faint)" }}>
+              {t("postLanguageDescription")}
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {LOCALE_OPTIONS.map((opt) => {
+                const active = postLocale === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPostLocale(opt.value)}
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                    style={{
+                      background: active ? "rgba(124,92,252,0.12)" : "var(--surface)",
+                      border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
+                      color: active ? "var(--accent)" : "var(--text)",
+                      boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
+                    }}
+                  >
+                    <span>{opt.flag}</span>
                     {opt.label}
-                  </div>
-                  <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {opt.sublabel}
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={saving || !changed}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-            style={{
-              background: "var(--accent)",
-              color: "white",
-              boxShadow: (!saving && changed) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
-            }}
-          >
-            {saving ? t("saving") : t("saveChanges")}
-          </button>
-          {saved && (
-            <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
-          )}
-        </div>
+          {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
 
-        {/* Post language */}
-        <div>
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-3"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {t("postLanguage")}
-          </p>
-          <p className="text-xs mb-3" style={{ color: "var(--text-faint)" }}>
-            {t("postLanguageDescription")}
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {(
-              [
-                { value: "en" as PostLocale, label: "English", flag: "🇬🇧" },
-                { value: "pt" as PostLocale, label: "Português", flag: "🇵🇹" },
-                { value: "fr" as PostLocale, label: "Français", flag: "🇫🇷" },
-              ] as const
-            ).map((opt) => {
-              const active = postLocale === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPostLocale(opt.value)}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-                  style={{
-                    background: active ? "rgba(124,92,252,0.12)" : "var(--surface-raised)",
-                    border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                    color: active ? "var(--accent)" : "var(--text)",
-                    boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
-                  }}
-                >
-                  <span>{opt.flag}</span>
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          {localeError && <p className="text-sm mt-2" style={{ color: "var(--danger)" }}>{localeError}</p>}
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleLocaleSave}
-              disabled={localeSaving || !localeChanged}
+              onClick={handleSave}
+              disabled={saving || !changed}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
               style={{
                 background: "var(--accent)",
                 color: "white",
-                boxShadow: (!localeSaving && localeChanged) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+                boxShadow: (!saving && changed) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
               }}
             >
-              {localeSaving ? t("saving") : t("saveChanges")}
+              {saving ? t("saving") : t("saveChanges")}
             </button>
-            {localeSaved && (
+            {saved && (
               <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
             )}
           </div>
         </div>
 
-        <div style={{ height: "1px", background: "var(--border)" }} />
-
-        {/* Auto-publish toggle — only visible if admin has configured a webhook */}
+        {/* Auto-publish */}
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-1"
@@ -310,15 +286,13 @@ export function AccountSettingsCard({
               <div
                 className="flex items-center justify-between px-4 py-3 rounded-xl"
                 style={{
-                  background: autoPublish ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
+                  background: autoPublish ? "var(--success-bg)" : "var(--surface-raised)",
                   border: autoPublish ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
                 }}
               >
-                <div>
-                  <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
-                    {autoPublish ? t("webhook.autoPublishOn") : t("webhook.autoPublishOff")}
-                  </p>
-                </div>
+                <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                  {autoPublish ? t("webhook.autoPublishOn") : t("webhook.autoPublishOff")}
+                </p>
                 <button
                   type="button"
                   role="switch"
@@ -329,8 +303,11 @@ export function AccountSettingsCard({
                   style={{ background: autoPublish ? "var(--success)" : "var(--border)" }}
                 >
                   <span
-                    className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-                    style={{ transform: autoPublish ? "translateX(20px)" : "translateX(0)" }}
+                    className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform"
+                    style={{
+                      background: "white",
+                      transform: autoPublish ? "translateX(20px)" : "translateX(0)",
+                    }}
                   />
                 </button>
               </div>
@@ -348,10 +325,11 @@ export function AccountSettingsCard({
                 color: "var(--text-faint)",
               }}
             >
-              Your Flow Productions manager will configure publishing for your account.
+              {t("webhook.noWebhookConfigured")}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

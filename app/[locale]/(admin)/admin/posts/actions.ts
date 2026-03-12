@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { z } from "zod";
 import type { Locale } from "@/lib/types/db";
@@ -234,11 +235,12 @@ export async function deletePost(postId: string) {
   if (!user) return { error: "Unauthorized" };
 
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   // Verify ownership or admin role before deleting
   const { data: post } = await supabase
     .from("posts")
-    .select("author_id")
+    .select("author_id, slug, status")
     .eq("id", postId)
     .maybeSingle();
 
@@ -246,7 +248,6 @@ export async function deletePost(postId: string) {
 
   const isOwner = post.author_id === user.id;
   if (!isOwner) {
-    // Check if user has admin role
     const { data: roleRow } = await supabase
       .from("user_roles")
       .select("role_id")
@@ -254,6 +255,29 @@ export async function deletePost(postId: string) {
       .eq("role_id", "admin")
       .maybeSingle();
     if (!roleRow) return { error: "Forbidden" };
+  }
+
+  // If the post was published, notify the client webhook to delete it from their site
+  if (post.status === "published") {
+    try {
+      const { data: client } = await admin
+        .from("clients")
+        .select("webhook_url, webhook_secret")
+        .eq("user_id", post.author_id)
+        .maybeSingle();
+
+      if (client?.webhook_url) {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (client.webhook_secret) headers["x-webhook-secret"] = client.webhook_secret;
+        await fetch(client.webhook_url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "delete", slug: post.slug }),
+        });
+      }
+    } catch {
+      // Non-fatal — still delete from CMS
+    }
   }
 
   const { error } = await supabase.from("posts").delete().eq("id", postId);

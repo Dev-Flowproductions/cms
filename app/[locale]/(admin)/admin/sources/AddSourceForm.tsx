@@ -13,45 +13,50 @@ export function AddSourceForm() {
   );
 
   return (
-    <form action={formAction} className="max-w-lg space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded">
-      <h2 className="font-medium">{t("addSource")}</h2>
+    <form
+      action={formAction}
+      className="max-w-lg space-y-4 p-5 rounded-2xl"
+      style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+    >
+      <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+        {t("addSource")}
+      </h2>
       <div>
-        <label className="block text-sm font-medium mb-1">{t("url")}</label>
-        <input
-          name="url"
-          type="url"
-          required
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-        />
+        <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+          {t("url")}
+        </label>
+        <input name="url" type="url" required className="input-field" />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">{t("title")}</label>
-        <input
-          name="title"
-          type="text"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-        />
+        <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+          {t("title")}
+        </label>
+        <input name="title" type="text" className="input-field" />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">{t("publisher")}</label>
-        <input
-          name="publisher"
-          type="text"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-        />
+        <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+          {t("publisher")}
+        </label>
+        <input name="publisher" type="text" className="input-field" />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">{t("notes")}</label>
-        <textarea
-          name="notes"
-          rows={2}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-        />
+        <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+          {t("notes")}
+        </label>
+        <textarea name="notes" rows={2} className="input-field" />
       </div>
-      {state?.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+      {state?.error && (
+        <p
+          className="text-xs px-3 py-2 rounded-xl"
+          style={{ background: "var(--danger-bg)", color: "var(--danger)" }}
+        >
+          {state.error}
+        </p>
+      )}
       <button
         type="submit"
-        className="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-sm"
+        className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+        style={{ background: "var(--accent)", color: "white" }}
       >
         {tCommon("submit")}
       </button>

@@ -7,22 +7,28 @@ export async function POST(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   const { postId } = await params;
-  const supabase = await createClient();
 
-  // Verify the caller is authenticated
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Allow internal scheduler calls (no user session needed)
+  const isInternalCall = _req.headers.get("x-scheduler-internal") === "1";
 
-  // Only admins may push
-  const { data: roleRow } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
-  if (roleRow?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isInternalCall) {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Only admins may push manually
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", user.id)
+      .single();
+    if (roleRow?.role_id !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // Fetch the post + its active localization + the owner's client webhook config
@@ -32,7 +38,7 @@ export async function POST(
     .select(`
       id, slug, author_id, status,
       post_localizations (
-        locale, title, content, meta_description, json_ld
+        locale, title, excerpt, content_md, seo_title, seo_description, jsonld
       ),
       cover_image_path
     `)
@@ -65,7 +71,7 @@ export async function POST(
   let coverImageUrl: string | null = null;
   if (post.cover_image_path) {
     const { data: urlData } = admin.storage
-      .from("post-images")
+      .from("covers")
       .getPublicUrl(post.cover_image_path);
     coverImageUrl = urlData?.publicUrl ?? null;
   }
@@ -81,15 +87,25 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
+  // Clean up the content before sending:
+  // 1. Replace the cover image placeholder with the actual URL (or remove the line)
+  // 2. Remove the redundant H1 that duplicates the title field
+  const COVER_PLACEHOLDER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
+  const cleanContent = (primary.content_md ?? "")
+    .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+    .trim();
+
   const payload = {
     event: "cms.post.published",
     post: {
       id: post.id,
       slug: post.slug,
       title: primary.title,
-      content: primary.content,
-      meta_description: primary.meta_description,
-      json_ld: primary.json_ld,
+      excerpt: primary.excerpt,
+      content_md: cleanContent,
+      seo_title: primary.seo_title,
+      meta_description: primary.seo_description,
+      json_ld: primary.jsonld ?? null,
       cover_image_url: coverImageUrl,
       locale: primary.locale,
       all_localizations: localizations,

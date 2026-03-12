@@ -5,6 +5,9 @@ import { Link } from "@/lib/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePost } from "@/app/[locale]/(admin)/admin/posts/actions";
+import { ScoreDots } from "@/components/ScoreDisplay";
+
+type SeoScore = { seo: number; aeo: number; geo: number };
 
 type PostRow = {
   id: string;
@@ -13,6 +16,7 @@ type PostRow = {
   primary_locale: string;
   updated_at: string;
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
+  post_localizations?: { locale: string; seo_score: SeoScore | null }[] | null;
 };
 
 function getDisplayName(profiles: PostRow["profiles"]): string | null {
@@ -21,8 +25,19 @@ function getDisplayName(profiles: PostRow["profiles"]): string | null {
   return profiles.display_name ?? null;
 }
 
+function extractScore(
+  locs: PostRow["post_localizations"],
+  primaryLocale: string
+): SeoScore | null {
+  if (!locs?.length) return null;
+  const loc = locs.find((l) => l.locale === primaryLocale) ?? locs[0];
+  const s = loc?.seo_score;
+  if (s && typeof s.seo === "number") return s as SeoScore;
+  return null;
+}
+
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  idea:       { bg: "rgba(120,120,160,0.12)", text: "#7878a0", dot: "#7878a0" },
+  idea:       { bg: "rgba(120,120,160,0.12)", text: "var(--text-muted)", dot: "var(--text-muted)" },
   research:   { bg: "rgba(99,179,237,0.1)",   text: "#63b3ed", dot: "#63b3ed" },
   draft:      { bg: "rgba(245,166,35,0.1)",   text: "#f5a623", dot: "#f5a623" },
   optimize:   { bg: "rgba(255,128,72,0.1)",   text: "#ff8048", dot: "#ff8048" },
@@ -66,7 +81,7 @@ export function DashboardPostsTable({
   return (
     <div>
       {/* Section header */}
-      <div className="flex items-center mb-5">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
             {isAdmin ? t("dashboard.allPosts") : t("dashboard.myPosts")}
@@ -83,6 +98,22 @@ export function DashboardPostsTable({
             </span>
           )}
         </div>
+        {!isAdmin && (
+          <Link
+            href="/dashboard/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: "var(--accent)",
+              color: "white",
+              boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            New post
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -118,8 +149,24 @@ export function DashboardPostsTable({
             {t("dashboard.noPostsYet")}
           </p>
           <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
-            {t("dashboard.postsAutoCreated")}
+            {isAdmin ? t("dashboard.postsAutoCreated") : "Posts are generated automatically — or create one manually above."}
           </p>
+          {!isAdmin && (
+            <Link
+              href="/dashboard/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              Write your first post
+            </Link>
+          )}
         </div>
       ) : (
         <div
@@ -162,6 +209,12 @@ export function DashboardPostsTable({
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
                   style={{ color: "var(--text-muted)" }}
                 >
+                  Score
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   {t("dashboard.table.updated")}
                 </th>
                 <th className="px-6 py-4" />
@@ -173,19 +226,14 @@ export function DashboardPostsTable({
                 const cfg = STATUS_CONFIG[post.status] ?? STATUS_CONFIG.idea;
                 const isDeleting = deletingId === post.id;
                 const isLast = i === posts.length - 1;
+                const score = extractScore(post.post_localizations, post.primary_locale);
 
                 return (
                   <tr
                     key={post.id}
+                    className="group transition-colors"
                     style={{
                       borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLTableRowElement).style.background = "var(--surface-raised)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLTableRowElement).style.background = "transparent";
                     }}
                   >
                     {isAdmin && (
@@ -240,6 +288,15 @@ export function DashboardPostsTable({
                       {post.primary_locale}
                     </td>
                     <td
+                      className="px-6 py-4 hidden sm:table-cell"
+                    >
+                      {score ? (
+                        <ScoreDots score={score} />
+                      ) : (
+                        <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
+                      )}
+                    </td>
+                    <td
                       className="px-6 py-4 text-xs whitespace-nowrap hidden sm:table-cell"
                       style={{ color: "var(--text-muted)" }}
                     >
@@ -262,14 +319,8 @@ export function DashboardPostsTable({
                           <button
                             onClick={() => handleDelete(post.id, post.slug)}
                             disabled={isDeleting || isPending}
-                            className="text-xs font-semibold transition-colors disabled:opacity-40"
+                            className="text-xs font-semibold transition-colors disabled:opacity-40 hover:text-danger"
                             style={{ color: "var(--text-muted)" }}
-                            onMouseEnter={(e) => {
-                              (e.currentTarget as HTMLButtonElement).style.color = "var(--danger)";
-                            }}
-                            onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)";
-                            }}
                           >
                             {isDeleting ? "…" : t("common.delete")}
                           </button>

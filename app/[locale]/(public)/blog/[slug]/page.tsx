@@ -74,27 +74,36 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <article className="max-w-3xl mx-auto">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold">{localization.title || post.slug}</h1>
-          <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <article className="max-w-3xl mx-auto px-6 py-12">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text)" }}>
+            {localization.title || post.slug}
+          </h1>
+          <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: "var(--text-faint)" }}>
             {post.published_at && (
               <time dateTime={post.published_at}>
                 {new Date(post.published_at).toLocaleDateString(locale)}
               </time>
             )}
-            {authorName && <span>{authorName}</span>}
+            {authorName && <span>· {authorName}</span>}
           </div>
           {localization.excerpt && (
-            <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">{localization.excerpt}</p>
+            <p className="mt-3 text-base leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              {localization.excerpt}
+            </p>
           )}
         </header>
         <div
-          className="prose dark:prose-invert max-w-none"
+          className="prose max-w-none"
+          style={{ color: "var(--text)" }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
-        <footer className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <IntlLink href="/blog" className="text-sm text-gray-600 dark:text-gray-400 hover:underline">
+        <footer className="mt-10 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+          <IntlLink
+            href="/blog"
+            className="text-xs font-semibold hover:underline"
+            style={{ color: "var(--accent)" }}
+          >
             ← Back to blog
           </IntlLink>
         </footer>

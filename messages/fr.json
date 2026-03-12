@@ -47,6 +47,8 @@
     "account": "Compte",
     "title": "Paramètres",
     "postingFrequency": "Fréquence de publication",
+    "postLanguage": "Langue des articles",
+    "postLanguageDescription": "Choisissez la langue dans laquelle vos articles générés par IA seront rédigés.",
     "saving": "Enregistrement…",
     "saveChanges": "Enregistrer les modifications",
     "saved": "Enregistré !",
@@ -75,8 +77,10 @@
       "show": "Afficher",
       "hide": "Masquer",
       "autoPublishLabel": "Publication automatique",
+      "autoPublishDescription": "Quand activé, les articles sont envoyés sur votre site dès que l'administrateur clique sur publier.",
       "autoPublishOn": "Les articles sont envoyés sur votre site dès leur publication",
-      "autoPublishOff": "L'administrateur devra confirmer avant d'envoyer sur votre site"
+      "autoPublishOff": "L'administrateur devra confirmer avant d'envoyer sur votre site",
+      "noWebhookConfigured": "Aucun webhook de publication n'a encore été configuré pour votre compte. Contactez votre gestionnaire pour le configurer."
     }
   },
   "onboarding": {
@@ -188,8 +192,21 @@
       "colFrequency": "Fréquence",
       "colGoogle": "Google",
       "colCreated": "Créé",
+      "colWebhook": "Webhook",
       "googleConnected": "Connecté",
       "onboardingPending": "Configuration en attente",
+      "webhookConfigured": "Configuré",
+      "webhookNotSet": "Non défini",
+      "webhookUrlLabel": "URL du webhook",
+      "webhookSecretLabel": "Jeton secret",
+      "webhookSecretPlaceholder": "Optionnel — envoyé dans l'en-tête x-webhook-secret",
+      "webhookSave": "Enregistrer le webhook",
+      "webhookSaving": "Enregistrement…",
+      "webhookSaved": "Enregistré",
+      "webhookShow": "Afficher",
+      "webhookHide": "Masquer",
+      "webhookEdit": "Modifier",
+      "webhookClose": "Fermer",
       "createForm": {
         "eyebrow": "Nouveau compte",
         "title": "Créer un compte utilisateur",

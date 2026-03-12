@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   authUrl.searchParams.set("scope", SCOPES);
   authUrl.searchParams.set("state", state);
   authUrl.searchParams.set("access_type", "offline");
-  authUrl.searchParams.set("prompt", "consent");
+  authUrl.searchParams.set("prompt", "select_account consent");
 
   return NextResponse.redirect(authUrl.toString());
 }

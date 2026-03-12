@@ -47,6 +47,8 @@
     "account": "Account",
     "title": "Settings",
     "postingFrequency": "Posting frequency",
+    "postLanguage": "Post language",
+    "postLanguageDescription": "Choose the language your AI-generated blog posts will be written in.",
     "saving": "Saving…",
     "saveChanges": "Save changes",
     "saved": "Saved!",
@@ -66,7 +68,7 @@
       "monthly": "Monthly",
       "monthlySublabel": "1 post / month"
     },
-    "webhook": {
+      "webhook": {
       "title": "Publishing webhook",
       "description": "Configure a webhook so published posts are automatically pushed to your website. Your site needs an endpoint that accepts POST requests with the post content.",
       "urlLabel": "Webhook URL",
@@ -75,8 +77,10 @@
       "show": "Show",
       "hide": "Hide",
       "autoPublishLabel": "Auto-publish",
+      "autoPublishDescription": "When enabled, posts will be pushed to your website immediately when the admin clicks publish.",
       "autoPublishOn": "Posts are pushed to your website immediately on publish",
-      "autoPublishOff": "Admin will be asked to confirm before pushing to your website"
+      "autoPublishOff": "Admin will be asked to confirm before pushing to your website",
+      "noWebhookConfigured": "No publish webhook has been configured for your account yet. Contact your manager to set it up."
     }
   },
   "onboarding": {
@@ -139,7 +143,7 @@
     "title": "Title",
     "excerpt": "Excerpt",
     "content": "Content",
-    "localizations": "Localizations",
+    "localizations": "Localisations",
     "approve": "Approve",
     "reject": "Reject",
     "checklist": "Review checklist",
@@ -161,7 +165,6 @@
       "filterAll": "All",
       "noPosts": "No posts yet. Create one to get started."
     },
-    "editPost": "Edit post",
     "editPostPage": {
       "postSettings": "Post settings",
       "markdownHint": "(Markdown)",
@@ -190,8 +193,21 @@
       "colFrequency": "Frequency",
       "colGoogle": "Google",
       "colCreated": "Created",
+      "colWebhook": "Webhook",
       "googleConnected": "Connected",
       "onboardingPending": "Pending setup",
+      "webhookConfigured": "Configured",
+      "webhookNotSet": "Not set",
+      "webhookUrlLabel": "Webhook URL",
+      "webhookSecretLabel": "Secret token",
+      "webhookSecretPlaceholder": "Optional — sent as x-webhook-secret header",
+      "webhookSave": "Save webhook",
+      "webhookSaving": "Saving…",
+      "webhookSaved": "Saved",
+      "webhookShow": "Show",
+      "webhookHide": "Hide",
+      "webhookEdit": "Edit",
+      "webhookClose": "Close",
       "createForm": {
         "eyebrow": "New account",
         "title": "Create user account",
@@ -209,7 +225,7 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back, {email}",
-    "adminWelcome": "Admin Dashboard",
+    "adminWelcome": "Admin dashboard",
     "adminSubtitle": "You're viewing all posts from all users.",
     "userSubtitle": "Manage your posts below.",
     "workspaceAdmin": "Admin workspace",
@@ -263,7 +279,7 @@
       "idea": "Idea",
       "research": "Research",
       "draft": "Draft",
-      "optimize": "Optimize",
+      "optimize": "Optimise",
       "format": "Format",
       "review": "Review",
       "approved": "Approved",

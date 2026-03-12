@@ -24,18 +24,28 @@ export async function saveReviewChecklist(
 ) {
   const { user } = await requireAdmin();
   const supabase = await createClient();
-  const { error } = await supabase.from("review_checklists").upsert(
-    {
-      post_id: postId,
-      reviewer_id: user.id,
-      locale: null,
-      items,
-      status,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "post_id,locale" }
-  );
-  if (error) throw error;
+
+  // Check if a row already exists for this post (locale IS NULL)
+  const { data: existing } = await supabase
+    .from("review_checklists")
+    .select("id")
+    .eq("post_id", postId)
+    .is("locale", null)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("review_checklists")
+      .update({ items, status, reviewer_id: user.id, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("review_checklists")
+      .insert({ post_id: postId, reviewer_id: user.id, locale: null, items, status });
+    if (error) throw error;
+  }
+
   return { success: true };
 }
 
@@ -43,20 +53,10 @@ export async function approvePost(postId: string) {
   const { user } = await requireAdmin();
   const supabase = await createClient();
 
-  const { data: checklist } = await supabase
-    .from("review_checklists")
-    .select("status")
-    .eq("post_id", postId)
-    .is("locale", null)
-    .maybeSingle();
-
-  if (!checklist || checklist.status !== "passed") {
-    return { error: "Review checklist must be completed and passed before approving." };
-  }
-
+  // Set status to published directly — approval IS publishing
   const { error } = await supabase
     .from("posts")
-    .update({ status: "approved" })
+    .update({ status: "published", published_at: new Date().toISOString() })
     .eq("id", postId)
     .eq("status", "review");
   if (error) return { error: error.message };

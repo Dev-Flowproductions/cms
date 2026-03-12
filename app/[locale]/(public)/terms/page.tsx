@@ -1,4 +1,3 @@
-import { getLocale } from "next-intl/server";
 import { Link } from "@/lib/navigation";
 
 export const metadata = {
@@ -7,7 +6,6 @@ export const metadata = {
 };
 
 export default async function TermsOfUsePage() {
-  const locale = await getLocale();
   const lastUpdated = "March 4, 2026";
 
   return (
@@ -19,7 +17,7 @@ export default async function TermsOfUsePage() {
 
         {/* Back */}
         <Link
-          href={`/${locale}/login`}
+          href="/login"
           className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest mb-10 transition-opacity hover:opacity-70"
           style={{ color: "var(--text-faint)" }}
         >
@@ -42,14 +40,14 @@ export default async function TermsOfUsePage() {
         <div className="space-y-10 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Agreement to Terms</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Agreement to terms</h2>
             <p>
               By accessing or using the Flow Productions CMS platform (&ldquo;Platform&rdquo;), you agree to be bound by these Terms of Use (&ldquo;Terms&rdquo;). If you do not agree, you must not use the Platform. These Terms apply to all users, including administrators and client accounts.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>2. The Service</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>2. The service</h2>
             <p className="mb-3">
               Flow Productions provides a content management system that enables:
             </p>
@@ -72,7 +70,7 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>3. Account Responsibilities</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>3. Account responsibilities</h2>
             <p className="mb-3">You are responsible for:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -90,7 +88,7 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>4. AI-Generated Content</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>4. AI-generated content</h2>
             <p className="mb-3">
               The Platform uses Google&apos;s Gemini AI to generate blog posts and cover images. You acknowledge that:
             </p>
@@ -111,7 +109,7 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>5. Google Account Connection</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>5. Google account connection</h2>
             <p>
               When you connect your Google account during onboarding, you authorise Flow Productions to access your Google Analytics and Google Search Console data in read-only mode. This access is used exclusively to improve the quality and relevance of content generated for your website. We will never modify, delete, or post to your Google accounts. You may revoke this access at any time via your{" "}
               <a
@@ -126,7 +124,7 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>6. Intellectual Property</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>6. Intellectual property</h2>
             <p className="mb-3">
               All content generated through the Platform on your behalf — including blog posts and cover images — is provided to you for use on your website. Flow Productions retains no ownership over your published content.
             </p>
@@ -136,7 +134,7 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>7. Acceptable Use</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>7. Acceptable use</h2>
             <p className="mb-3">You agree not to:</p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -155,14 +153,14 @@ export default async function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>8. Availability & Modifications</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>8. Availability & modifications</h2>
             <p>
               Flow Productions will endeavour to maintain Platform availability but does not guarantee uninterrupted access. We reserve the right to modify, suspend, or discontinue any part of the Platform at any time, with or without notice. We will make reasonable efforts to notify active users of significant changes.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>9. Limitation of Liability</h2>
+            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>9. Limitation of liability</h2>
             <p>
               To the maximum extent permitted by applicable law, Flow Productions shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform, including but not limited to loss of revenue, data, or business opportunities resulting from AI-generated content. Our total liability shall not exceed the amount paid by you for the service in the three months preceding the claim.
             </p>
@@ -200,11 +198,11 @@ export default async function TermsOfUsePage() {
 
         {/* Footer links */}
         <div className="mt-16 pt-8 flex gap-6" style={{ borderTop: "1px solid var(--border)" }}>
-          <Link href={`/${locale}/privacy`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
-            Privacy Policy
+          <Link href="/privacy" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
+            Privacy policy
           </Link>
-          <Link href={`/${locale}/login`} className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
-            Back to Login
+          <Link href="/login" className="text-xs hover:opacity-70 transition-opacity" style={{ color: "var(--text-faint)" }}>
+            Back to login
           </Link>
         </div>
 

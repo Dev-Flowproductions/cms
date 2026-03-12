@@ -47,6 +47,8 @@
     "account": "Conta",
     "title": "Definições",
     "postingFrequency": "Frequência de publicação",
+    "postLanguage": "Idioma dos artigos",
+    "postLanguageDescription": "Escolha o idioma em que os artigos gerados por IA serão escritos.",
     "saving": "A guardar…",
     "saveChanges": "Guardar alterações",
     "saved": "Guardado!",
@@ -75,8 +77,10 @@
       "show": "Mostrar",
       "hide": "Ocultar",
       "autoPublishLabel": "Publicação automática",
+      "autoPublishDescription": "Quando ativado, os artigos são enviados para o seu website imediatamente quando o administrador clica em publicar.",
       "autoPublishOn": "Os artigos são enviados para o seu site imediatamente após publicação",
-      "autoPublishOff": "O administrador será questionado antes de enviar para o seu site"
+      "autoPublishOff": "O administrador será questionado antes de enviar para o seu site",
+      "noWebhookConfigured": "Ainda não foi configurado nenhum webhook de publicação para a sua conta. Contacte o seu gestor para o configurar."
     }
   },
   "onboarding": {
@@ -188,8 +192,21 @@
       "colFrequency": "Frequência",
       "colGoogle": "Google",
       "colCreated": "Criado",
+      "colWebhook": "Webhook",
       "googleConnected": "Ligado",
       "onboardingPending": "Configuração pendente",
+      "webhookConfigured": "Configurado",
+      "webhookNotSet": "Não definido",
+      "webhookUrlLabel": "URL do webhook",
+      "webhookSecretLabel": "Token secreto",
+      "webhookSecretPlaceholder": "Opcional — enviado no cabeçalho x-webhook-secret",
+      "webhookSave": "Guardar webhook",
+      "webhookSaving": "A guardar…",
+      "webhookSaved": "Guardado",
+      "webhookShow": "Mostrar",
+      "webhookHide": "Ocultar",
+      "webhookEdit": "Editar",
+      "webhookClose": "Fechar",
       "createForm": {
         "eyebrow": "Nova conta",
         "title": "Criar conta de utilizador",

@@ -4,7 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ── Dark theme (default) ── */
+:root,
+[data-theme="dark"] {
   --bg: #0a0a0f;
   --surface: #111118;
   --surface-raised: #16161f;
@@ -19,6 +21,30 @@
   --success: #22d3a0;
   --warning: #f5a623;
   --danger: #ff5c6a;
+  --input-bg: #16161f;
+  --scrollbar-thumb: #3c3c58;
+  --noise-opacity: 0.4;
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-raised: #f0f0f5;
+  --border: #e0e0ea;
+  --border-subtle: #ebebf2;
+  --accent: #7c5cfc;
+  --accent-dim: #5a3ed9;
+  --accent-glow: rgba(124, 92, 252, 0.12);
+  --text: #111118;
+  --text-muted: #5c5c80;
+  --text-faint: #a0a0bc;
+  --success: #0f9e78;
+  --warning: #d4820a;
+  --danger: #d93025;
+  --input-bg: #ffffff;
+  --scrollbar-thumb: #c8c8d8;
+  --noise-opacity: 0.15;
 }
 
 * {
@@ -40,7 +66,7 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--text-faint); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* Selection */
@@ -64,7 +90,7 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
-  opacity: 0.4;
+  opacity: var(--noise-opacity);
 }
 
 /* Glow utilities */
@@ -91,7 +117,44 @@ body::before {
   border-radius: 12px;
 }
 
+/* Table row hover */
+tr.group:hover td { background: var(--surface-raised); }
+
+/* Danger hover utility */
+.hover\:text-danger:hover { color: var(--danger) !important; }
+
 .admin-panel-link:hover {
   border-color: var(--accent) !important;
   color: var(--accent) !important;
+}
+
+/* Shared input field — consistent focus ring across all forms */
+.input-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-field::placeholder { color: var(--text-faint); }
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.input-field[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Semantic tinted backgrounds (used for banners, badges, etc.) */
+:root,
+[data-theme="dark"],
+[data-theme="light"] {
+  --success-bg: rgba(34, 211, 160, 0.08);
+  --warning-bg: rgba(245, 166, 35, 0.10);
+  --danger-bg:  rgba(255, 92, 106, 0.08);
+  --accent-bg:  rgba(124, 92, 252, 0.10);
+  --gradient-accent:  linear-gradient(135deg, #7c5cfc 0%, #a78bfa 100%);
+  --gradient-success: linear-gradient(135deg, #22d3a0 0%, #34d399 100%);
 }

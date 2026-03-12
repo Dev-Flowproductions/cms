@@ -26,14 +26,16 @@ export function ApproveRejectButtons({ postId }: { postId: string }) {
       <button
         type="button"
         onClick={handleApprove}
-        className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+        className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+        style={{ background: "var(--gradient-success)", color: "var(--bg)" }}
       >
         {t("approve")}
       </button>
       <button
         type="button"
         onClick={handleReject}
-        className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+        className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+        style={{ background: "var(--danger-bg)", color: "var(--danger)", border: "1px solid rgba(255,92,106,0.2)" }}
       >
         {t("reject")}
       </button>

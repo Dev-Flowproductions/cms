@@ -149,17 +149,14 @@ async function generatePostForClient(
   const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
   const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
 
-  // Auto-generate a URL-safe slug from the domain + date + short random suffix to guarantee uniqueness
-  const datePart = new Date().toISOString().slice(0, 10);
-  const randomSuffix = Math.random().toString(36).slice(2, 6);
-  const slugBase = `${domainSlug.replace(/\s+/g, "-")}-${datePart}`.toLowerCase().slice(0, 64);
-  const slug = `${slugBase}-${randomSuffix}`;
+  // Use a temporary placeholder slug — will be replaced with the title-derived slug after PT generation
+  const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
 
-  // Create the post row (primary locale = pt)
+  // Create the post row with a temp slug
   const { data: post, error: postError } = await admin
     .from("posts")
     .insert({
-      slug,
+      slug: tempSlug,
       primary_locale: primaryLocale,
       content_type: "hero",
       status: "draft",
@@ -193,6 +190,8 @@ async function generatePostForClient(
   });
 
   // ── Generate content for each locale sequentially ──────────────────────────
+  // PT is generated first so we can derive the slug from its title.
+  let slug = tempSlug;
   let titleForCoverPrompt = focusKeyword;
   let firstRunId: string | undefined;
 
@@ -233,7 +232,28 @@ async function generatePostForClient(
       continue;
     }
 
-    if (locale === primaryLocale) titleForCoverPrompt = generated.title;
+    if (locale === primaryLocale) {
+      titleForCoverPrompt = generated.title;
+
+      // Derive the final slug from the PT title — short, clean, no date
+      // e.g. "Visão da flowproductions 2026: o futuro da produção" → "visao-da-flowproductions-2026-o-futuro-da-producao"
+      const titleSlug = generated.title
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 60)
+        .replace(/-$/, "");
+
+      // Ensure uniqueness with a short suffix
+      const suffix = Math.random().toString(36).slice(2, 6);
+      slug = `${titleSlug}-${suffix}`;
+
+      // Update the post row with the real slug
+      await admin.from("posts").update({ slug }).eq("id", post.id);
+    }
 
     const jsonld = {
       "@context": "https://schema.org",

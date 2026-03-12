@@ -14,6 +14,40 @@ You write in the client's brand voice, using their website and analytics data as
 You NEVER invent statistics. Every number, fact, or claim must be real, attributable, and accurate.
 
 ════════════════════════════════════════
+TOPIC SELECTION (CRITICAL)
+════════════════════════════════════════
+
+Every post must sit at the intersection of TWO things:
+  1. What the client's business actually does (from CLIENT CONTEXT)
+  2. What is genuinely trending RIGHT NOW in their industry
+
+STEP 1 — UNDERSTAND THE CLIENT:
+- Read the CLIENT CONTEXT carefully: domain, industry, website summary, top pages, top keywords,
+  and — most importantly — the Google Analytics and Search Console data if provided.
+- The GA/Search Console data tells you exactly what the client's real audience is already searching for
+  and what pages are already performing. Use this as your primary signal.
+- Identify: what topics are bringing traffic, what queries people are typing, what gaps exist between
+  what people search for and what the site currently covers.
+
+STEP 2 — IDENTIFY A TRENDING ANGLE:
+- Look at the Search Console queries provided. These are real searches from the client's audience.
+  Pick the query that has the most potential and is currently under-served by existing content.
+- Cross-reference with what is happening RIGHT NOW (current year/month) in that industry:
+  new regulations, emerging technologies, recent market shifts, new tools being adopted, viral debates.
+- Prioritise topics where search intent is strong AND the trend is current — this combination
+  produces posts that rank AND get cited by AI search engines.
+- The trending angle must be real and current — not something from 2 years ago.
+
+STEP 3 — COMBINE THEM INTO ONE SHARP TOPIC:
+- The winning topic is: [what your audience is already searching] + [what is happening right now in your industry].
+- Frame it from the client's perspective and expertise — not as a generic overview.
+- It must be directly relevant to what the client sells or does.
+- Do NOT write generic SEO/AI/marketing posts unless the client is explicitly a marketing agency.
+- If no GA/Search Console data is available, fall back to Step 2 (industry trends + client services).
+
+The cover image you describe MUST be visually coherent with the client's industry and post topic.
+
+════════════════════════════════════════
 REQUIRED POST STRUCTURE (in this exact order)
 ════════════════════════════════════════
 
@@ -219,6 +253,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble, no 
 
 {
   "title": "Display title (H1 text, no # prefix)",
+  "slug": "1-3 lowercase words from the focus keyword, hyphens only, no stopwords — e.g. 'video-corporativo' or 'producao-audiovisual'",
+  "cover_image_description": "A real-world photographic scene that matches the actual content of this post. Read the content_md you just wrote and describe a physical scene that visually represents the main topic — the setting, the people or objects involved, the mood, and the lighting. Describe only tangible, physical things. No text, no screens, no UI, no diagrams, no abstract concepts. 1-2 sentences.",
   "seo_title": "SEO title — 50-60 chars, focus keyword near start, brand at end",
   "seo_description": "Meta description — 145-158 chars, keyword + benefit + CTA verb",
   "focus_keyword": "the exact focus keyword used",
@@ -237,6 +273,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble, no 
 
 CRITICAL: The seo_score object must contain honest self-assessment scores (0-10 each).
 The content_md must follow: date → H1 → image (immediately after H1) → intro → 3×(H2+H3+body) → FAQ → conclusion.
+The slug must be 1-3 words maximum, directly derived from the focus keyword. No dates. No brand names unless essential.
 `.trim();
 
 // ─── Context builders ──────────────────────────────────────────────────────
@@ -269,6 +306,14 @@ const CONTENT_TYPE_GUIDE: Record<string, string> = {
 export function buildPrompt(post: PostContext, client: ClientContext): string {
   const lines: string[] = [];
 
+  const now = new Date();
+  const currentDate = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  lines.push("═══════════════════════════════");
+  lines.push("CURRENT DATE (for trending topic research)");
+  lines.push("═══════════════════════════════");
+  lines.push(`Today is ${currentDate}. Use this to identify what is trending RIGHT NOW in the client's industry.`);
+  lines.push("");
   lines.push("═══════════════════════════════");
   lines.push("POST CONTEXT");
   lines.push("═══════════════════════════════");
@@ -297,17 +342,17 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
   }
 
   if (client.gaTopPages?.length) {
-    lines.push(`Top performing pages (from Google Analytics) — align content to build topical authority:`);
+    lines.push(`Top performing pages (Google Analytics) — these topics already resonate with this audience; build on them or fill the gaps:`);
     client.gaTopPages.slice(0, 5).forEach((p) => lines.push(`  - ${p}`));
   }
 
   if (client.gaTopKeywords?.length) {
-    lines.push(`Top organic keywords — use these as semantic variants throughout:`);
+    lines.push(`Top organic keywords (Google Analytics) — use as semantic variants AND as topic signal for what this audience cares about:`);
     client.gaTopKeywords.slice(0, 10).forEach((k) => lines.push(`  - ${k}`));
   }
 
   if (client.searchConsoleQueries?.length) {
-    lines.push(`Top Search Console queries — convert these into FAQ questions and H3 subheadings:`);
+    lines.push(`Real search queries from Google Search Console — these are the EXACT phrases this site's audience types into Google. Use the most relevant one as the basis for your topic, focus keyword, and FAQ questions:`);
     client.searchConsoleQueries.slice(0, 10).forEach((q) => lines.push(`  - ${q}`));
   }
 
@@ -327,7 +372,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
   lines.push("");
   lines.push("AEO 10/10 checklist:");
   lines.push("  ✓ Definition block in intro: '**{term}** is...'");
-  lines.push("  ✓ 4-5 FAQ items, questions phrased as real user queries");
+  lines.push("  ✓ 4-5 FAQ items — if Search Console queries were provided, use them as FAQ questions");
   lines.push("  ✓ Each FAQ answer: 40-60 words, self-contained, direct");
   lines.push("  ✓ Each H2 opens with a direct answer sentence");
   lines.push("");

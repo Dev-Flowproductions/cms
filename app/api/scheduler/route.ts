@@ -116,6 +116,8 @@ type SupportedLocale = (typeof ALL_LOCALES)[number];
 
 type GeneratedContent = {
   title: string;
+  slug?: string;
+  cover_image_description?: string;
   seo_title: string;
   seo_description: string;
   focus_keyword: string;
@@ -196,6 +198,7 @@ async function generatePostForClient(
   // PT is generated first so we can derive the slug from its title.
   let slug = tempSlug;
   let titleForCoverPrompt = focusKeyword;
+  let coverImageDescription: string | null = null;
   let firstRunId: string | undefined;
 
   for (const locale of ALL_LOCALES) {
@@ -249,22 +252,44 @@ async function generatePostForClient(
 
     if (locale === primaryLocale) {
       titleForCoverPrompt = generated.title;
+      if (generated.cover_image_description) coverImageDescription = generated.cover_image_description;
 
-      // Derive the final slug from the PT title â€” short, clean, no date
-      // e.g. "VisÃ£o da flowproductions 2026: o futuro da produÃ§Ã£o" â†’ "visao-da-flowproductions-2026-o-futuro-da-producao"
-      const titleSlug = generated.title
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
-        .replace(/[^a-z0-9\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .slice(0, 60)
-        .replace(/-$/, "");
+      // Prefer Gemini's suggested slug (already 1-3 keywords), fall back to title derivation
+      const rawSlug = (generated.slug && generated.slug.trim())
+        ? generated.slug
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/-$/, "")
+            .slice(0, 60)
+        : generated.title
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .slice(0, 60)
+            .replace(/-$/, "");
 
-      // Ensure uniqueness with a short suffix
-      const suffix = Math.random().toString(36).slice(2, 6);
-      slug = `${titleSlug}-${suffix}`;
+      // Collision check: if slug exists, append -2, -3, etc.
+      let candidate = rawSlug;
+      let counter = 2;
+      while (true) {
+        const { data: existing } = await admin
+          .from("posts")
+          .select("id")
+          .eq("slug", candidate)
+          .neq("id", post.id)
+          .maybeSingle();
+        if (!existing) break;
+        candidate = `${rawSlug}-${counter}`;
+        counter++;
+      }
+      slug = candidate;
 
       // Update the post row with the real slug
       await admin.from("posts").update({ slug }).eq("id", post.id);
@@ -324,13 +349,18 @@ async function generatePostForClient(
 
   // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
-    const coverPrompt =
-      `Professional hero cover image for a blog post titled: "${titleForCoverPrompt}". ` +
-      `Topic: ${focusKeyword}. ` +
-      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (â‰ˆ1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
-      `Keep the main subject centred both horizontally and vertically â€” safe zone is the central 60% of the frame. ` +
-      `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
+    // Build the Imagen prompt — use Gemini's specific description as the subject,
+    // but wrap it with strict negative constraints to prevent text/code/UI hallucinations.
+    const coverSubject = coverImageDescription
+      ? coverImageDescription
+      : `A professional scene related to "${titleForCoverPrompt}" in the ${focusKeyword} industry`;
 
+    const coverPrompt =
+      `Editorial photography: ${coverSubject}. ` +
+      `4:3 aspect ratio, full-width hero image. ` +
+      `High quality, cinematic lighting, sharp focus, photorealistic. ` +
+      `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
+      `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
     const imgResponse = await imagenAI.models.generateImages({
       model: "imagen-4.0-generate-001",
       prompt: coverPrompt,

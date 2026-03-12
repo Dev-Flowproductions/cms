@@ -283,9 +283,10 @@ async function generatePostForClient(
   // Generate cover image
   try {
     const coverPrompt =
-      `Professional hero image for a blog post about: "${generated.focus_keyword}". ` +
-      `Wide landscape format, 16:9 ratio. High quality, modern, editorial photography style. ` +
-      `Clean composition, no text overlays, no watermarks.`;
+      `Professional hero cover image for a blog post titled: "${generated.title}". ` +
+      `Topic: ${generated.focus_keyword}. ` +
+      `Wide landscape, 16:9 aspect ratio. Keep the main subject centred — avoid placing key elements near the top or bottom edges, as the image will be cropped to 1200×630 for display. ` +
+      `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
     const imgResponse = await imagenAI.models.generateImages({
       model: "imagen-4.0-generate-001",

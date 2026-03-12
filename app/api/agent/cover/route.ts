@@ -30,9 +30,9 @@ export async function POST(request: Request) {
   // ── Imagen via Gemini API ──────────────────────────────────────────────────
   try {
     const imagePrompt =
-      `Professional hero image for a blog post about: "${query}". ` +
-      `Wide landscape format, 16:9 ratio. High quality, modern, editorial photography style. ` +
-      `Clean composition, no text overlays, no watermarks.`;
+      `Professional hero cover image for a blog post about: "${query}". ` +
+      `Wide landscape, 16:9 aspect ratio. Keep the main subject centred — avoid placing key elements near the top or bottom edges, as the image will be cropped to 1200×630 for display. ` +
+      `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
     const response = await genai.models.generateImages({
       model: "imagen-4.0-generate-001",
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     // ── Picsum fallback ────────────────────────────────────────────────────
     console.warn("[cover] Imagen failed, falling back to Picsum:", imgErr);
     const seed = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const fallbackUrl = `https://picsum.photos/seed/${seed}/1600/900`;
+    const fallbackUrl = `https://picsum.photos/seed/${seed}/1200/630`;
     const imgRes = await fetch(fallbackUrl, { redirect: "follow" });
     if (!imgRes.ok) return NextResponse.json({ error: "Failed to download fallback image" }, { status: 502 });
     imageBuffer = await imgRes.arrayBuffer();

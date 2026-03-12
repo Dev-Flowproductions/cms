@@ -147,6 +147,26 @@ export function EditPostForm({
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
 
+  // Delete state
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const { deletePost } = await import("@/app/[locale]/(admin)/admin/posts/actions");
+      const result = await deletePost(post.id);
+      if (result.error) { setDeleteError(result.error); setDeleting(false); return; }
+      router.push("../posts");
+      router.refresh();
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : "Unknown error");
+      setDeleting(false);
+    }
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     setGenError(null);
@@ -303,6 +323,59 @@ export function EditPostForm({
         </div>
       )}
 
+      {/* ── Delete confirmation modal ── */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl p-6 space-y-4"
+            style={{ background: "var(--surface)", border: "1px solid var(--danger)" }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--danger-bg)" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold" style={{ color: "var(--text)" }}>Delete this post?</h3>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                  This will permanently delete the post and all its translations from the CMS.
+                  {post.status === "published" && (
+                    <span style={{ color: "var(--danger)" }}> It will also be removed from the client&apos;s website.</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {deleteError && <p className="text-sm" style={{ color: "var(--danger)" }}>{deleteError}</p>}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                style={{ background: "var(--danger)", color: "white" }}
+              >
+                {deleting ? "Deleting…" : "Yes, delete permanently"}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: "var(--surface-raised)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Post settings ── */}
       <section style={sectionStyle}>
         <p style={sectionHeadingStyle}>{labels.postSettings}</p>
@@ -432,6 +505,25 @@ export function EditPostForm({
               </span>
             )}
 
+            {/* Delete button — pushed to the right */}
+            <div className="flex-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                style={{
+                  background: "var(--danger-bg)",
+                  color: "var(--danger)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+                Delete post
+              </button>
+            </div>
             {publishError && (
               <span className="text-xs font-medium" style={{ color: "var(--danger)" }}>
                 {publishError}

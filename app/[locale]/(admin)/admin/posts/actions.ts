@@ -60,6 +60,64 @@ export async function createPost(formData: FormData) {
   return { success: true, postId: post.id };
 }
 
+export async function createManualPost(formData: FormData) {
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const title = formData.get("title")?.toString().trim() ?? "";
+  const content_md = formData.get("content_md")?.toString() ?? "";
+  const seo_description = formData.get("seo_description")?.toString().trim() || null;
+  const primary_locale = (formData.get("primary_locale")?.toString() ?? "pt") as Locale;
+
+  if (!title) return { error: "Title is required" };
+
+  const rawSlug = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
+
+  const supabase = await createClient();
+
+  // Ensure slug is unique by appending a short random suffix if needed
+  let slug = rawSlug;
+  const { data: existing } = await supabase.from("posts").select("id").eq("slug", slug).maybeSingle();
+  if (existing) {
+    slug = `${rawSlug}-${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  const { data: post, error: postError } = await supabase
+    .from("posts")
+    .insert({
+      slug,
+      primary_locale,
+      content_type: "hero",
+      status: "draft",
+      author_id: user.id,
+    })
+    .select("id")
+    .single();
+  if (postError) return { error: postError.message };
+
+  const { error: locError } = await supabase.from("post_localizations").insert({
+    post_id: post.id,
+    locale: primary_locale,
+    title,
+    excerpt: seo_description ?? "",
+    content_md,
+    seo_description: seo_description ?? null,
+  });
+  if (locError) {
+    await supabase.from("posts").delete().eq("id", post.id);
+    return { error: locError.message };
+  }
+
+  return { success: true, postId: post.id };
+}
+
 const updatePostSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/).optional(),
   status: z.string().optional(),

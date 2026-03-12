@@ -2,40 +2,41 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "@/lib/navigation";
-import {
-  getReviewChecklist,
-  saveReviewChecklist,
-} from "../../review-queue/actions";
+import { getReviewChecklist, saveReviewChecklist, approvePost, rejectPost } from "../../review-queue/actions";
 import { DEFAULT_CHECKLIST_KEYS } from "../../review-queue/constants";
-import { useTranslations } from "next-intl";
 
-const CHECKLIST_MESSAGE_KEYS: Record<string, string> = {
-  credibility: "credibility",
-  brand_voice: "brandVoice",
-  entity_accuracy: "entityAccuracy",
-  intent_completeness: "intentCompleteness",
-  formatting: "formatting",
+const CHECKLIST_LABELS: Record<string, string> = {
+  credibility: "Credibility — all claims are accurate and attributable",
+  brand_voice: "Brand voice — tone matches the client's website",
+  entity_accuracy: "Entity accuracy — names, dates, and facts are correct",
+  intent_completeness: "Intent completeness — post fully answers the search intent",
+  formatting: "Formatting — structure follows the required template",
 };
 
 export function ReviewChecklistBlock({ postId }: { postId: string }) {
-  const t = useTranslations("admin");
-  const tChecklist = useTranslations("checklist");
   const router = useRouter();
-  const [items, setItems] = useState<Array<{ key: string; label: string; passed: boolean; notes?: string }>>([]);
-  const [status, setStatus] = useState<"pending" | "passed" | "failed">("pending");
+  const [items, setItems] = useState<Array<{ key: string; label: string; passed: boolean; notes: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [savedOk, setSavedOk] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getReviewChecklist(postId).then((data) => {
       if (data?.items && Array.isArray(data.items)) {
-        setItems(data.items as Array<{ key: string; label: string; passed: boolean; notes?: string }>);
-        setStatus((data.status as "pending" | "passed" | "failed") ?? "pending");
+        setItems(
+          (data.items as Array<{ key: string; label: string; passed: boolean; notes?: string }>).map((i) => ({
+            ...i,
+            notes: i.notes ?? "",
+          }))
+        );
       } else {
         setItems(
           DEFAULT_CHECKLIST_KEYS.map((key) => ({
             key,
-            label: key,
+            label: CHECKLIST_LABELS[key] ?? key,
             passed: false,
             notes: "",
           }))
@@ -45,67 +46,250 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
     });
   }, [postId]);
 
-  async function handleSave() {
-    setSaving(true);
-    const allPassed = items.every((i) => i.passed);
-    await saveReviewChecklist(postId, items, allPassed ? "passed" : "pending");
-    setStatus(allPassed ? "passed" : "pending");
-    setSaving(false);
-    router.refresh();
-  }
+  const allPassed = items.length > 0 && items.every((i) => i.passed);
 
   function setItemPassed(index: number, passed: boolean) {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], passed };
-      return next;
-    });
+    setItems((prev) => prev.map((item, i) => i === index ? { ...item, passed } : item));
   }
 
   function setItemNotes(index: number, notes: string) {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], notes };
-      return next;
-    });
+    setItems((prev) => prev.map((item, i) => i === index ? { ...item, notes } : item));
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading checklist...</p>;
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    setSavedOk(false);
+    try {
+      await saveReviewChecklist(postId, items, allPassed ? "passed" : "pending");
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 3000);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleApprove() {
+    setApproving(true);
+    setError(null);
+    // Save checklist first so status is up-to-date
+    try {
+      await saveReviewChecklist(postId, items, allPassed ? "passed" : "pending");
+    } catch { /* non-fatal */ }
+
+    const result = await approvePost(postId);
+    if (result.error) {
+      setError(result.error);
+      setApproving(false);
+      return;
+    }
+
+    // Fire webhook if this post's author has one configured
+    try {
+      await fetch(`/api/publish/${postId}`, { method: "POST" });
+    } catch { /* non-fatal — webhook failure doesn't block approval */ }
+
+    setApproving(false);
+    router.refresh();
+  }
+
+  async function handleReject() {
+    const reason = window.prompt("Reason for rejection (optional):");
+    if (reason === null) return; // cancelled
+    setRejecting(true);
+    setError(null);
+    const result = await rejectPost(postId, reason || undefined);
+    setRejecting(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      router.refresh();
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mt-6 rounded-2xl p-5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading checklist…</p>
+      </div>
+    );
+  }
 
   return (
-    <section className="border border-gray-200 dark:border-gray-700 rounded p-4">
-      <h2 className="font-medium mb-4">{t("checklist")}</h2>
-      <ul className="space-y-3">
-        {items.map((item, i) => (
-          <li key={item.key} className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={item.passed}
-              onChange={(e) => setItemPassed(i, e.target.checked)}
-              className="mt-1"
-            />
-            <div className="flex-1">
-              <span className="text-sm">{tChecklist((CHECKLIST_MESSAGE_KEYS[item.key] ?? item.key) as "credibility" | "brandVoice" | "entityAccuracy" | "intentCompleteness" | "formatting")}</span>
-              <input
-                type="text"
-                placeholder="Notes"
-                value={item.notes ?? ""}
-                onChange={(e) => setItemNotes(i, e.target.value)}
-                className="mt-1 w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-sm text-gray-500">Status: {status}</p>
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-3 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-sm disabled:opacity-50"
+    <div
+      className="mt-6 rounded-2xl overflow-hidden"
+      style={{ border: "1px solid rgba(124,92,252,0.3)", background: "var(--surface)" }}
+    >
+      {/* Header */}
+      <div
+        className="px-6 py-4 flex items-center justify-between"
+        style={{ borderBottom: "1px solid var(--border)", background: "rgba(124,92,252,0.04)" }}
       >
-        {saving ? "Saving..." : t("save", { ns: "common" })}
-      </button>
-    </section>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(124,92,252,0.15)" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
+              Review checklist
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+              {items.filter((i) => i.passed).length} / {items.length} items passed
+            </p>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${items.length ? (items.filter((i) => i.passed).length / items.length) * 100 : 0}%`,
+              background: allPassed ? "var(--success)" : "var(--accent)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Checklist items */}
+      <div className="px-6 py-5 space-y-3">
+        {items.map((item, i) => (
+          <div
+            key={item.key}
+            className="rounded-xl px-4 py-3 transition-all"
+            style={{
+              background: item.passed ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
+              border: item.passed ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                onClick={() => setItemPassed(i, !item.passed)}
+                className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                style={{
+                  background: item.passed ? "var(--success)" : "var(--surface)",
+                  border: item.passed ? "none" : "1px solid var(--border)",
+                }}
+              >
+                {item.passed && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: item.passed ? "var(--text)" : "var(--text-muted)" }}>
+                  {CHECKLIST_LABELS[item.key] ?? item.key}
+                </p>
+                <input
+                  type="text"
+                  placeholder="Notes (optional)"
+                  value={item.notes}
+                  onChange={(e) => setItemNotes(i, e.target.value)}
+                  className="mt-1.5 w-full text-xs px-2.5 py-1.5 rounded-lg outline-none transition-all"
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text)",
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer — actions */}
+      {error && (
+        <div className="mx-6 mb-4 px-4 py-2.5 rounded-xl text-xs" style={{ background: "rgba(255,92,106,0.08)", border: "1px solid rgba(255,92,106,0.25)", color: "var(--danger)" }}>
+          {error}
+        </div>
+      )}
+
+      <div
+        className="px-6 py-4 flex items-center gap-3 flex-wrap"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        {/* Save checklist */}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+          style={{
+            background: "var(--surface-raised)",
+            color: "var(--text-muted)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          {saving ? "Saving…" : "Save checklist"}
+        </button>
+        {savedOk && <span className="text-xs font-medium" style={{ color: "var(--success)" }}>✓ Saved</span>}
+
+        <div className="flex-1" />
+
+        {/* Reject */}
+        <button
+          type="button"
+          onClick={handleReject}
+          disabled={rejecting || approving}
+          className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+          style={{
+            background: "rgba(255,92,106,0.1)",
+            color: "var(--danger)",
+            border: "1px solid rgba(255,92,106,0.25)",
+          }}
+        >
+          {rejecting ? "Rejecting…" : "Reject — send back to draft"}
+        </button>
+
+        {/* Approve */}
+        <button
+          type="button"
+          onClick={handleApprove}
+          disabled={approving || rejecting || !allPassed}
+          className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+          style={{
+            background: allPassed ? "linear-gradient(135deg, #22d3a0, #34d399)" : "var(--surface-raised)",
+            color: allPassed ? "var(--bg)" : "var(--text-faint)",
+            border: allPassed ? "none" : "1px solid var(--border)",
+            boxShadow: allPassed ? "0 0 16px rgba(34,211,160,0.25)" : "none",
+          }}
+          title={!allPassed ? "Tick all checklist items before approving" : undefined}
+        >
+          {approving ? (
+            <>
+              <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+              </svg>
+              Approving…
+            </>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Approve post
+            </>
+          )}
+        </button>
+        {!allPassed && (
+          <p className="w-full text-xs text-right" style={{ color: "var(--text-faint)" }}>
+            Tick all items to enable approval
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

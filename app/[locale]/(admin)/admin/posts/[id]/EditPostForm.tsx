@@ -249,6 +249,7 @@ export function EditPostForm({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowPublishConfirm(false); }}
         >
           <div
             className="w-full max-w-md rounded-2xl p-6 space-y-4"
@@ -257,18 +258,18 @@ export function EditPostForm({
             <div className="flex items-start gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(124,92,252,0.12)" }}
+                style={{ background: "rgba(34,211,160,0.12)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="var(--accent)" />
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#22d3a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <div>
                 <h3 className="text-base font-bold" style={{ color: "var(--text)" }}>
-                  Publish to client website?
+                  Ready to publish?
                 </h3>
                 <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                  This will push the post content to the client&apos;s configured webhook endpoint and set the status to <strong>published</strong>. This action cannot be undone automatically.
+                  This will push the post to the client&apos;s website via webhook and mark it as <strong style={{ color: "var(--text)" }}>published</strong>.
                 </p>
               </div>
             </div>
@@ -278,12 +279,12 @@ export function EditPostForm({
                 disabled={publishing}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                 style={{
-                  background: "linear-gradient(135deg, #7c5cfc, #a78bfa)",
-                  color: "white",
-                  boxShadow: "0 0 16px rgba(124,92,252,0.3)",
+                  background: "linear-gradient(135deg, #22d3a0, #34d399)",
+                  color: "var(--bg)",
+                  boxShadow: "0 0 16px rgba(34,211,160,0.3)",
                 }}
               >
-                {publishing ? "Publishing…" : "Yes, publish"}
+                {publishing ? "Publishing…" : "Yes, publish now"}
               </button>
               <button
                 onClick={() => setShowPublishConfirm(false)}
@@ -295,7 +296,7 @@ export function EditPostForm({
                   border: "1px solid var(--border)",
                 }}
               >
-                Cancel
+                No, keep editing
               </button>
             </div>
           </div>
@@ -417,15 +418,11 @@ export function EditPostForm({
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      {publishConfig.autoPublish ? "Publish to website" : "Publish to website…"}
-                    </>
-                  )}
-                </button>
-                {!publishConfig.autoPublish && (
-                  <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-                    Will ask for confirmation
-                  </span>
-                )}
+                  {publishConfig.autoPublish ? "Publish to website" : "Publish to website"}
+                </>
+              )}
+            </button>
+              
               </>
             )}
 

@@ -79,6 +79,9 @@ export type ClientRow = {
   google_connected_at: string | null;
   frequency: Frequency;
   created_at: string;
+  webhook_url: string | null;
+  webhook_secret: string | null;
+  auto_publish: boolean;
   profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
   email?: string;
 };
@@ -89,7 +92,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, created_at, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, created_at, webhook_url, webhook_secret, auto_publish, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -162,6 +165,30 @@ export async function updateClientWebhook(
   userId: string,
   data: { webhook_url: string | null; webhook_secret: string | null; auto_publish: boolean }
 ) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateUserAutoPublish(userId: string, auto_publish: boolean) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ auto_publish, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateUserWebhookByAdmin(
+  userId: string,
+  data: { webhook_url: string | null; webhook_secret: string | null }
+) {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase
     .from("clients")

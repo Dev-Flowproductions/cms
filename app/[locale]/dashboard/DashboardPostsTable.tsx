@@ -112,7 +112,7 @@ export function DashboardPostsTable({
   return (
     <div>
       {/* Section header */}
-      <div className="flex items-center mb-5">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
             {isAdmin ? t("dashboard.allPosts") : t("dashboard.myPosts")}
@@ -129,6 +129,22 @@ export function DashboardPostsTable({
             </span>
           )}
         </div>
+        {!isAdmin && (
+          <Link
+            href="/dashboard/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: "var(--accent)",
+              color: "white",
+              boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            New post
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -164,8 +180,24 @@ export function DashboardPostsTable({
             {t("dashboard.noPostsYet")}
           </p>
           <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
-            {t("dashboard.postsAutoCreated")}
+            {isAdmin ? t("dashboard.postsAutoCreated") : "Posts are generated automatically — or create one manually above."}
           </p>
+          {!isAdmin && (
+            <Link
+              href="/dashboard/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              Write your first post
+            </Link>
+          )}
         </div>
       ) : (
         <div

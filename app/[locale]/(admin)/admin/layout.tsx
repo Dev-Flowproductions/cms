@@ -5,6 +5,7 @@ import { AdminNav } from "./AdminNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { AdminLogoutButton } from "./AdminLogoutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RunSchedulerButton } from "./RunSchedulerButton";
 
 export default async function AdminLayout({
   children,
@@ -54,6 +55,7 @@ export default async function AdminLayout({
 
         {/* Sidebar footer */}
         <div className="px-3 py-4 space-y-1" style={{ borderTop: "1px solid var(--border)" }}>
+          <RunSchedulerButton />
           <Link
             href="/dashboard"
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all w-full"

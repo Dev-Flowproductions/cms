@@ -18,10 +18,10 @@ export async function POST(
   // Only admins may push
   const { data: roleRow } = await supabase
     .from("user_roles")
-    .select("role")
+    .select("role_id")
     .eq("user_id", user.id)
     .single();
-  if (roleRow?.role !== "admin") {
+  if (roleRow?.role_id !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -32,7 +32,7 @@ export async function POST(
     .select(`
       id, slug, author_id, status,
       post_localizations (
-        locale, title, content, meta_description, json_ld
+        locale, title, excerpt, content_md, seo_title, seo_description, jsonld
       ),
       cover_image_path
     `)
@@ -65,7 +65,7 @@ export async function POST(
   let coverImageUrl: string | null = null;
   if (post.cover_image_path) {
     const { data: urlData } = admin.storage
-      .from("post-images")
+      .from("covers")
       .getPublicUrl(post.cover_image_path);
     coverImageUrl = urlData?.publicUrl ?? null;
   }
@@ -87,9 +87,11 @@ export async function POST(
       id: post.id,
       slug: post.slug,
       title: primary.title,
-      content: primary.content,
-      meta_description: primary.meta_description,
-      json_ld: primary.json_ld,
+      excerpt: primary.excerpt,
+      content_md: primary.content_md,
+      seo_title: primary.seo_title,
+      meta_description: primary.seo_description,
+      json_ld: primary.jsonld,
       cover_image_url: coverImageUrl,
       locale: primary.locale,
       all_localizations: localizations,

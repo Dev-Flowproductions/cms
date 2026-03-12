@@ -85,14 +85,16 @@ export async function POST(
     event: "cms.post.published",
     post: {
       id: post.id,
-      // title, slug, excerpt, content are jsonb multilingual objects on the receiving end
-      slug: Object.fromEntries(localizations.map((l) => [l.locale, post.slug])),
-      title: Object.fromEntries(localizations.map((l) => [l.locale, l.title ?? ""])),
-      excerpt: Object.fromEntries(localizations.map((l) => [l.locale, l.excerpt ?? ""])),
-      content: Object.fromEntries(localizations.map((l) => [l.locale, l.content_md ?? ""])),
-      featured_image_path: coverImageUrl,
+      slug: post.slug,
+      title: primary.title,
+      excerpt: primary.excerpt,
+      content_md: primary.content_md,
+      seo_title: primary.seo_title,
+      meta_description: primary.seo_description,
       json_ld: primary.jsonld ?? null,
+      cover_image_url: coverImageUrl,
       locale: primary.locale,
+      all_localizations: localizations,
     },
     timestamp: new Date().toISOString(),
   };

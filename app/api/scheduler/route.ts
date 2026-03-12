@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ?force=true bypasses the frequency interval check — useful for testing
+  const force = new URL(req.url).searchParams.get("force") === "true";
+
   const admin = createAdminClient();
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -61,7 +64,7 @@ export async function POST(req: NextRequest) {
   for (const client of clients ?? []) {
     const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
     const lastRun = client.last_post_generated_at ? new Date(client.last_post_generated_at).getTime() : 0;
-    const due = now - lastRun >= intervalMs;
+    const due = force || now - lastRun >= intervalMs;
     if (due) {
       dueClients.push(client);
     } else {

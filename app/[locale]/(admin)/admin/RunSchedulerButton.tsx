@@ -7,13 +7,17 @@ export function RunSchedulerButton() {
   const [result, setResult] = useState<{ generated: number; skipped: number; errors: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleRun() {
-    if (!confirm("Run the AI post scheduler now? This will generate new posts for all due clients.")) return;
+  async function handleRun(force = false) {
+    const msg = force
+      ? "Force-run the scheduler? This bypasses the frequency check and generates a post for every client immediately."
+      : "Run the AI post scheduler now? This will generate new posts for all due clients.";
+    if (!confirm(msg)) return;
     setRunning(true);
     setResult(null);
     setError(null);
     try {
-      const res = await fetch("/api/scheduler", { method: "POST" });
+      const url = force ? "/api/scheduler?force=true" : "/api/scheduler";
+      const res = await fetch(url, { method: "POST" });
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Scheduler failed"); return; }
       setResult({ generated: json.generated, skipped: json.skipped, errors: json.errors });
@@ -29,7 +33,7 @@ export function RunSchedulerButton() {
     <div>
       <button
         type="button"
-        onClick={handleRun}
+        onClick={() => handleRun(false)}
         disabled={running}
         className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all w-full disabled:opacity-50"
         style={{ color: running ? "var(--accent)" : "var(--text-muted)" }}
@@ -47,6 +51,23 @@ export function RunSchedulerButton() {
         )}
         {running ? "Generating…" : "Run scheduler"}
       </button>
+
+      {/* Force run — bypasses frequency check */}
+      <button
+        type="button"
+        onClick={() => handleRun(true)}
+        disabled={running}
+        className="flex items-center gap-2 px-3 py-1 rounded-xl text-[10px] font-medium transition-all w-full disabled:opacity-50 mt-0.5"
+        style={{ color: "var(--text-faint)" }}
+        onMouseEnter={(e) => { if (!running) (e.currentTarget as HTMLButtonElement).style.color = "var(--warning)"; }}
+        onMouseLeave={(e) => { if (!running) (e.currentTarget as HTMLButtonElement).style.color = "var(--text-faint)"; }}
+      >
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        Force run
+      </button>
+
       {result && (
         <p className="text-[10px] px-3 mt-1" style={{ color: "var(--success)" }}>
           ✓ {result.generated} generated · {result.skipped} skipped · {result.errors} errors

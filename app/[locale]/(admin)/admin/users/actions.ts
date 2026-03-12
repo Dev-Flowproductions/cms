@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { z } from "zod";
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
+export type PostLocale = "en" | "pt" | "fr";
 
 const createUserSchema = z.object({
   email: z.string().email(),
@@ -78,6 +79,7 @@ export type ClientRow = {
   google_scope: string | null;
   google_connected_at: string | null;
   frequency: Frequency;
+  post_locale: PostLocale;
   created_at: string;
   webhook_url: string | null;
   webhook_secret: string | null;
@@ -92,7 +94,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, created_at, webhook_url, webhook_secret, auto_publish, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -114,7 +116,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, webhook_url, webhook_secret, auto_publish")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -202,6 +204,16 @@ export async function deleteUser(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientPostLocale(userId: string, post_locale: PostLocale) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ post_locale, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };
 }

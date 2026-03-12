@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -56,14 +56,26 @@ export async function POST(req: NextRequest) {
   const now = Date.now();
   const results: Array<{ client_id: string; domain: string; status: string; post_id?: string; error?: string }> = [];
 
+  // Collect clients that are due so we can stagger their generation
+  const dueClients: NonNullable<typeof clients> = [];
   for (const client of clients ?? []) {
     const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
     const lastRun = client.last_post_generated_at ? new Date(client.last_post_generated_at).getTime() : 0;
     const due = now - lastRun >= intervalMs;
-
-    if (!due) {
+    if (due) {
+      dueClients.push(client);
+    } else {
       results.push({ client_id: client.id, domain: client.domain, status: "skipped_not_due" });
-      continue;
+    }
+  }
+
+  // Process due clients with a random stagger (0–30 s per client) to spread API load
+  for (let i = 0; i < dueClients.length; i++) {
+    const client = dueClients[i];
+    if (i > 0) {
+      // Random delay 5–30 s between each client
+      const jitterMs = 5_000 + Math.floor(Math.random() * 25_000);
+      await new Promise((r) => setTimeout(r, jitterMs));
     }
 
     try {
@@ -106,12 +118,13 @@ async function generatePostForClient(
     google_scope: string | null;
     auto_publish?: boolean | null;
     webhook_url?: string | null;
+    post_locale?: string | null;
   },
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
   imagenAI: GoogleGenAI,
 ): Promise<string> {
-  const locale = "pt"; // default to Portuguese; can be made configurable later
+  const locale = (client.post_locale ?? "en") as string;
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());

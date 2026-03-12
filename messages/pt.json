@@ -47,6 +47,8 @@
     "account": "Conta",
     "title": "Definições",
     "postingFrequency": "Frequência de publicação",
+    "postLanguage": "Idioma dos artigos",
+    "postLanguageDescription": "Escolha o idioma em que os artigos gerados por IA serão escritos.",
     "saving": "A guardar…",
     "saveChanges": "Guardar alterações",
     "saved": "Guardado!",

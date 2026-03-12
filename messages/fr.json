@@ -47,6 +47,8 @@
     "account": "Compte",
     "title": "Paramètres",
     "postingFrequency": "Fréquence de publication",
+    "postLanguage": "Langue des articles",
+    "postLanguageDescription": "Choisissez la langue dans laquelle vos articles générés par IA seront rédigés.",
     "saving": "Enregistrement…",
     "saveChanges": "Enregistrer les modifications",
     "saved": "Enregistré !",

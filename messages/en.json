@@ -47,6 +47,8 @@
     "account": "Account",
     "title": "Settings",
     "postingFrequency": "Posting frequency",
+    "postLanguage": "Post language",
+    "postLanguageDescription": "Choose the language your AI-generated blog posts will be written in.",
     "saving": "Saving…",
     "saveChanges": "Save changes",
     "saved": "Saved!",

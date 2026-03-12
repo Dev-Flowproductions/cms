@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
-import { updateClientFrequency, updateUserAutoPublish, type Frequency } from "@/app/[locale]/(admin)/admin/users/actions";
+import {
+  updateClientFrequency,
+  updateUserAutoPublish,
+  updateClientPostLocale,
+  type Frequency,
+  type PostLocale,
+} from "@/app/[locale]/(admin)/admin/users/actions";
 
 type Settings = {
   id: string;
@@ -11,6 +17,7 @@ type Settings = {
   google_access_token: string | null;
   google_connected_at: string | null;
   frequency: Frequency;
+  post_locale: PostLocale;
   webhook_url: string | null;
   auto_publish: boolean;
 };
@@ -29,6 +36,11 @@ export function AccountSettingsCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [postLocale, setPostLocale] = useState<PostLocale>(settings?.post_locale ?? "en");
+  const [localeSaved, setLocaleSaved] = useState(false);
+  const [localeSaving, setLocaleSaving] = useState(false);
+  const [localeError, setLocaleError] = useState<string | null>(null);
+
   const [autoPublish, setAutoPublish] = useState(settings?.auto_publish ?? false);
   const [autoSaved, setAutoSaved] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
@@ -46,6 +58,7 @@ export function AccountSettingsCard({
   const googleConnected = !!settings.google_connected_at;
   const hasWebhook = !!settings.webhook_url;
   const changed = frequency !== settings.frequency;
+  const localeChanged = postLocale !== settings.post_locale;
 
   async function handleSave() {
     setSaving(true);
@@ -56,6 +69,17 @@ export function AccountSettingsCard({
     if (result.error) { setError(result.error); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  }
+
+  async function handleLocaleSave() {
+    setLocaleSaving(true);
+    setLocaleError(null);
+    setLocaleSaved(false);
+    const result = await updateClientPostLocale(userId, postLocale);
+    setLocaleSaving(false);
+    if (result.error) { setLocaleError(result.error); return; }
+    setLocaleSaved(true);
+    setTimeout(() => setLocaleSaved(false), 3000);
   }
 
   async function handleAutoPublishToggle() {
@@ -204,6 +228,65 @@ export function AccountSettingsCard({
           {saved && (
             <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
           )}
+        </div>
+
+        {/* Post language */}
+        <div>
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {t("postLanguage")}
+          </p>
+          <p className="text-xs mb-3" style={{ color: "var(--text-faint)" }}>
+            {t("postLanguageDescription")}
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {(
+              [
+                { value: "en" as PostLocale, label: "English", flag: "🇬🇧" },
+                { value: "pt" as PostLocale, label: "Português", flag: "🇵🇹" },
+                { value: "fr" as PostLocale, label: "Français", flag: "🇫🇷" },
+              ] as const
+            ).map((opt) => {
+              const active = postLocale === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setPostLocale(opt.value)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                  style={{
+                    background: active ? "rgba(124,92,252,0.12)" : "var(--surface-raised)",
+                    border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
+                    color: active ? "var(--accent)" : "var(--text)",
+                    boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
+                  }}
+                >
+                  <span>{opt.flag}</span>
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          {localeError && <p className="text-sm mt-2" style={{ color: "var(--danger)" }}>{localeError}</p>}
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={handleLocaleSave}
+              disabled={localeSaving || !localeChanged}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                boxShadow: (!localeSaving && localeChanged) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+              }}
+            >
+              {localeSaving ? t("saving") : t("saveChanges")}
+            </button>
+            {localeSaved && (
+              <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
+            )}
+          </div>
         </div>
 
         <div style={{ height: "1px", background: "var(--border)" }} />

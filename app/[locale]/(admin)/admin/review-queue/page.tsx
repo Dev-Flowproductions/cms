@@ -105,12 +105,10 @@ export default async function ReviewQueuePage() {
                 return (
                   <tr
                     key={post.id}
+                    className="transition-colors hover:bg-[var(--surface-raised)]"
                     style={{
                       borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-                      transition: "background 0.15s",
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--surface-raised)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
                   >
                     <td className="px-6 py-4">
                       <Link href={`/admin/posts/${post.id}`}>

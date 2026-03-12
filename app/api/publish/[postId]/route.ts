@@ -76,39 +76,63 @@ export async function POST(
     coverImageUrl = urlData?.publicUrl ?? null;
   }
 
-  // Determine primary localization (prefer 'pt', then 'en', then first)
   const localizations = post.post_localizations ?? [];
+
+  // Clean content_md for each localization (replace/remove cover placeholder, strip duplicate H1)
+  const COVER_PLACEHOLDER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
+  const cleanedLocalizations = localizations.map((l: {
+    locale: string;
+    title: string | null;
+    excerpt: string | null;
+    content_md: string | null;
+    seo_title: string | null;
+    seo_description: string | null;
+    jsonld: unknown;
+  }) => ({
+    ...l,
+    content_md: (l.content_md ?? "")
+      .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+      .trim(),
+  }));
+
+  // Prefer 'pt' as primary, then 'en', then first available
   const primary =
-    localizations.find((l: { locale: string }) => l.locale === "pt") ??
-    localizations.find((l: { locale: string }) => l.locale === "en") ??
-    localizations[0];
+    cleanedLocalizations.find((l) => l.locale === "pt") ??
+    cleanedLocalizations.find((l) => l.locale === "en") ??
+    cleanedLocalizations[0];
 
   if (!primary) {
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
-
-  // Clean up the content before sending:
-  // 1. Replace the cover image placeholder with the actual URL (or remove the line)
-  // 2. Remove the redundant H1 that duplicates the title field
-  const COVER_PLACEHOLDER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
-  const cleanContent = (primary.content_md ?? "")
-    .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
-    .trim();
 
   const payload = {
     event: "cms.post.published",
     post: {
       id: post.id,
       slug: post.slug,
+      cover_image_url: coverImageUrl,
+      // Primary locale fields (flat, for backward compatibility)
       title: primary.title,
       excerpt: primary.excerpt,
-      content_md: cleanContent,
+      content_md: primary.content_md,
       seo_title: primary.seo_title,
       meta_description: primary.seo_description,
       json_ld: primary.jsonld ?? null,
-      cover_image_url: coverImageUrl,
       locale: primary.locale,
-      all_localizations: localizations,
+      // All translations keyed by locale code, for multilingual sites
+      translations: Object.fromEntries(
+        cleanedLocalizations.map((l) => [
+          l.locale,
+          {
+            title: l.title,
+            excerpt: l.excerpt,
+            content_md: l.content_md,
+            seo_title: l.seo_title,
+            meta_description: l.seo_description,
+            json_ld: l.jsonld ?? null,
+          },
+        ])
+      ),
     },
     timestamp: new Date().toISOString(),
   };

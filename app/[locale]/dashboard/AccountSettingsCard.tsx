@@ -6,9 +6,7 @@ import { useLocale } from "next-intl";
 import {
   updateClientFrequency,
   updateUserAutoPublish,
-  updateClientPostLocale,
   type Frequency,
-  type PostLocale,
 } from "@/app/[locale]/(admin)/admin/users/actions";
 
 type Settings = {
@@ -17,16 +15,9 @@ type Settings = {
   google_access_token: string | null;
   google_connected_at: string | null;
   frequency: Frequency;
-  post_locale: PostLocale;
   webhook_url: string | null;
   auto_publish: boolean;
 };
-
-const LOCALE_OPTIONS: { value: PostLocale; label: string; flag: string }[] = [
-  { value: "en", label: "English", flag: "🇬🇧" },
-  { value: "pt", label: "Português", flag: "🇵🇹" },
-  { value: "fr", label: "Français", flag: "🇫🇷" },
-];
 
 export function AccountSettingsCard({
   userId,
@@ -39,7 +30,6 @@ export function AccountSettingsCard({
   const locale = useLocale();
 
   const [frequency, setFrequency] = useState<Frequency>(settings?.frequency ?? "weekly");
-  const [postLocale, setPostLocale] = useState<PostLocale>(settings?.post_locale ?? "en");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,18 +50,15 @@ export function AccountSettingsCard({
 
   const googleConnected = !!settings.google_connected_at;
   const hasWebhook = !!settings.webhook_url;
-  const changed = frequency !== settings.frequency || postLocale !== settings.post_locale;
+  const changed = frequency !== settings.frequency;
 
   async function handleSave() {
     setSaving(true);
     setError(null);
     setSaved(false);
-    const [r1, r2] = await Promise.all([
-      updateClientFrequency(userId, frequency),
-      updateClientPostLocale(userId, postLocale),
-    ]);
+    const result = await updateClientFrequency(userId, frequency);
     setSaving(false);
-    if (r1.error || r2.error) { setError(r1.error ?? r2.error ?? "Error"); return; }
+    if (result.error) { setError(result.error); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -171,7 +158,7 @@ export function AccountSettingsCard({
           </a>
         </div>
 
-        {/* Post settings group — frequency + language, single save */}
+        {/* Post frequency */}
         <div
           className="rounded-xl p-5 space-y-6"
           style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
@@ -204,42 +191,6 @@ export function AccountSettingsCard({
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                       {opt.sublabel}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ height: "1px", background: "var(--border)" }} />
-
-          <div>
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-2"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {t("postLanguage")}
-            </p>
-            <p className="text-xs mb-3" style={{ color: "var(--text-faint)" }}>
-              {t("postLanguageDescription")}
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {LOCALE_OPTIONS.map((opt) => {
-                const active = postLocale === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPostLocale(opt.value)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-                    style={{
-                      background: active ? "rgba(124,92,252,0.12)" : "var(--surface)",
-                      border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                      color: active ? "var(--accent)" : "var(--text)",
-                      boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
-                    }}
-                  >
-                    <span>{opt.flag}</span>
-                    {opt.label}
                   </button>
                 );
               })}

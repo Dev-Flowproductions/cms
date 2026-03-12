@@ -81,6 +81,14 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
+  // Clean up the content before sending:
+  // 1. Replace the cover image placeholder with the actual URL (or remove the line)
+  // 2. Remove the redundant H1 that duplicates the title field
+  const COVER_PLACEHOLDER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
+  const cleanContent = (primary.content_md ?? "")
+    .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+    .trim();
+
   const payload = {
     event: "cms.post.published",
     post: {
@@ -88,7 +96,7 @@ export async function POST(
       slug: post.slug,
       title: primary.title,
       excerpt: primary.excerpt,
-      content_md: primary.content_md,
+      content_md: cleanContent,
       seo_title: primary.seo_title,
       meta_description: primary.seo_description,
       json_ld: primary.jsonld ?? null,

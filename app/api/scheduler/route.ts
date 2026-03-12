@@ -294,13 +294,14 @@ async function generatePostForClient(
     const coverPrompt =
       `Professional hero cover image for a blog post titled: "${titleForCoverPrompt}". ` +
       `Topic: ${focusKeyword}. ` +
-      `Wide landscape, 16:9 aspect ratio. Keep the main subject centred — avoid placing key elements near the top or bottom edges, as the image will be cropped to 1200×630 for display. ` +
+      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (≈1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
+      `Keep the main subject centred both horizontally and vertically — safe zone is the central 60% of the frame. ` +
       `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
     const imgResponse = await imagenAI.models.generateImages({
       model: "imagen-4.0-generate-001",
       prompt: coverPrompt,
-      config: { numberOfImages: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" },
+      config: { numberOfImages: 1, aspectRatio: "4:3", outputMimeType: "image/jpeg" },
     });
 
     const img = imgResponse.generatedImages?.[0]?.image;

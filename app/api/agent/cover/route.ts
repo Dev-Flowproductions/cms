@@ -31,7 +31,8 @@ export async function POST(request: Request) {
   try {
     const imagePrompt =
       `Professional hero cover image for a blog post about: "${query}". ` +
-      `Wide landscape, 16:9 aspect ratio. Keep the main subject centred — avoid placing key elements near the top or bottom edges, as the image will be cropped to 1200×630 for display. ` +
+      `Tall wide format, 4:3 aspect ratio. The image fills a full-width hero panel: 82vh tall on desktop (≈1574px at 1920px wide), 62vh tall on mobile. Use object-cover crop. ` +
+      `Keep the main subject centred both horizontally and vertically — safe zone is the central 60% of the frame. ` +
       `High quality, modern, editorial photography style. Clean composition. No text, no overlays, no watermarks, no borders.`;
 
     const response = await genai.models.generateImages({
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       prompt: imagePrompt,
       config: {
         numberOfImages: 1,
-        aspectRatio: "16:9",
+        aspectRatio: "4:3",
         outputMimeType: "image/jpeg",
       },
     });
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     // ── Picsum fallback ────────────────────────────────────────────────────
     console.warn("[cover] Imagen failed, falling back to Picsum:", imgErr);
     const seed = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const fallbackUrl = `https://picsum.photos/seed/${seed}/1200/630`;
+    const fallbackUrl = `https://picsum.photos/seed/${seed}/1920/1440`;
     const imgRes = await fetch(fallbackUrl, { redirect: "follow" });
     if (!imgRes.ok) return NextResponse.json({ error: "Failed to download fallback image" }, { status: 502 });
     imageBuffer = await imgRes.arrayBuffer();

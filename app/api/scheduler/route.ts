@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 
-const MODEL = "gemini-3.1-flash-lite";
+const MODEL = "gemini-3.1-flash-lite-preview";
 
 /**
  * Frequency â†’ minimum interval in milliseconds before a new post should be generated.
@@ -361,25 +361,24 @@ async function generatePostForClient(
       `High quality, cinematic lighting, sharp focus, photorealistic. ` +
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
-    const imgResponse = await imagenAI.models.generateImages({
+    const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
-      prompt: coverPrompt,
-      config: { numberOfImages: 1, aspectRatio: "4:3", outputMimeType: "image/jpeg" },
+      contents: coverPrompt,
     });
 
-    const img = imgResponse.generatedImages?.[0]?.image;
-    if (img?.imageBytes) {
-      const binaryStr = atob(img.imageBytes as unknown as string);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    const parts = imgResponse.candidates?.[0]?.content?.parts ?? [];
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        const buffer = Buffer.from(part.inlineData.data, "base64");
+        const coverPath = `${post.id}/cover-${Date.now()}.jpg`;
+        const { error: uploadErr } = await admin.storage
+          .from("covers")
+          .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
 
-      const coverPath = `${post.id}/cover-${Date.now()}.jpg`;
-      const { error: uploadErr } = await admin.storage
-        .from("covers")
-        .upload(coverPath, bytes.buffer, { contentType: "image/jpeg", upsert: true });
-
-      if (!uploadErr) {
-        await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
+        if (!uploadErr) {
+          await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
+        }
+        break;
       }
     }
   } catch (coverErr) {

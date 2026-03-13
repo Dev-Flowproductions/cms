@@ -7,7 +7,7 @@ import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODEL = "gemini-3.1-flash-lite";
+const MODEL = "gemini-3.1-flash-lite-preview";
 
 export async function POST(request: Request) {
   // Auth
@@ -213,27 +213,26 @@ export async function POST(request: Request) {
         `Wide landscape format, 16:9 ratio. High quality, modern, editorial photography style. ` +
         `Clean composition, no text overlays, no watermarks.`;
 
-      const imgResponse = await imagenAI.models.generateImages({
+      const imgResponse = await imagenAI.models.generateContent({
         model: "gemini-3.1-flash-image-preview",
-        prompt: coverPrompt,
-        config: { numberOfImages: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" },
+        contents: coverPrompt,
       });
 
-      const img = imgResponse.generatedImages?.[0]?.image;
-      if (img?.imageBytes) {
-        const binaryStr = atob(img.imageBytes as unknown as string);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      const parts = imgResponse.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const buffer = Buffer.from(part.inlineData.data, "base64");
+          const coverPath = `${post_id}/cover-${Date.now()}.jpg`;
+          const { error: uploadErr } = await admin.storage
+            .from("covers")
+            .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
 
-        const coverPath = `${post_id}/cover-${Date.now()}.jpg`;
-        const { error: uploadErr } = await admin.storage
-          .from("covers")
-          .upload(coverPath, bytes.buffer, { contentType: "image/jpeg", upsert: true });
-
-        if (!uploadErr) {
-          await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post_id);
-          const { data: urlData } = admin.storage.from("covers").getPublicUrl(coverPath);
-          coverPublicUrl = urlData.publicUrl;
+          if (!uploadErr) {
+            await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post_id);
+            const { data: urlData } = admin.storage.from("covers").getPublicUrl(coverPath);
+            coverPublicUrl = urlData.publicUrl;
+          }
+          break;
         }
       }
     } catch (coverErr) {

@@ -7,7 +7,7 @@ import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODEL = "gemini-3.1-pro-preview";
+const MODEL = "gemini-3.1-flash-lite";
 
 export async function POST(request: Request) {
   // Auth
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
         `Clean composition, no text overlays, no watermarks.`;
 
       const imgResponse = await imagenAI.models.generateImages({
-        model: "imagen-4.0-generate-001",
+        model: "gemini-3.1-flash-image-preview",
         prompt: coverPrompt,
         config: { numberOfImages: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" },
       });

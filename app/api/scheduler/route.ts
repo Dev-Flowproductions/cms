@@ -1,10 +1,10 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 
-const MODEL = "gemini-3.1-pro-preview";
+const MODEL = "gemini-3.1-flash-lite";
 
 /**
  * Frequency â†’ minimum interval in milliseconds before a new post should be generated.
@@ -362,7 +362,7 @@ async function generatePostForClient(
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
     const imgResponse = await imagenAI.models.generateImages({
-      model: "imagen-4.0-generate-001",
+      model: "gemini-3.1-flash-image-preview",
       prompt: coverPrompt,
       config: { numberOfImages: 1, aspectRatio: "4:3", outputMimeType: "image/jpeg" },
     });

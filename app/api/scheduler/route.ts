@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
@@ -194,124 +194,243 @@ async function generatePostForClient(
     systemInstruction: SYSTEM_INSTRUCTIONS,
   });
 
-  // â”€â”€ Generate content for each locale sequentially â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // PT is generated first so we can derive the slug from its title.
+  // ── STEP 1: Generate primary content in PT ──────────────────────────────────
   let slug = tempSlug;
   let titleForCoverPrompt = focusKeyword;
   let coverImageDescription: string | null = null;
-  let firstRunId: string | undefined;
+  let primaryContent: GeneratedContent | null = null;
 
-  for (const locale of ALL_LOCALES) {
-    const postCtx: PostContext = {
-      slug,
-      content_type: "hero",
-      locale,
-      focus_keyword: focusKeyword,
-      publication_date: publicationDate,
-      existing_title: null,
-      existing_draft: null,
-    };
+  const postCtx: PostContext = {
+    slug,
+    content_type: "hero",
+    locale: primaryLocale,
+    focus_keyword: focusKeyword,
+    publication_date: publicationDate,
+    existing_title: null,
+    existing_draft: null,
+  };
 
-    const { data: run } = await admin
+  const { data: primaryRun } = await admin
+    .from("agent_runs")
+    .insert({ post_id: post.id, locale: primaryLocale, status: "running", model: MODEL, input: { postCtx, clientCtx } })
+    .select("id")
+    .single();
+  const primaryRunId = primaryRun?.id;
+
+  const primaryPrompt = buildPrompt(postCtx, clientCtx);
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await geminiModel.generateContent(primaryPrompt);
+      const text = result.response.text().trim();
+      const clean = text
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+      primaryContent = JSON.parse(clean);
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for PT (${client.domain}): ${msg}`);
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, 5_000 * attempt));
+      }
+    }
+  }
+
+  if (!primaryContent) {
+    if (primaryRunId) await admin.from("agent_runs").update({ status: "failed", error: "Gemini failed after 3 attempts" }).eq("id", primaryRunId);
+    throw new Error(`Primary content generation failed for ${client.domain}`);
+  }
+
+  // Extract metadata from primary content
+  titleForCoverPrompt = primaryContent.title;
+  if (primaryContent.cover_image_description) coverImageDescription = primaryContent.cover_image_description;
+
+  // Derive slug from primary content
+  const rawSlug = (primaryContent.slug && primaryContent.slug.trim())
+    ? primaryContent.slug
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/-$/, "")
+        .slice(0, 60)
+    : primaryContent.title
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 60)
+        .replace(/-$/, "");
+
+  // Collision check
+  let candidate = rawSlug;
+  let counter = 2;
+  while (true) {
+    const { data: existing } = await admin
+      .from("posts")
+      .select("id")
+      .eq("slug", candidate)
+      .neq("id", post.id)
+      .maybeSingle();
+    if (!existing) break;
+    candidate = `${rawSlug}-${counter}`;
+    counter++;
+  }
+  slug = candidate;
+  await admin.from("posts").update({ slug }).eq("id", post.id);
+
+  // Save PT localization
+  const ptJsonld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "headline": primaryContent.title,
+        "description": primaryContent.seo_description,
+        "keywords": primaryContent.focus_keyword,
+        "datePublished": new Date().toISOString(),
+        "inLanguage": "pt",
+        "author": publisherEntity,
+        "publisher": publisherEntity,
+        "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/pt/blog/${slug}` },
+      },
+      ...(primaryContent.faq_blocks?.length > 0 ? [{
+        "@type": "FAQPage",
+        "mainEntity": primaryContent.faq_blocks.map((f) => ({
+          "@type": "Question",
+          "name": f.question,
+          "acceptedAnswer": { "@type": "Answer", "text": f.answer },
+        })),
+      }] : []),
+    ],
+  };
+
+  await admin.from("post_localizations").upsert(
+    {
+      post_id: post.id,
+      locale: "pt",
+      title: primaryContent.title,
+      excerpt: primaryContent.excerpt,
+      content_md: primaryContent.content_md,
+      seo_title: primaryContent.seo_title,
+      seo_description: primaryContent.seo_description,
+      focus_keyword: primaryContent.focus_keyword,
+      faq_blocks: primaryContent.faq_blocks,
+      jsonld: ptJsonld,
+      seo_score: primaryContent.seo_score ?? null,
+    },
+    { onConflict: "post_id,locale" }
+  );
+
+  if (primaryRunId) await admin.from("agent_runs").update({ status: "done", output: primaryContent }).eq("id", primaryRunId);
+
+  // ── STEP 2: Translate to other locales (EN, FR) ─────────────────────────────
+  const translationLocales = ALL_LOCALES.filter((l) => l !== primaryLocale);
+
+  for (const locale of translationLocales) {
+    await new Promise((r) => setTimeout(r, 2_000)); // Rate limit pause
+
+    const { data: transRun } = await admin
       .from("agent_runs")
-      .insert({ post_id: post.id, locale, status: "running", model: MODEL, input: { postCtx, clientCtx } })
+      .insert({ post_id: post.id, locale, status: "running", model: MODEL, input: { action: "translate", from: "pt", to: locale } })
       .select("id")
       .single();
-    const runId = run?.id;
-    if (locale === primaryLocale) firstRunId = runId;
+    const transRunId = transRun?.id;
 
-    const prompt = buildPrompt(postCtx, clientCtx);
-    let generated: GeneratedContent | null = null;
-    const MAX_RETRIES = 3;
+    const langName = locale === "en" ? "English" : locale === "fr" ? "French" : locale;
+
+    const translationPrompt = `You are a professional translator. Translate the following blog post from Portuguese to ${langName}.
+
+RULES:
+- Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
+- Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
+- Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
+- Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
+- The cover image placeholder ![Cover image]({COVER_IMAGE_PLACEHOLDER}) must remain exactly as-is.
+- Do NOT add, remove, or change any facts, statistics, or claims — only translate.
+- Use natural, fluent ${langName} — not word-for-word translation.
+
+ORIGINAL CONTENT (Portuguese):
+
+Title: ${primaryContent.title}
+Excerpt: ${primaryContent.excerpt}
+SEO Title: ${primaryContent.seo_title}
+SEO Description: ${primaryContent.seo_description}
+Focus Keyword: ${primaryContent.focus_keyword}
+
+Content (Markdown):
+${primaryContent.content_md}
+
+FAQ Blocks:
+${primaryContent.faq_blocks.map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
+
+Respond with a single valid JSON object — no markdown fences, no preamble:
+{
+  "title": "Translated title",
+  "excerpt": "Translated excerpt",
+  "seo_title": "Translated SEO title",
+  "seo_description": "Translated SEO description",
+  "focus_keyword": "Translated focus keyword",
+  "content_md": "Full translated markdown content",
+  "faq_blocks": [{ "question": "Translated question", "answer": "Translated answer" }]
+}`;
+
+    let translated: GeneratedContent | null = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const result = await geminiModel.generateContent(prompt);
+        const result = await geminiModel.generateContent(translationPrompt);
         const text = result.response.text().trim();
         const clean = text
           .replace(/^```json\s*/i, "")
           .replace(/^```\s*/i, "")
           .replace(/```\s*$/i, "")
           .trim();
-        generated = JSON.parse(clean);
+        translated = JSON.parse(clean);
         break;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for locale ${locale} (${client.domain}): ${msg}`);
+        console.warn(`[scheduler] Translation attempt ${attempt}/${MAX_RETRIES} failed for ${locale} (${client.domain}): ${msg}`);
         if (attempt < MAX_RETRIES) {
-          await new Promise((r) => setTimeout(r, 5_000 * attempt));
+          await new Promise((r) => setTimeout(r, 3_000 * attempt));
         }
       }
     }
 
-    if (!generated) {
-      if (runId) await admin.from("agent_runs").update({ status: "failed", error: "Gemini failed after 3 attempts" }).eq("id", runId);
-      console.warn(`[scheduler] Giving up on locale ${locale} for ${client.domain} after ${MAX_RETRIES} attempts`);
+    if (!translated) {
+      if (transRunId) await admin.from("agent_runs").update({ status: "failed", error: "Translation failed" }).eq("id", transRunId);
+      console.warn(`[scheduler] Skipping ${locale} translation for ${client.domain}`);
       continue;
     }
 
-    if (locale === primaryLocale) {
-      titleForCoverPrompt = generated.title;
-      if (generated.cover_image_description) coverImageDescription = generated.cover_image_description;
+    // Carry over SEO scores from primary content
+    translated.seo_score = primaryContent.seo_score;
 
-      // Prefer Gemini's suggested slug (already 1-3 keywords), fall back to title derivation
-      const rawSlug = (generated.slug && generated.slug.trim())
-        ? generated.slug
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s-]/g, "")
-            .trim()
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/-$/, "")
-            .slice(0, 60)
-        : generated.title
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s-]/g, "")
-            .trim()
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-")
-            .slice(0, 60)
-            .replace(/-$/, "");
-
-      // Collision check: if slug exists, append -2, -3, etc.
-      let candidate = rawSlug;
-      let counter = 2;
-      while (true) {
-        const { data: existing } = await admin
-          .from("posts")
-          .select("id")
-          .eq("slug", candidate)
-          .neq("id", post.id)
-          .maybeSingle();
-        if (!existing) break;
-        candidate = `${rawSlug}-${counter}`;
-        counter++;
-      }
-      slug = candidate;
-
-      // Update the post row with the real slug
-      await admin.from("posts").update({ slug }).eq("id", post.id);
-    }
-
-    const jsonld = {
+    const localeJsonld = {
       "@context": "https://schema.org",
       "@graph": [
         {
           "@type": "BlogPosting",
-          "headline": generated.title,
-          "description": generated.seo_description,
-          "keywords": generated.focus_keyword,
+          "headline": translated.title,
+          "description": translated.seo_description,
+          "keywords": translated.focus_keyword,
           "datePublished": new Date().toISOString(),
           "inLanguage": locale,
           "author": publisherEntity,
           "publisher": publisherEntity,
           "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/${locale}/blog/${slug}` },
         },
-        ...(generated.faq_blocks?.length > 0 ? [{
+        ...(translated.faq_blocks?.length > 0 ? [{
           "@type": "FAQPage",
-          "mainEntity": generated.faq_blocks.map((f) => ({
+          "mainEntity": translated.faq_blocks.map((f) => ({
             "@type": "Question",
             "name": f.question,
             "acceptedAnswer": { "@type": "Answer", "text": f.answer },
@@ -324,28 +443,23 @@ async function generatePostForClient(
       {
         post_id: post.id,
         locale,
-        title: generated.title,
-        excerpt: generated.excerpt,
-        content_md: generated.content_md,
-        seo_title: generated.seo_title,
-        seo_description: generated.seo_description,
-        focus_keyword: generated.focus_keyword,
-        faq_blocks: generated.faq_blocks,
-        jsonld,
-        seo_score: generated.seo_score ?? null,
+        title: translated.title,
+        excerpt: translated.excerpt,
+        content_md: translated.content_md,
+        seo_title: translated.seo_title,
+        seo_description: translated.seo_description,
+        focus_keyword: translated.focus_keyword,
+        faq_blocks: translated.faq_blocks,
+        jsonld: localeJsonld,
+        seo_score: translated.seo_score ?? null,
       },
       { onConflict: "post_id,locale" }
     );
 
-    if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
-
-    // Small pause between locale generations to respect rate limits
-    if (locale !== ALL_LOCALES[ALL_LOCALES.length - 1]) {
-      await new Promise((r) => setTimeout(r, 3_000));
-    }
+    if (transRunId) await admin.from("agent_runs").update({ status: "done", output: translated }).eq("id", transRunId);
   }
 
-  void firstRunId; // suppress unused warning
+
 
   // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {

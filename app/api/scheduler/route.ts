@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -117,6 +117,7 @@ type SupportedLocale = (typeof ALL_LOCALES)[number];
 type GeneratedContent = {
   title: string;
   slug?: string;
+  core_argument?: string;
   cover_image_description?: string;
   seo_title: string;
   seo_description: string;
@@ -138,6 +139,9 @@ async function generatePostForClient(
     auto_publish?: boolean | null;
     webhook_url?: string | null;
     post_locale?: string | null;
+    brand_name?: string | null;
+    brand_tone?: string | null;
+    brand_book?: import("@/lib/brand-book/types").BrandBook | null;
   },
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
@@ -150,9 +154,8 @@ async function generatePostForClient(
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());
 
-  // Derive a focus keyword from the domain
-  const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
-  const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
+  // Use brand name if set, otherwise domain as topic hint (Gemini will generate the actual focus keyword)
+  const topicHint = client.brand_name ?? client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "");
 
   // Use a temporary placeholder slug â€” will be replaced with the title-derived slug after PT generation
   const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
@@ -175,18 +178,22 @@ async function generatePostForClient(
   // Build shared context
   const clientCtx: ClientContext = {
     domain: client.domain,
+    brandName: client.brand_name ?? null,
+    brandTone: client.brand_tone ?? null,
+    brandBook: client.brand_book ?? null,
     websiteSummary: null,
-    industry: null,
+    industry: client.brand_book?.industry ?? null,
     gaTopPages: null,
     gaTopKeywords: null,
     searchConsoleQueries: null,
   };
 
+  const brandName = client.brand_book?.brandName ?? client.brand_name ?? client.domain;
   const publisherEntity = {
     "@type": "Organization",
-    "name": "Flow Productions",
+    "name": brandName,
     "url": `https://${client.domain}`,
-    "logo": { "@type": "ImageObject", "url": "https://flowproductions.pt/logo.png" },
+    "logo": { "@type": "ImageObject", "url": `https://${client.domain}/logo.png` },
   };
 
   const geminiModel = genAI.getGenerativeModel({
@@ -196,7 +203,7 @@ async function generatePostForClient(
 
   // ── STEP 1: Generate primary content in PT ──────────────────────────────────
   let slug = tempSlug;
-  let titleForCoverPrompt = focusKeyword;
+  let titleForCoverPrompt = topicHint;
   let coverImageDescription: string | null = null;
   let primaryContent: GeneratedContent | null = null;
 
@@ -204,7 +211,7 @@ async function generatePostForClient(
     slug,
     content_type: "hero",
     locale: primaryLocale,
-    focus_keyword: focusKeyword,
+    focus_keyword: topicHint, // Just a hint — Gemini will generate the actual focus keyword
     publication_date: publicationDate,
     existing_title: null,
     existing_draft: null,
@@ -467,7 +474,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // but wrap it with strict negative constraints to prevent text/code/UI hallucinations.
     const coverSubject = coverImageDescription
       ? coverImageDescription
-      : `A professional scene related to "${titleForCoverPrompt}" in the ${focusKeyword} industry`;
+      : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
 
     const coverPrompt =
       `Editorial photography: ${coverSubject}. ` +

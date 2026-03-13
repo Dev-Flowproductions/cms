@@ -70,6 +70,8 @@ export async function createUser(formData: FormData) {
   return { success: true, userId };
 }
 
+import type { BrandBook } from "@/lib/brand-book/types";
+
 export type ClientRow = {
   id: string;
   user_id: string;
@@ -84,6 +86,9 @@ export type ClientRow = {
   webhook_url: string | null;
   webhook_secret: string | null;
   auto_publish: boolean;
+  brand_name: string | null;
+  brand_tone: string | null;
+  brand_book: BrandBook | null;
   profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
   email?: string;
 };
@@ -94,7 +99,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -213,6 +218,53 @@ export async function updateClientPostLocale(userId: string, post_locale: PostLo
   const { error } = await supabase
     .from("clients")
     .update({ post_locale, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientBrand(
+  userId: string,
+  data: { brand_name: string | null; brand_tone: string | null }
+) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function regenerateBrandBook(userId: string, domain: string) {
+  await requireAdmin();
+  
+  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/brand-book`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, domain }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    return { error: data.error ?? "Failed to regenerate brand book" };
+  }
+
+  return { success: true };
+}
+
+export async function updateBrandBook(userId: string, brandBook: BrandBook) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clients")
+    .update({
+      brand_book: brandBook,
+      brand_name: brandBook.brandName,
+      brand_tone: brandBook.voiceAttributes.join(", "),
+      updated_at: new Date().toISOString(),
+    })
     .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };

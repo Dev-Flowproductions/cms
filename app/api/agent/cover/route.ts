@@ -23,9 +23,9 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  let imageBuffer: ArrayBuffer;
-  let contentType = "image/png";
-  let source: string;
+  let imageBuffer!: ArrayBuffer | Buffer;
+  let contentType = "image/jpeg";
+  let source = "gemini";
 
   // ── Imagen via Gemini API ──────────────────────────────────────────────────
   try {
@@ -36,25 +36,23 @@ export async function POST(request: Request) {
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
 
-    const response = await genai.models.generateImages({
+    const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
-      prompt: imagePrompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: "4:3",
-        outputMimeType: "image/jpeg",
-      },
+      contents: imagePrompt,
     });
 
-    const img = response.generatedImages?.[0]?.image;
-    if (!img?.imageBytes) throw new Error("No image bytes returned");
-
-    const binaryStr = atob(img.imageBytes as unknown as string);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-    imageBuffer = bytes.buffer;
-    contentType = "image/jpeg";
-    source = "imagen";
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    let foundImage = false;
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        imageBuffer = Buffer.from(part.inlineData.data, "base64");
+        contentType = "image/jpeg";
+        source = "gemini";
+        foundImage = true;
+        break;
+      }
+    }
+    if (!foundImage) throw new Error("No image returned from Gemini");
 
   } catch (imgErr) {
     // ── Picsum fallback ────────────────────────────────────────────────────

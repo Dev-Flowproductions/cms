@@ -154,15 +154,17 @@ export function PostsListClient({
                     <td className="px-4 py-3 text-xs" style={{ color: "var(--text-faint)" }}>
                       {new Date(post.updated_at).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-right">
                       <Link href={`/admin/posts/${post.id}`}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap hover:opacity-80"
                         style={{
-                          background: "var(--surface-raised)",
-                          color: "var(--accent)",
-                          border: "1px solid var(--border)",
+                          background: "var(--accent)",
+                          color: "white",
                         }}
                       >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
                         {t("editPost")}
                       </Link>
                     </td>

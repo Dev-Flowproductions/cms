@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -117,6 +117,7 @@ type SupportedLocale = (typeof ALL_LOCALES)[number];
 type GeneratedContent = {
   title: string;
   slug?: string;
+  core_argument?: string;
   cover_image_description?: string;
   seo_title: string;
   seo_description: string;
@@ -138,6 +139,15 @@ async function generatePostForClient(
     auto_publish?: boolean | null;
     webhook_url?: string | null;
     post_locale?: string | null;
+    brand_name?: string | null;
+    brand_tone?: string | null;
+    brand_book?: import("@/lib/brand-book/types").BrandBook | null;
+    company_name?: string | null;
+    logo_url?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    font_style?: string | null;
+    brand_voice?: string | null;
   },
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
@@ -150,9 +160,8 @@ async function generatePostForClient(
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());
 
-  // Derive a focus keyword from the domain
-  const domainSlug = client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "").replace(/[^a-z0-9]/gi, " ").trim();
-  const focusKeyword = `${domainSlug} ${new Date().getFullYear()}`.toLowerCase();
+  // Use brand name if set, otherwise domain as topic hint (Gemini will generate the actual focus keyword)
+  const topicHint = client.brand_name ?? client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "");
 
   // Use a temporary placeholder slug â€” will be replaced with the title-derived slug after PT generation
   const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
@@ -172,21 +181,35 @@ async function generatePostForClient(
 
   if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
 
-  // Build shared context
+  // Build shared context with manual brand info
+  const manualBrand = client.company_name ? {
+    companyName: client.company_name,
+    logoUrl: client.logo_url ?? null,
+    primaryColor: client.primary_color ?? "#7c5cfc",
+    secondaryColor: client.secondary_color ?? "#22d3a0",
+    fontStyle: client.font_style ?? "modern",
+    brandVoice: client.brand_voice ?? "professional",
+  } : null;
+
   const clientCtx: ClientContext = {
     domain: client.domain,
+    brandName: client.company_name ?? client.brand_name ?? null,
+    brandTone: client.brand_voice ?? client.brand_tone ?? null,
+    brandBook: client.brand_book ?? null,
+    manualBrand,
     websiteSummary: null,
-    industry: null,
+    industry: client.brand_book?.industry ?? null,
     gaTopPages: null,
     gaTopKeywords: null,
     searchConsoleQueries: null,
   };
 
+  const brandName = client.brand_book?.brandName ?? client.brand_name ?? client.domain;
   const publisherEntity = {
     "@type": "Organization",
-    "name": "Flow Productions",
+    "name": brandName,
     "url": `https://${client.domain}`,
-    "logo": { "@type": "ImageObject", "url": "https://flowproductions.pt/logo.png" },
+    "logo": { "@type": "ImageObject", "url": `https://${client.domain}/logo.png` },
   };
 
   const geminiModel = genAI.getGenerativeModel({
@@ -196,7 +219,7 @@ async function generatePostForClient(
 
   // ── STEP 1: Generate primary content in PT ──────────────────────────────────
   let slug = tempSlug;
-  let titleForCoverPrompt = focusKeyword;
+  let titleForCoverPrompt = topicHint;
   let coverImageDescription: string | null = null;
   let primaryContent: GeneratedContent | null = null;
 
@@ -204,7 +227,7 @@ async function generatePostForClient(
     slug,
     content_type: "hero",
     locale: primaryLocale,
-    focus_keyword: focusKeyword,
+    focus_keyword: topicHint, // Just a hint — Gemini will generate the actual focus keyword
     publication_date: publicationDate,
     existing_title: null,
     existing_draft: null,
@@ -467,11 +490,18 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // but wrap it with strict negative constraints to prevent text/code/UI hallucinations.
     const coverSubject = coverImageDescription
       ? coverImageDescription
-      : `A professional scene related to "${titleForCoverPrompt}" in the ${focusKeyword} industry`;
+      : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
+
+    // Build brand-aware color/style guidance
+    const brandStyle = manualBrand
+      ? `Color palette suggestion: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}. ` +
+        `Visual style: ${manualBrand.fontStyle} aesthetic, ${manualBrand.brandVoice} mood. `
+      : "";
 
     const coverPrompt =
       `Editorial photography: ${coverSubject}. ` +
       `4:3 aspect ratio, full-width hero image. ` +
+      `${brandStyle}` +
       `High quality, cinematic lighting, sharp focus, photorealistic. ` +
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;

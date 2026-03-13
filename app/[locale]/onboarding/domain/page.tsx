@@ -1,46 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 
-async function saveDomain(domain: string) {
-  const res = await fetch("/api/onboarding/domain", {
+const FONT_STYLES = [
+  { id: "modern", label: "Modern & Clean" },
+  { id: "classic", label: "Classic & Elegant" },
+  { id: "bold", label: "Bold & Impactful" },
+  { id: "playful", label: "Playful & Creative" },
+  { id: "minimal", label: "Minimal & Simple" },
+];
+
+const BRAND_VOICES = [
+  { id: "professional", label: "Professional & Authoritative" },
+  { id: "friendly", label: "Friendly & Approachable" },
+  { id: "innovative", label: "Innovative & Forward-thinking" },
+  { id: "luxurious", label: "Luxurious & Premium" },
+  { id: "casual", label: "Casual & Conversational" },
+];
+
+async function saveBrandInfo(data: {
+  domain: string;
+  companyName: string;
+  logoFile: File | null;
+  primaryColor: string;
+  secondaryColor: string;
+  fontStyle: string;
+  brandVoice: string;
+}) {
+  const formData = new FormData();
+  formData.append("domain", data.domain);
+  formData.append("companyName", data.companyName);
+  formData.append("primaryColor", data.primaryColor);
+  formData.append("secondaryColor", data.secondaryColor);
+  formData.append("fontStyle", data.fontStyle);
+  formData.append("brandVoice", data.brandVoice);
+  if (data.logoFile) {
+    formData.append("logo", data.logoFile);
+  }
+
+  const res = await fetch("/api/onboarding/brand", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ domain }),
+    body: formData,
   });
   return res.json() as Promise<{ error?: string }>;
 }
 
-export default function OnboardingDomainPage() {
-  const t = useTranslations("onboarding.domain");
+export default function OnboardingBrandPage() {
+  const t = useTranslations("onboarding.brand");
   const tStep = useTranslations("onboarding");
   const locale = useLocale();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [domain, setDomain] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
+  const [secondaryColor, setSecondaryColor] = useState("#22d3a0");
+  const [fontStyle, setFontStyle] = useState("modern");
+  const [brandVoice, setBrandVoice] = useState("professional");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = domain.trim();
-    if (!trimmed) return;
+    if (!domain.trim() || !companyName.trim()) return;
+
     setLoading(true);
     setError(null);
-    const result = await saveDomain(trimmed);
+
+    const result = await saveBrandInfo({
+      domain: domain.trim(),
+      companyName: companyName.trim(),
+      logoFile,
+      primaryColor,
+      secondaryColor,
+      fontStyle,
+      brandVoice,
+    });
+
     setLoading(false);
+
     if (result.error) {
-      setError(result.error === "domain_taken" ? t("errorDomainTaken") : result.error);
+      if (result.error === "domain_taken") {
+        setError(t("errorDomainTaken"));
+      } else {
+        setError(result.error);
+      }
       return;
     }
+
     router.push(`/${locale}/onboarding/google`);
   }
 
+  const inputStyle = {
+    background: "var(--surface-raised)",
+    border: "1px solid var(--border)",
+    color: "var(--text)",
+  };
+
   return (
-    <div className="w-full max-w-md animate-slide-up">
-      {/* Step indicator */}
+    <div className="w-full max-w-xl animate-slide-up">
       <p
         className="text-xs font-semibold uppercase tracking-widest text-center mb-8"
         style={{ color: "var(--text-faint)" }}
@@ -48,7 +122,6 @@ export default function OnboardingDomainPage() {
         {tStep("stepOf", { current: 1, total: 2 })}
       </p>
 
-      {/* Card */}
       <div
         className="rounded-2xl p-8"
         style={{
@@ -70,41 +143,160 @@ export default function OnboardingDomainPage() {
           {t("subtitle")}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Domain & Company Name */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+                {t("domainLabel")}
+              </label>
+              <input
+                type="text"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                required
+                placeholder="yourdomain.com"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+                {t("companyNameLabel")}
+              </label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                placeholder="Your Company Name"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Logo Upload */}
           <div>
-            <label
-              htmlFor="domain"
-              className="block text-xs font-semibold uppercase tracking-widest mb-2"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {t("label")}
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              {t("logoLabel")}
             </label>
-            <input
-              id="domain"
-              type="text"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              required
-              placeholder={t("placeholder")}
-              autoComplete="off"
-              className="w-full px-4 py-3 rounded-xl text-sm transition-all"
-              style={{
-                background: "var(--surface-raised)",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            />
-            <p className="mt-1.5 text-xs" style={{ color: "var(--text-faint)" }}>
-              {t("hint")}
-            </p>
+            <div
+              className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:border-[var(--accent)]"
+              style={{ background: "var(--surface-raised)", border: "1px dashed var(--border)" }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo preview" className="w-16 h-16 object-contain rounded-lg" />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-lg flex items-center justify-center"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                  </svg>
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                  {logoPreview ? t("logoChange") : t("logoUpload")}
+                </p>
+                <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                  {t("logoHint")}
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Colors */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              {t("colorsLabel")}
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                  style={{ background: "transparent" }}
+                />
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{t("primaryColor")}</p>
+                  <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{primaryColor}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                <input
+                  type="color"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                  style={{ background: "transparent" }}
+                />
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{t("secondaryColor")}</p>
+                  <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{secondaryColor}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Font Style */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              {t("fontStyleLabel")}
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {FONT_STYLES.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() => setFontStyle(style.id)}
+                  className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    background: fontStyle === style.id ? "var(--accent)" : "var(--surface-raised)",
+                    color: fontStyle === style.id ? "white" : "var(--text)",
+                    border: `1px solid ${fontStyle === style.id ? "var(--accent)" : "var(--border)"}`,
+                  }}
+                >
+                  {style.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Brand Voice */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              {t("brandVoiceLabel")}
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {BRAND_VOICES.map((voice) => (
+                <button
+                  key={voice.id}
+                  type="button"
+                  onClick={() => setBrandVoice(voice.id)}
+                  className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left"
+                  style={{
+                    background: brandVoice === voice.id ? "var(--accent)" : "var(--surface-raised)",
+                    color: brandVoice === voice.id ? "white" : "var(--text)",
+                    border: `1px solid ${brandVoice === voice.id ? "var(--accent)" : "var(--border)"}`,
+                  }}
+                >
+                  {voice.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (
@@ -122,8 +314,8 @@ export default function OnboardingDomainPage() {
 
           <button
             type="submit"
-            disabled={loading || !domain.trim()}
-            className="w-full py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+            disabled={loading || !domain.trim() || !companyName.trim()}
+            className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             style={{
               background: "var(--accent)",
               color: "white",

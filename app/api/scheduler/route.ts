@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -142,6 +142,12 @@ async function generatePostForClient(
     brand_name?: string | null;
     brand_tone?: string | null;
     brand_book?: import("@/lib/brand-book/types").BrandBook | null;
+    company_name?: string | null;
+    logo_url?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    font_style?: string | null;
+    brand_voice?: string | null;
   },
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
@@ -175,12 +181,22 @@ async function generatePostForClient(
 
   if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
 
-  // Build shared context
+  // Build shared context with manual brand info
+  const manualBrand = client.company_name ? {
+    companyName: client.company_name,
+    logoUrl: client.logo_url ?? null,
+    primaryColor: client.primary_color ?? "#7c5cfc",
+    secondaryColor: client.secondary_color ?? "#22d3a0",
+    fontStyle: client.font_style ?? "modern",
+    brandVoice: client.brand_voice ?? "professional",
+  } : null;
+
   const clientCtx: ClientContext = {
     domain: client.domain,
-    brandName: client.brand_name ?? null,
-    brandTone: client.brand_tone ?? null,
+    brandName: client.company_name ?? client.brand_name ?? null,
+    brandTone: client.brand_voice ?? client.brand_tone ?? null,
     brandBook: client.brand_book ?? null,
+    manualBrand,
     websiteSummary: null,
     industry: client.brand_book?.industry ?? null,
     gaTopPages: null,
@@ -476,9 +492,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       ? coverImageDescription
       : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
 
+    // Build brand-aware color/style guidance
+    const brandStyle = manualBrand
+      ? `Color palette suggestion: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}. ` +
+        `Visual style: ${manualBrand.fontStyle} aesthetic, ${manualBrand.brandVoice} mood. `
+      : "";
+
     const coverPrompt =
       `Editorial photography: ${coverSubject}. ` +
       `4:3 aspect ratio, full-width hero image. ` +
+      `${brandStyle}` +
       `High quality, cinematic lighting, sharp focus, photorealistic. ` +
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;

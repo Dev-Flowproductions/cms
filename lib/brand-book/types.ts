@@ -1,7 +1,17 @@
 /**
- * Brand Book type definitions
- * Auto-generated from domain analysis, used for content generation
+ * Brand identity types
+ * ManualBrandInfo: User-provided during onboarding
+ * BrandBook: Auto-generated from domain analysis + manual info
  */
+
+export interface ManualBrandInfo {
+  companyName: string;
+  logoUrl: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  fontStyle: string;
+  brandVoice: string;
+}
 
 export interface BrandBook {
   // Core identity

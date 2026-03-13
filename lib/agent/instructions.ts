@@ -126,13 +126,14 @@ OUTPUT (JSON only, no markdown fences)
 
 // ─── Context builders ──────────────────────────────────────────────────────
 
-import type { BrandBook } from "@/lib/brand-book/types";
+import type { BrandBook, ManualBrandInfo } from "@/lib/brand-book/types";
 
 export type ClientContext = {
   domain: string | null;
   brandName?: string | null;
   brandTone?: string | null;
   brandBook?: BrandBook | null;
+  manualBrand?: ManualBrandInfo | null;
   websiteSummary?: string | null;
   industry?: string | null;
   gaTopPages?: string[] | null;
@@ -171,14 +172,30 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
 
   if (client.domain) lines.push(`Website: ${client.domain}`);
 
-  // Include brand book if available
+  // Include manual brand identity (user-provided, highest priority)
+  if (client.manualBrand) {
+    const mb = client.manualBrand;
+    lines.push("");
+    lines.push("═══════════════════════════════");
+    lines.push("BRAND IDENTITY (user-provided, follow exactly)");
+    lines.push("═══════════════════════════════");
+    lines.push(`Company name: ${mb.companyName} (use this exact name)`);
+    lines.push(`Brand voice: ${mb.brandVoice}`);
+    lines.push(`Font style: ${mb.fontStyle}`);
+    lines.push(`Colors: Primary ${mb.primaryColor}, Secondary ${mb.secondaryColor}`);
+    if (mb.logoUrl) lines.push(`Logo: ${mb.logoUrl}`);
+  }
+
+  // Include brand book for additional context
   if (client.brandBook) {
     const bb = client.brandBook;
     lines.push("");
     lines.push("═══════════════════════════════");
-    lines.push("BRAND BOOK (follow strictly)");
+    lines.push("BRAND ANALYSIS (additional context)");
     lines.push("═══════════════════════════════");
-    lines.push(`Brand name: ${bb.brandName} (use this exact name)`);
+    if (!client.manualBrand) {
+      lines.push(`Brand name: ${bb.brandName} (use this exact name)`);
+    }
     if (bb.tagline) lines.push(`Tagline: ${bb.tagline}`);
     lines.push(`Industry: ${bb.industry} / ${bb.niche}`);
     lines.push(`Voice: ${bb.voiceAttributes.join(", ")}`);
@@ -198,7 +215,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     }
     lines.push(`CTA style: ${bb.contentGuidelines.callToActionStyle}`);
     lines.push(`Image style: ${bb.visualIdentity.imageStyle}`);
-  } else {
+  } else if (!client.manualBrand) {
     // Fallback to simple brand info
     if (client.brandName) {
       lines.push(`Brand name: ${client.brandName} (use this exact name, not the domain)`);

@@ -85,6 +85,25 @@
   },
   "onboarding": {
     "stepOf": "Step {current} of {total}",
+    "brand": {
+      "eyebrow": "Welcome",
+      "title": "Set up your brand",
+      "subtitle": "Tell us about your brand so we can create content that matches your identity.",
+      "domainLabel": "Website domain",
+      "companyNameLabel": "Company name",
+      "logoLabel": "Company logo",
+      "logoUpload": "Click to upload logo",
+      "logoChange": "Click to change logo",
+      "logoHint": "PNG, JPG or SVG up to 2MB",
+      "colorsLabel": "Brand colors",
+      "primaryColor": "Primary",
+      "secondaryColor": "Secondary",
+      "fontStyleLabel": "Font style",
+      "brandVoiceLabel": "Brand voice",
+      "continue": "Continue",
+      "saving": "Saving…",
+      "errorDomainTaken": "This domain is already linked to another account. Please contact support if you believe this is a mistake."
+    },
     "domain": {
       "eyebrow": "Welcome",
       "title": "Set up your workspace",

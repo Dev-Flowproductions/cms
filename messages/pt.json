@@ -85,6 +85,25 @@
   },
   "onboarding": {
     "stepOf": "Passo {current} de {total}",
+    "brand": {
+      "eyebrow": "Bem-vindo",
+      "title": "Configure a sua marca",
+      "subtitle": "Conte-nos sobre a sua marca para criarmos conteúdo que corresponda à sua identidade.",
+      "domainLabel": "Domínio do website",
+      "companyNameLabel": "Nome da empresa",
+      "logoLabel": "Logótipo da empresa",
+      "logoUpload": "Clique para carregar logótipo",
+      "logoChange": "Clique para alterar logótipo",
+      "logoHint": "PNG, JPG ou SVG até 2MB",
+      "colorsLabel": "Cores da marca",
+      "primaryColor": "Primária",
+      "secondaryColor": "Secundária",
+      "fontStyleLabel": "Estilo de fonte",
+      "brandVoiceLabel": "Voz da marca",
+      "continue": "Continuar",
+      "saving": "A guardar…",
+      "errorDomainTaken": "Este domínio já está associado a outra conta. Contacte o suporte se acreditar que isto é um erro."
+    },
     "domain": {
       "eyebrow": "Bem-vindo",
       "title": "Configure o seu espaço de trabalho",

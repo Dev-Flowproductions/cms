@@ -85,6 +85,25 @@
   },
   "onboarding": {
     "stepOf": "Étape {current} sur {total}",
+    "brand": {
+      "eyebrow": "Bienvenue",
+      "title": "Configurez votre marque",
+      "subtitle": "Parlez-nous de votre marque pour créer du contenu adapté à votre identité.",
+      "domainLabel": "Domaine du site",
+      "companyNameLabel": "Nom de l'entreprise",
+      "logoLabel": "Logo de l'entreprise",
+      "logoUpload": "Cliquez pour télécharger le logo",
+      "logoChange": "Cliquez pour changer le logo",
+      "logoHint": "PNG, JPG ou SVG jusqu'à 2 Mo",
+      "colorsLabel": "Couleurs de la marque",
+      "primaryColor": "Primaire",
+      "secondaryColor": "Secondaire",
+      "fontStyleLabel": "Style de police",
+      "brandVoiceLabel": "Voix de la marque",
+      "continue": "Continuer",
+      "saving": "Enregistrement…",
+      "errorDomainTaken": "Ce domaine est déjà associé à un autre compte. Veuillez contacter le support si vous pensez qu'il s'agit d'une erreur."
+    },
     "domain": {
       "eyebrow": "Bienvenue",
       "title": "Configurez votre espace de travail",

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
 
     const response = await genai.models.generateImages({
-      model: "imagen-4.0-generate-001",
+      model: "gemini-3.1-flash-image-preview",
       prompt: imagePrompt,
       config: {
         numberOfImages: 1,

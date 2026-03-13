@@ -57,18 +57,26 @@ REQUIRED POST STRUCTURE (in this exact order)
    CRITICAL: Use the EXACT "Publication date" value provided in the POST CONTEXT.
    Do NOT guess, invent, or use a date from your training data.
 
-2. H1 — TITLE
+2. H1 — TITLE (ONLY ONE H1 IN THE ENTIRE POST)
    # {Title with focus keyword — sentence case}
    - Must include the focus keyword naturally.
    - Compelling, clear, under 70 characters.
    - Sentence case: only first word and proper nouns capitalised.
    - Do NOT add any text or paragraph directly under the H1.
    - The H1 is immediately followed by the cover image — nothing in between.
+   - CRITICAL: This is the ONLY # heading in the post. All other headings must be ## (H2) or ### (H3). Never use # again.
 
-3. COVER IMAGE PLACEHOLDER
-   Immediately after the H1, on its own line, no blank line between:
+3. COVER IMAGE PLACEHOLDER (CRITICAL)
+   Immediately after the H1, output this EXACT line — character for character:
    ![Cover image]({COVER_IMAGE_PLACEHOLDER})
-   Use exactly this string. Do NOT add any text before or after this line.
+   
+   RULES:
+   - Use EXACTLY this placeholder string: {COVER_IMAGE_PLACEHOLDER}
+   - Do NOT invent, guess, or use any real image URLs (no https://, no .jpg, no .png)
+   - Do NOT use URLs from the client's website
+   - Do NOT add any other images anywhere in the post
+   - This is the ONLY image in the entire post
+   - The system will replace this placeholder with a real generated image later
 
 4. INTRODUCTION PARAGRAPH
    2-3 sentences after the cover image.
@@ -133,7 +141,9 @@ KEYWORD PLACEMENT:
 - Every H2 should contain a keyword variant or closely related phrase.
 
 HEADING HIERARCHY:
-- H1 (once) → H2 (section headings) → H3 (sub-sections within H2s).
+- H1 appears ONCE at the very top (the title). Never use # anywhere else in the post.
+- H2 (##) for all section headings.
+- H3 (###) for sub-sections within H2s.
 - Never skip levels. No H4 or below.
 - H3s must be meaningful, keyword-adjacent subheadings.
 
@@ -244,6 +254,7 @@ MARKDOWN RULES
 - No raw HTML. No code blocks unless the post is deeply technical.
 - No horizontal rules (---).
 - Tables: use standard markdown | col | col | format if a comparison table is included.
+- IMAGES: Only ONE image allowed — the cover image placeholder. Do NOT add any other ![...](...) markdown images anywhere in the post. Do NOT use external URLs.
 
 ════════════════════════════════════════
 OUTPUT FORMAT

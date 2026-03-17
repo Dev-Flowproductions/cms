@@ -240,6 +240,11 @@ async function generatePostForClient(
   const geminiModel = genAI.getGenerativeModel({
     model: MODEL,
     systemInstruction: SYSTEM_INSTRUCTIONS,
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 8192,
+      topP: 0.95,
+    },
   });
 
   // ── STEP 1: Generate primary content in PT ──────────────────────────────────
@@ -350,9 +355,9 @@ async function generatePostForClient(
         "publisher": publisherEntity,
         "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/pt/blog/${slug}` },
       },
-      ...(primaryContent.faq_blocks?.length > 0 ? [{
+      ...((primaryContent.faq_blocks?.length ?? 0) > 0 ? [{
         "@type": "FAQPage",
-        "mainEntity": primaryContent.faq_blocks.map((f) => ({
+        "mainEntity": (primaryContent.faq_blocks ?? []).map((f) => ({
           "@type": "Question",
           "name": f.question,
           "acceptedAnswer": { "@type": "Answer", "text": f.answer },
@@ -371,7 +376,7 @@ async function generatePostForClient(
       seo_title: primaryContent.seo_title,
       seo_description: primaryContent.seo_description,
       focus_keyword: primaryContent.focus_keyword,
-      faq_blocks: primaryContent.faq_blocks,
+      faq_blocks: primaryContent.faq_blocks ?? null,
       jsonld: ptJsonld,
       seo_score: primaryContent.seo_score ?? null,
     },
@@ -418,7 +423,7 @@ Content (Markdown):
 ${primaryContent.content_md}
 
 FAQ Blocks:
-${primaryContent.faq_blocks.map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
+${(primaryContent.faq_blocks ?? []).map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
 
 Respond with a single valid JSON object — no markdown fences, no preamble:
 {
@@ -476,9 +481,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
           "publisher": publisherEntity,
           "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/${locale}/blog/${slug}` },
         },
-        ...(translated.faq_blocks?.length > 0 ? [{
+        ...((translated.faq_blocks?.length ?? 0) > 0 ? [{
           "@type": "FAQPage",
-          "mainEntity": translated.faq_blocks.map((f) => ({
+          "mainEntity": (translated.faq_blocks ?? []).map((f) => ({
             "@type": "Question",
             "name": f.question,
             "acceptedAnswer": { "@type": "Answer", "text": f.answer },
@@ -497,7 +502,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         seo_title: translated.seo_title,
         seo_description: translated.seo_description,
         focus_keyword: translated.focus_keyword,
-        faq_blocks: translated.faq_blocks,
+        faq_blocks: translated.faq_blocks ?? null,
         jsonld: localeJsonld,
         seo_score: translated.seo_score ?? null,
       },
@@ -517,16 +522,22 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       ? coverImageDescription
       : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
 
-    // Build brand-aware color/style guidance
-    const brandStyle = manualBrand
-      ? `Color palette suggestion: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}. ` +
-        `Visual style: ${manualBrand.fontStyle} aesthetic, ${manualBrand.brandVoice} mood. `
-      : "";
+    // Brand guidance: user-provided first, then brand book visual identity
+    const visualIdentity = (client.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
+    const brandStyleParts: string[] = [];
+    if (manualBrand) {
+      brandStyleParts.push(`Color palette: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}.`);
+      brandStyleParts.push(`Visual style: ${manualBrand.fontStyle} aesthetic, ${manualBrand.brandVoice} mood.`);
+    }
+    if (visualIdentity?.aestheticStyle) brandStyleParts.push(visualIdentity.aestheticStyle);
+    if (visualIdentity?.imageStyle) brandStyleParts.push(`Image style: ${visualIdentity.imageStyle}`);
+    if (visualIdentity?.colorPalette && !manualBrand) brandStyleParts.push(visualIdentity.colorPalette);
+    const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
 
     const coverPrompt =
       `Editorial photography: ${coverSubject}. ` +
       `4:3 aspect ratio, full-width hero image. ` +
-      `${brandStyle}` +
+      brandStyle +
       `High quality, cinematic lighting, sharp focus, photorealistic. ` +
       `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
       `The entire frame must be a real-world photographic scene with no written characters of any kind.`;

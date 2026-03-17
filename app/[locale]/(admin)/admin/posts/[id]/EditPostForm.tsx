@@ -31,6 +31,8 @@ type Post = {
   published_at: string | null;
   scheduled_for: string | null;
   post_localizations: Localization[];
+  webhook_status?: string | null;
+  webhook_error?: string | null;
 };
 
 type Props = {
@@ -517,6 +519,28 @@ export function EditPostForm({
               <span className="text-xs" style={{ color: "var(--text-faint)" }}>
                 No webhook configured for this author
               </span>
+            )}
+
+            {/* Webhook status — show last push result so user knows if the site was updated */}
+            {publishConfig?.hasWebhook && (post.webhook_status || post.webhook_error) && (
+              <div className="flex flex-col gap-0.5">
+                {post.webhook_status === "success" && (
+                  <span className="text-xs font-medium" style={{ color: "var(--success)" }}>
+                    Last push: success — if the post still doesn&apos;t appear on the site, the site may not be handling the webhook payload.
+                  </span>
+                )}
+                {post.webhook_status === "failed" && post.webhook_error && (
+                  <span className="text-xs font-medium max-w-md" style={{ color: "var(--danger)" }} title={post.webhook_error}>
+                    Last push failed: {post.webhook_error.slice(0, 80)}{post.webhook_error.length > 80 ? "…" : ""}
+                  </span>
+                )}
+                {post.webhook_status === "pending" && (
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Push pending…</span>
+                )}
+                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                  Only &quot;Publish to website&quot; pushes to the site. Changing status to Published and saving does not.
+                </span>
+              </div>
             )}
 
             {/* Delete button — pushed to the right */}

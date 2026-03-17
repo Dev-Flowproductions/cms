@@ -80,7 +80,9 @@
       "autoPublishDescription": "When enabled, posts will be pushed to your website immediately when the admin clicks publish.",
       "autoPublishOn": "Posts are pushed to your website immediately on publish",
       "autoPublishOff": "Admin will be asked to confirm before pushing to your website",
-      "noWebhookConfigured": "No publish webhook has been configured for your account yet. Contact your manager to set it up."
+      "noWebhookConfigured": "No publish webhook has been configured for your account yet. Contact your manager to set it up.",
+      "lastAutoRunFailedTitle": "Last automatic post failed",
+      "lastAutoRunFailedHint": "The next scheduled run will try again. If it keeps failing, contact your manager with the error above."
     },
     "brand": {
       "title": "Brand",
@@ -223,6 +225,7 @@
       "onboardingPending": "Pending setup",
       "webhookConfigured": "Configured",
       "webhookNotSet": "Not set",
+      "lastRunFailed": "Last auto-run failed (hover for details)",
       "webhookUrlLabel": "Webhook URL",
       "webhookSecretLabel": "Secret token",
       "webhookSecretPlaceholder": "Optional — sent as x-webhook-secret header",

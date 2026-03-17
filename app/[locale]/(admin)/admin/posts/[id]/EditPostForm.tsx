@@ -379,6 +379,20 @@ export function EditPostForm({
       {/* ── Post settings ── */}
       <section style={sectionStyle}>
         <p style={sectionHeadingStyle}>{labels.postSettings}</p>
+
+        {post.status === "draft" && post.slug.startsWith("draft-") && (
+          <div
+            className="mb-5 px-4 py-3 rounded-xl text-sm"
+            style={{
+              background: "rgba(245,166,35,0.1)",
+              border: "1px solid rgba(245,166,35,0.3)",
+              color: "var(--text)",
+            }}
+          >
+            <strong>Incomplete generation.</strong> This post was created by the scheduler but generation did not finish. Use <strong>Generate with AI</strong> below for each locale (PT, EN, FR), then set status to <strong>Review</strong> and save.
+          </div>
+        )}
+
         <form action={setPostState} className="space-y-5">
           <input type="hidden" name="id" value={post.id} />
 

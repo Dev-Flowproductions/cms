@@ -47,22 +47,35 @@ export async function POST(request: Request) {
 
   const keyword = focus_keyword ?? existing?.focus_keyword ?? post.slug.replace(/-/g, " ");
 
-  // Fetch client context (domain, GA/Search Console data)
+  // Fetch client context (domain, brand book, manual brand info)
   const { data: clientRow } = await admin
     .from("clients")
-    .select("domain, google_access_token, google_scope")
+    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, brand_name, brand_tone")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
-  // Build client context — GA/Search Console data will be fetched here in V2
-  // For now we pass domain and leave analytics fields empty (populated once OAuth is connected)
+  const manualBrand = clientRow?.company_name
+    ? {
+        companyName: clientRow.company_name,
+        logoUrl: clientRow.logo_url ?? null,
+        primaryColor: clientRow.primary_color ?? "#7c5cfc",
+        secondaryColor: clientRow.secondary_color ?? "#22d3a0",
+        fontStyle: clientRow.font_style ?? "modern",
+        brandVoice: clientRow.brand_voice ?? "professional",
+      }
+    : null;
+
   const clientCtx: ClientContext = {
     domain: clientRow?.domain ?? null,
-    websiteSummary: null,       // TODO: scrape / store website description
-    industry: null,             // TODO: add industry field to clients table
-    gaTopPages: null,           // TODO: fetch from GA API using google_access_token
-    gaTopKeywords: null,        // TODO: fetch from GA API
-    searchConsoleQueries: null, // TODO: fetch from Search Console API
+    brandName: clientRow?.company_name ?? clientRow?.brand_name ?? null,
+    brandTone: clientRow?.brand_voice ?? clientRow?.brand_tone ?? null,
+    brandBook: clientRow?.brand_book ?? null,
+    manualBrand,
+    websiteSummary: null,
+    industry: (clientRow?.brand_book as { industry?: string } | null)?.industry ?? null,
+    gaTopPages: null,
+    gaTopKeywords: null,
+    searchConsoleQueries: null,
   };
 
   // Publication date

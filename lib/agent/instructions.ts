@@ -164,6 +164,8 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
   const now = new Date();
   const currentDate = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
+  lines.push("TASK: Generate ONE blog post as a single JSON object. You MUST follow the system instructions (structure, SEO, AEO, GEO, formatting, output schema) and the brand context below. Use the exact company name and voice given. Output ONLY valid JSON, no markdown fences.");
+  lines.push("");
   lines.push("═══════════════════════════════");
   lines.push("CONTEXT");
   lines.push("═══════════════════════════════");
@@ -179,44 +181,51 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     const mb = client.manualBrand;
     lines.push("");
     lines.push("═══════════════════════════════");
-    lines.push("BRAND IDENTITY (user-provided, follow exactly)");
+    lines.push("BRAND IDENTITY (user-provided — FOLLOW EXACTLY)");
     lines.push("═══════════════════════════════");
-    lines.push(`Company name: ${mb.companyName} (use this exact name)`);
-    lines.push(`Brand voice: ${mb.brandVoice}`);
+    lines.push(`Company name: ${mb.companyName} (use this exact name everywhere)`);
+    lines.push(`Brand voice: ${mb.brandVoice} (match this tone)`);
     lines.push(`Font style: ${mb.fontStyle}`);
     lines.push(`Colors: Primary ${mb.primaryColor}, Secondary ${mb.secondaryColor}`);
     if (mb.logoUrl) lines.push(`Logo: ${mb.logoUrl}`);
   }
 
-  // Include brand book for additional context
-  if (client.brandBook) {
-    const bb = client.brandBook;
+  // Include brand book for additional context (defensive for missing fields)
+  const rawBook = client.brandBook;
+  const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as import("@/lib/brand-book/types").BrandBook; } catch { return null; } })() : rawBook;
+  if (bb && typeof bb === "object") {
     lines.push("");
     lines.push("═══════════════════════════════");
-    lines.push("BRAND ANALYSIS (additional context)");
+    lines.push("BRAND ANALYSIS (follow this context)");
     lines.push("═══════════════════════════════");
-    if (!client.manualBrand) {
+    if (!client.manualBrand && bb.brandName) {
       lines.push(`Brand name: ${bb.brandName} (use this exact name)`);
     }
     if (bb.tagline) lines.push(`Tagline: ${bb.tagline}`);
-    lines.push(`Industry: ${bb.industry} / ${bb.niche}`);
-    lines.push(`Voice: ${bb.voiceAttributes.join(", ")}`);
-    lines.push(`Tone: ${bb.toneDescription}`);
-    lines.push(`Writing style: ${bb.writingStyle}`);
-    lines.push(`Target audience: ${bb.targetAudience.primary}`);
-    lines.push(`Value proposition: ${bb.uniqueValueProposition}`);
-    lines.push(`Market position: ${bb.marketPosition}`);
-    if (bb.contentThemes.length > 0) {
+    if (bb.industry || bb.niche) lines.push(`Industry: ${bb.industry ?? ""} / ${bb.niche ?? ""}`);
+    if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
+      lines.push(`Voice: ${bb.voiceAttributes.join(", ")}`);
+    }
+    if (bb.toneDescription) lines.push(`Tone: ${bb.toneDescription}`);
+    if (bb.writingStyle) lines.push(`Writing style: ${bb.writingStyle}`);
+    if (bb.targetAudience?.primary) lines.push(`Target audience: ${bb.targetAudience.primary}`);
+    if (bb.uniqueValueProposition) lines.push(`Value proposition: ${bb.uniqueValueProposition}`);
+    if (bb.marketPosition) lines.push(`Market position: ${bb.marketPosition}`);
+    if (Array.isArray(bb.contentThemes) && bb.contentThemes.length > 0) {
       lines.push(`Content themes: ${bb.contentThemes.join(", ")}`);
     }
-    if (bb.topicsToAvoid.length > 0) {
+    if (Array.isArray(bb.topicsToAvoid) && bb.topicsToAvoid.length > 0) {
       lines.push(`Topics to AVOID: ${bb.topicsToAvoid.join(", ")}`);
     }
-    if (bb.keyMessages.length > 0) {
-      lines.push(`Key messages to reinforce: ${bb.keyMessages.slice(0, 3).join("; ")}`);
+    if (Array.isArray(bb.keyMessages) && bb.keyMessages.length > 0) {
+      lines.push(`Key messages: ${bb.keyMessages.slice(0, 3).join("; ")}`);
     }
-    lines.push(`CTA style: ${bb.contentGuidelines.callToActionStyle}`);
-    lines.push(`Image style: ${bb.visualIdentity.imageStyle}`);
+    if (bb.contentGuidelines?.callToActionStyle) {
+      lines.push(`CTA style: ${bb.contentGuidelines.callToActionStyle}`);
+    }
+    if (bb.visualIdentity?.imageStyle) {
+      lines.push(`Image style: ${bb.visualIdentity.imageStyle}`);
+    }
   } else if (!client.manualBrand) {
     // Fallback to simple brand info
     if (client.brandName) {

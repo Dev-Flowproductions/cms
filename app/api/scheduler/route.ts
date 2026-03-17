@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
@@ -31,11 +32,26 @@ const FREQUENCY_INTERVAL_MS: Record<string, number> = {
  *   5. Updates clients.last_post_generated_at
  */
 export async function POST(req: NextRequest) {
-  // Verify the request is from Vercel Cron or an authorised manual trigger
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const cronMatch = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  if (!cronMatch) {
+    // Allow authenticated admin to run from the admin panel (no CRON_SECRET in browser)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const admin = createAdminClient();
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", user.id)
+      .single();
+    if (roleRow?.role_id !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // ?force=true bypasses the frequency interval check â€” useful for testing
@@ -100,11 +116,19 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, generated, skipped, errors, results });
 }
 
-// Allow GET for a quick health check
-export async function GET() {
+// GET: health check, or run scheduler when ?secret=CRON_SECRET (for Vercel Cron which uses GET)
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const secretParam = url.searchParams.get("secret");
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && secretParam === cronSecret) {
+    // Delegate to POST logic by calling the same flow
+    const mockPost = new NextRequest(req.url, { method: "POST", headers: req.headers });
+    return POST(mockPost);
+  }
   return NextResponse.json({
     ok: true,
-    message: "Scheduler endpoint is live. POST to trigger a run.",
+    message: "Scheduler endpoint is live. POST to trigger a run (or GET ?secret=CRON_SECRET for cron).",
     next_run: "Daily at 07:00 UTC via Vercel Cron",
   });
 }

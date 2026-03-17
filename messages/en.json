@@ -81,6 +81,10 @@
       "autoPublishOn": "Posts are pushed to your website immediately on publish",
       "autoPublishOff": "Admin will be asked to confirm before pushing to your website",
       "noWebhookConfigured": "No publish webhook has been configured for your account yet. Contact your manager to set it up."
+    },
+    "brand": {
+      "title": "Brand",
+      "description": "Update your company name, logo, colours and voice. Changes are used when generating content."
     }
   },
   "onboarding": {
@@ -98,7 +102,8 @@
       "colorsLabel": "Brand colors",
       "primaryColor": "Primary",
       "secondaryColor": "Secondary",
-      "fontStyleLabel": "Font style",
+      "fontStyleLabel": "Font",
+      "fontStylePlaceholder": "e.g. Roboto, Inter, Open Sans",
       "brandVoiceLabel": "Brand voice",
       "continue": "Continue",
       "saving": "Saving…",
@@ -213,6 +218,7 @@
       "colGoogle": "Google",
       "colCreated": "Created",
       "colWebhook": "Webhook",
+      "colActions": "Actions",
       "googleConnected": "Connected",
       "onboardingPending": "Pending setup",
       "webhookConfigured": "Configured",

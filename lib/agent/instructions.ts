@@ -122,6 +122,8 @@ OUTPUT (JSON only, no markdown fences)
   "faq_blocks": [{ "question": "...", "answer": "40-60 words" }],
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }
+
+Each score in seo_score must be an integer from 0 to 100 (inclusive). seo, aeo, geo are out of 100.
 `.trim();
 
 // ─── Context builders ──────────────────────────────────────────────────────

@@ -5,14 +5,6 @@ import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 
-const FONT_STYLES = [
-  { id: "modern", label: "Modern & Clean" },
-  { id: "classic", label: "Classic & Elegant" },
-  { id: "bold", label: "Bold & Impactful" },
-  { id: "playful", label: "Playful & Creative" },
-  { id: "minimal", label: "Minimal & Simple" },
-];
-
 const BRAND_VOICES = [
   { id: "professional", label: "Professional & Authoritative" },
   { id: "friendly", label: "Friendly & Approachable" },
@@ -61,7 +53,7 @@ export default function OnboardingBrandPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
   const [secondaryColor, setSecondaryColor] = useState("#22d3a0");
-  const [fontStyle, setFontStyle] = useState("modern");
+  const [fontStyle, setFontStyle] = useState("");
   const [brandVoice, setBrandVoice] = useState("professional");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +81,7 @@ export default function OnboardingBrandPage() {
       logoFile,
       primaryColor,
       secondaryColor,
-      fontStyle,
+      fontStyle: fontStyle.trim() || "modern",
       brandVoice,
     });
 
@@ -256,23 +248,14 @@ export default function OnboardingBrandPage() {
             <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
               {t("fontStyleLabel")}
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {FONT_STYLES.map((style) => (
-                <button
-                  key={style.id}
-                  type="button"
-                  onClick={() => setFontStyle(style.id)}
-                  className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all"
-                  style={{
-                    background: fontStyle === style.id ? "var(--accent)" : "var(--surface-raised)",
-                    color: fontStyle === style.id ? "white" : "var(--text)",
-                    border: `1px solid ${fontStyle === style.id ? "var(--accent)" : "var(--border)"}`,
-                  }}
-                >
-                  {style.label}
-                </button>
-              ))}
-            </div>
+            <input
+              type="text"
+              value={fontStyle}
+              onChange={(e) => setFontStyle(e.target.value)}
+              placeholder={t("fontStylePlaceholder")}
+              className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              style={inputStyle}
+            />
           </div>
 
           {/* Brand Voice */}

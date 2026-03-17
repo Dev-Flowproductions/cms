@@ -81,6 +81,10 @@
       "autoPublishOn": "Les articles sont envoyés sur votre site dès leur publication",
       "autoPublishOff": "L'administrateur devra confirmer avant d'envoyer sur votre site",
       "noWebhookConfigured": "Aucun webhook de publication n'a encore été configuré pour votre compte. Contactez votre gestionnaire pour le configurer."
+    },
+    "brand": {
+      "title": "Marque",
+      "description": "Modifiez le nom de l'entreprise, le logo, les couleurs et la voix. Les changements sont utilisés pour générer le contenu."
     }
   },
   "onboarding": {
@@ -98,7 +102,8 @@
       "colorsLabel": "Couleurs de la marque",
       "primaryColor": "Primaire",
       "secondaryColor": "Secondaire",
-      "fontStyleLabel": "Style de police",
+      "fontStyleLabel": "Police",
+      "fontStylePlaceholder": "ex. Roboto, Inter, Open Sans",
       "brandVoiceLabel": "Voix de la marque",
       "continue": "Continuer",
       "saving": "Enregistrement…",
@@ -212,6 +217,7 @@
       "colGoogle": "Google",
       "colCreated": "Créé",
       "colWebhook": "Webhook",
+      "colActions": "Actions",
       "googleConnected": "Connecté",
       "onboardingPending": "Configuration en attente",
       "webhookConfigured": "Configuré",

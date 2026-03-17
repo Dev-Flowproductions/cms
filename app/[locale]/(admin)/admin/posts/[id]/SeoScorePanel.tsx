@@ -1,5 +1,7 @@
 "use client";
 
+const SCORE_MAX = 100;
+
 type ScoreData = {
   seo: number;
   aeo: number;
@@ -7,12 +9,19 @@ type ScoreData = {
   notes?: string;
 };
 
-function StarBar({ score, max = 10 }: { score: number; max?: number }) {
-  const filled = Math.round((score / max) * 5);
+/** Normalize to 0-100 if stored as 0-10 (legacy). */
+function normalizeScore(val: number): number {
+  if (val >= 0 && val <= 10 && val % 1 === 0) return Math.round(val * 10);
+  return Math.min(SCORE_MAX, Math.max(0, Math.round(val)));
+}
+
+function StarBar({ score }: { score: number }) {
+  const s = normalizeScore(score);
+  const filled = Math.round((s / SCORE_MAX) * 5);
   const color =
-    score >= 9 ? "var(--success)" :
-    score >= 7 ? "#f59e0b" :
-    score >= 5 ? "#f97316" :
+    s >= 90 ? "var(--success)" :
+    s >= 70 ? "#f59e0b" :
+    s >= 50 ? "#f97316" :
     "var(--danger)";
 
   return (
@@ -32,18 +41,23 @@ function StarBar({ score, max = 10 }: { score: number; max?: number }) {
         </svg>
       ))}
       <span className="text-xs font-bold tabular-nums" style={{ color }}>
-        {score}/10
+        {s}/{SCORE_MAX}
       </span>
     </div>
   );
 }
 
 export function SeoScorePanel({ score }: { score: ScoreData }) {
-  const avg = Math.round((score.seo + score.aeo + score.geo) / 3);
+  const s = {
+    seo: normalizeScore(score.seo),
+    aeo: normalizeScore(score.aeo),
+    geo: normalizeScore(score.geo),
+  };
+  const avg = Math.round((s.seo + s.aeo + s.geo) / 3);
   const avgColor =
-    avg >= 9 ? "var(--success)" :
-    avg >= 7 ? "#f59e0b" :
-    avg >= 5 ? "#f97316" :
+    avg >= 90 ? "var(--success)" :
+    avg >= 70 ? "#f59e0b" :
+    avg >= 50 ? "#f97316" :
     "var(--danger)";
 
   return (
@@ -70,7 +84,7 @@ export function SeoScorePanel({ score }: { score: ScoreData }) {
             className="text-sm font-bold tabular-nums"
             style={{ color: avgColor }}
           >
-            {avg}/10
+            {avg}/{SCORE_MAX}
           </span>
         </div>
       </div>
@@ -79,9 +93,9 @@ export function SeoScorePanel({ score }: { score: ScoreData }) {
       <div className="grid grid-cols-3 gap-3">
         {(
           [
-            { label: "SEO", value: score.seo, hint: "Search engine ranking signals" },
-            { label: "AEO", value: score.aeo, hint: "Answer engine / featured snippets" },
-            { label: "GEO", value: score.geo, hint: "Generative AI citation readiness" },
+            { label: "SEO", value: s.seo, hint: "Search engine ranking signals" },
+            { label: "AEO", value: s.aeo, hint: "Answer engine / featured snippets" },
+            { label: "GEO", value: s.geo, hint: "Generative AI citation readiness" },
           ] as const
         ).map(({ label, value, hint }) => (
           <div

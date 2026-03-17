@@ -355,30 +355,41 @@ export function UsersClient({ initialUsers, initialError }: Props) {
 
                       {/* Webhook */}
                       <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedWebhook(webhookExpanded ? null : u.user_id)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                          style={{
-                            background: hasWebhook ? "rgba(34,211,160,0.1)" : "var(--surface-raised)",
-                            color: hasWebhook ? "#22d3a0" : "var(--text-muted)",
-                            border: hasWebhook ? "1px solid rgba(34,211,160,0.25)" : "1px solid var(--border)",
-                          }}
-                        >
-                          {hasWebhook ? (
-                            <>
-                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
-                              {t("webhookConfigured")}
-                            </>
-                          ) : (
-                            <>
-                              <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-                                <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                              </svg>
-                              {t("webhookNotSet")}
-                            </>
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedWebhook(webhookExpanded ? null : u.user_id)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all w-fit"
+                            style={{
+                              background: hasWebhook ? "rgba(34,211,160,0.1)" : "var(--surface-raised)",
+                              color: hasWebhook ? "#22d3a0" : "var(--text-muted)",
+                              border: hasWebhook ? "1px solid rgba(34,211,160,0.25)" : "1px solid var(--border)",
+                            }}
+                          >
+                            {hasWebhook ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
+                                {t("webhookConfigured")}
+                              </>
+                            ) : (
+                              <>
+                                <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
+                                  <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                                </svg>
+                                {t("webhookNotSet")}
+                              </>
+                            )}
+                          </button>
+                          {u.last_generation_error && (
+                            <span
+                              className="text-[10px] font-medium max-w-[140px] truncate"
+                              style={{ color: "#f59e0b" }}
+                              title={u.last_generation_error}
+                            >
+                              {t("lastRunFailed")}
+                            </span>
                           )}
-                        </button>
+                        </div>
                       </td>
 
                       {/* Created */}

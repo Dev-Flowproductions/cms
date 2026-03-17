@@ -80,7 +80,9 @@
       "autoPublishDescription": "Quando ativado, os artigos são enviados para o seu website imediatamente quando o administrador clica em publicar.",
       "autoPublishOn": "Os artigos são enviados para o seu site imediatamente após publicação",
       "autoPublishOff": "O administrador será questionado antes de enviar para o seu site",
-      "noWebhookConfigured": "Ainda não foi configurado nenhum webhook de publicação para a sua conta. Contacte o seu gestor para o configurar."
+      "noWebhookConfigured": "Ainda não foi configurado nenhum webhook de publicação para a sua conta. Contacte o seu gestor para o configurar.",
+      "lastAutoRunFailedTitle": "Última publicação automática falhou",
+      "lastAutoRunFailedHint": "A próxima execução agendada tentará novamente. Se continuar a falhar, contacte o seu gestor com o erro acima."
     },
     "brand": {
       "title": "Marca",
@@ -222,6 +224,7 @@
       "onboardingPending": "Configuração pendente",
       "webhookConfigured": "Configurado",
       "webhookNotSet": "Não definido",
+      "lastRunFailed": "Última execução automática falhou (passe o rato para detalhes)",
       "webhookUrlLabel": "URL do webhook",
       "webhookSecretLabel": "Token secreto",
       "webhookSecretPlaceholder": "Opcional — enviado no cabeçalho x-webhook-secret",

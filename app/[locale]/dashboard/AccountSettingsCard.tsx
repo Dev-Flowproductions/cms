@@ -32,6 +32,8 @@ type Settings = {
   secondary_color?: string | null;
   font_style?: string | null;
   brand_voice?: string | null;
+  last_generation_error?: string | null;
+  last_generation_error_at?: string | null;
 };
 
 const inputStyle = {
@@ -227,6 +229,21 @@ export function AccountSettingsCard({
             {googleConnected ? t("reconnectGoogle") : t("connectGoogle")}
           </a>
         </div>
+
+        {settings.last_generation_error && (
+          <div
+            className="px-4 py-3 rounded-xl text-sm"
+            style={{
+              background: "rgba(245,166,35,0.1)",
+              border: "1px solid rgba(245,166,35,0.3)",
+              color: "var(--text)",
+            }}
+          >
+            <p className="font-semibold mb-1">{t("lastAutoRunFailedTitle")}</p>
+            <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{settings.last_generation_error}</p>
+            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("lastAutoRunFailedHint")}</p>
+          </div>
+        )}
 
         {/* Post frequency */}
         <div

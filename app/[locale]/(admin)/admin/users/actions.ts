@@ -92,6 +92,8 @@ export type ClientRow = {
   company_name: string | null;
   profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
   email?: string;
+  last_generation_error?: string | null;
+  last_generation_error_at?: string | null;
 };
 
 export async function listUsers(): Promise<ClientRow[]> {
@@ -100,7 +102,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, last_generation_error, last_generation_error_at, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -122,7 +124,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, last_generation_error, last_generation_error_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;

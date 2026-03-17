@@ -205,6 +205,7 @@ async function generatePostForClient(
 
   if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
 
+  try {
   // Build shared context with manual brand info
   const manualBrand = client.company_name ? {
     companyName: client.company_name,
@@ -669,8 +670,22 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     await admin.from("posts").update({ status: "review" }).eq("id", post.id);
   }
 
-  await admin.from("clients").update({ last_post_generated_at: new Date().toISOString() }).eq("id", client.id);
+  await admin.from("clients").update({
+    last_post_generated_at: new Date().toISOString(),
+    last_generation_error: null,
+    last_generation_error_at: null,
+  }).eq("id", client.id);
 
   console.log(`[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id}`);
   return post.id;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[scheduler] Generation failed for ${client.domain} (post ${post.id}):`, msg);
+    await admin.from("clients").update({
+      last_generation_error: msg,
+      last_generation_error_at: new Date().toISOString(),
+    }).eq("id", client.id);
+    await admin.from("posts").delete().eq("id", post.id);
+    throw err;
+  }
 }

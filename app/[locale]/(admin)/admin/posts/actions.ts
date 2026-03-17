@@ -257,22 +257,37 @@ export async function deletePost(postId: string) {
     if (!roleRow) return { error: "Forbidden" };
   }
 
-  // If the post was published, notify the client webhook to delete it from their site
+  // If the post was published, notify the client webhook (spec: post.deleted)
   if (post.status === "published") {
     try {
       const { data: client } = await admin
         .from("clients")
-        .select("webhook_url, webhook_secret")
+        .select("id, webhook_url, webhook_secret")
         .eq("user_id", post.author_id)
         .maybeSingle();
 
       if (client?.webhook_url) {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (client.webhook_secret) headers["x-webhook-secret"] = client.webhook_secret;
+        const { buildRevalidationPayload, buildWebhookHeaders } = await import("@/lib/cms-api/webhooks");
+        const payload = {
+          ...buildRevalidationPayload("post.deleted", client.id, {
+            id: postId,
+            slug: post.slug,
+            status: "deleted",
+            updatedAt: new Date().toISOString(),
+          }),
+          action: "delete",
+          slug: post.slug,
+        };
+        const headers = client.webhook_secret
+          ? buildWebhookHeaders(payload, client.webhook_secret, "post.deleted")
+          : { "Content-Type": "application/json" };
+        if (client.webhook_secret) {
+          (headers as Record<string, string>)["x-webhook-secret"] = client.webhook_secret;
+        }
         await fetch(client.webhook_url, {
           method: "POST",
           headers,
-          body: JSON.stringify({ action: "delete", slug: post.slug }),
+          body: JSON.stringify(payload),
         });
       }
     } catch {

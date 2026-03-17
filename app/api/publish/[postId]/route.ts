@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildRevalidationPayload, buildWebhookHeaders } from "@/lib/cms-api/webhooks";
 
 export async function POST(
   _req: NextRequest,
@@ -36,7 +37,7 @@ export async function POST(
   const { data: post, error: postError } = await admin
     .from("posts")
     .select(`
-      id, slug, author_id, status,
+      id, slug, author_id, status, updated_at, webhook_status,
       post_localizations (
         locale, title, excerpt, content_md, seo_title, seo_description, jsonld
       ),
@@ -49,10 +50,10 @@ export async function POST(
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
-  // Fetch the author's client webhook config
+  // Fetch the author's client webhook config (include client id for siteId)
   const { data: client, error: clientError } = await admin
     .from("clients")
-    .select("webhook_url, webhook_secret, auto_publish, domain")
+    .select("id, webhook_url, webhook_secret, auto_publish, domain")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
@@ -105,13 +106,23 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
+  const event =
+    (post as { webhook_status?: string }).webhook_status === "success"
+      ? "post.updated"
+      : "post.published";
+
+  const revalidation = buildRevalidationPayload(event, client.id, {
+    id: post.id,
+    slug: post.slug,
+    status: "published",
+    updatedAt: (post as { updated_at: string }).updated_at,
+  });
+
   const payload = {
-    event: "cms.post.published",
+    ...revalidation,
     post: {
-      id: post.id,
-      slug: post.slug,
+      ...revalidation.post,
       cover_image_url: coverImageUrl,
-      // Primary locale fields (flat, for backward compatibility)
       title: primary.title,
       excerpt: primary.excerpt,
       content_md: primary.content_md,
@@ -119,7 +130,6 @@ export async function POST(
       meta_description: primary.seo_description,
       json_ld: primary.jsonld ?? null,
       locale: primary.locale,
-      // All translations keyed by locale code, for multilingual sites
       translations: Object.fromEntries(
         cleanedLocalizations.map((l) => [
           l.locale,
@@ -134,7 +144,6 @@ export async function POST(
         ])
       ),
     },
-    timestamp: new Date().toISOString(),
   };
 
   // Mark as pending before attempting
@@ -148,11 +157,11 @@ export async function POST(
     .eq("id", postId);
 
   try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+    const headers = client.webhook_secret
+      ? buildWebhookHeaders(payload, client.webhook_secret, event)
+      : { "Content-Type": "application/json" };
     if (client.webhook_secret) {
-      headers["x-webhook-secret"] = client.webhook_secret;
+      (headers as Record<string, string>)["x-webhook-secret"] = client.webhook_secret;
     }
 
     const response = await fetch(client.webhook_url, {

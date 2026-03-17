@@ -89,6 +89,7 @@ export type ClientRow = {
   brand_name: string | null;
   brand_tone: string | null;
   brand_book: BrandBook | null;
+  company_name: string | null;
   profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
   email?: string;
 };
@@ -99,7 +100,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -121,7 +122,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -208,6 +209,18 @@ export async function updateUserWebhookByAdmin(
 export async function deleteUser(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
+
+  // Delete in order: posts (author_id references profiles), then client, then user_roles, then auth user.
+  // post_localizations cascade from posts. profiles cascade from auth.users.
+  const { error: postsError } = await admin.from("posts").delete().eq("author_id", userId);
+  if (postsError) return { error: `Failed to delete user posts: ${postsError.message}` };
+
+  const { error: clientError } = await admin.from("clients").delete().eq("user_id", userId);
+  if (clientError) return { error: `Failed to delete client: ${clientError.message}` };
+
+  const { error: rolesError } = await admin.from("user_roles").delete().eq("user_id", userId);
+  if (rolesError) return { error: `Failed to delete roles: ${rolesError.message}` };
+
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) return { error: error.message };
   return { success: true };

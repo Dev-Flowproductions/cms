@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { deleteUser, updateUserWebhookByAdmin, updateClientBrand, regenerateBrandBook, type ClientRow } from "./actions";
+import { deleteUser, updateUserWebhookByAdmin, type ClientRow } from "./actions";
 import { CreateUserForm } from "./CreateUserForm";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -10,188 +10,6 @@ type Props = {
   initialUsers: ClientRow[];
   initialError: string | null;
 };
-
-function BrandBookViewer({ user, onRegenerate }: { user: ClientRow; onRegenerate: () => void }) {
-  const [regenerating, setRegenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const bb = user.brand_book;
-
-  async function handleRegenerate() {
-    if (!user.domain) return;
-    setRegenerating(true);
-    setError(null);
-    const result = await regenerateBrandBook(user.user_id, user.domain);
-    setRegenerating(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      onRegenerate();
-    }
-  }
-
-  if (!bb) {
-    return (
-      <div className="text-center py-6">
-        <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-          No brand book generated yet.
-        </p>
-        {user.domain && (
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            className="px-4 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-            style={{ background: "var(--accent)", color: "white" }}
-          >
-            {regenerating ? "Generating..." : "Generate brand book"}
-          </button>
-        )}
-        {error && <p className="text-xs mt-2" style={{ color: "var(--danger)" }}>{error}</p>}
-      </div>
-    );
-  }
-
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="mb-4">
-      <h4 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--accent)" }}>
-        {title}
-      </h4>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, value }: { label: string; value: string | null | undefined }) => (
-    value ? (
-      <div className="mb-2">
-        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}: </span>
-        <span className="text-xs" style={{ color: "var(--text)" }}>{value}</span>
-      </div>
-    ) : null
-  );
-
-  const Tags = ({ items }: { items: string[] | undefined }) => (
-    items && items.length > 0 ? (
-      <div className="flex flex-wrap gap-1.5 mt-1">
-        {items.map((item, i) => (
-          <span
-            key={i}
-            className="px-2 py-0.5 rounded-full text-xs"
-            style={{ background: "rgba(124,92,252,0.1)", color: "var(--accent)" }}
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    ) : null
-  );
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span
-            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-              bb.confidence === "high"
-                ? "bg-green-500/10 text-green-500"
-                : bb.confidence === "medium"
-                ? "bg-yellow-500/10 text-yellow-500"
-                : "bg-red-500/10 text-red-500"
-            }`}
-          >
-            {bb.confidence} confidence
-          </span>
-          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-            Generated {new Date(bb.generatedAt).toLocaleDateString()}
-          </span>
-        </div>
-        <button
-          onClick={handleRegenerate}
-          disabled={regenerating || !user.domain}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)", color: "var(--text)" }}
-        >
-          {regenerating ? "Regenerating..." : "Regenerate"}
-        </button>
-      </div>
-
-      {error && <p className="text-xs mb-3" style={{ color: "var(--danger)" }}>{error}</p>}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Section title="Identity">
-            <Field label="Brand name" value={bb.brandName} />
-            <Field label="Tagline" value={bb.tagline} />
-            <Field label="Industry" value={bb.industry} />
-            <Field label="Niche" value={bb.niche} />
-            <Field label="Market position" value={bb.marketPosition} />
-          </Section>
-
-          <Section title="Voice & Tone">
-            <div className="mb-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Attributes:</span>
-              <Tags items={bb.voiceAttributes} />
-            </div>
-            <Field label="Tone" value={bb.toneDescription} />
-            <Field label="Writing style" value={bb.writingStyle} />
-          </Section>
-
-          <Section title="Target Audience">
-            <Field label="Primary" value={bb.targetAudience.primary} />
-            <Field label="Secondary" value={bb.targetAudience.secondary} />
-            <Field label="Demographics" value={bb.targetAudience.demographics} />
-            <div className="mt-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Pain points:</span>
-              <Tags items={bb.targetAudience.painPoints} />
-            </div>
-          </Section>
-        </div>
-
-        <div>
-          <Section title="Messaging">
-            <Field label="Value proposition" value={bb.uniqueValueProposition} />
-            <div className="mt-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Key messages:</span>
-              <Tags items={bb.keyMessages} />
-            </div>
-            <div className="mt-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Content themes:</span>
-              <Tags items={bb.contentThemes} />
-            </div>
-            <div className="mt-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Topics to avoid:</span>
-              <Tags items={bb.topicsToAvoid} />
-            </div>
-          </Section>
-
-          <Section title="Competitive Landscape">
-            <div className="mb-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Competitors:</span>
-              <Tags items={bb.competitors} />
-            </div>
-            <div className="mt-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Differentiators:</span>
-              <Tags items={bb.differentiators} />
-            </div>
-          </Section>
-
-          <Section title="Visual Identity">
-            <Field label="Color palette" value={bb.visualIdentity.colorPalette} />
-            <Field label="Aesthetic" value={bb.visualIdentity.aestheticStyle} />
-            <Field label="Image style" value={bb.visualIdentity.imageStyle} />
-          </Section>
-
-          <Section title="Content Guidelines">
-            <div className="mb-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Formats:</span>
-              <Tags items={bb.contentGuidelines.preferredFormats} />
-            </div>
-            <Field label="CTA style" value={bb.contentGuidelines.callToActionStyle} />
-          </Section>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function WebhookRow({ user, t }: { user: ClientRow; t: ReturnType<typeof useTranslations> }) {
   const [webhookUrl, setWebhookUrl] = useState(user.webhook_url ?? "");
@@ -301,7 +119,6 @@ export function UsersClient({ initialUsers, initialError }: Props) {
   const [error, setError] = useState<string | null>(initialError);
   const [isPending, startTransition] = useTransition();
   const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
-  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
   const router = useRouter();
 
   const FREQUENCY_LABELS: Record<string, string> = {
@@ -408,7 +225,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
         </div>
       ) : (
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-x-auto overflow-y-hidden"
           style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
         >
           <table className="min-w-full text-sm">
@@ -422,11 +239,11 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                   "Brand",
                   t("colWebhook"),
                   t("colCreated"),
-                  "",
+                  t("colActions"),
                 ].map((h, i) => (
                   <th
                     key={i}
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
+                    className={`px-6 py-4 text-xs font-semibold uppercase tracking-widest ${i === 7 ? "text-right sticky right-0 bg-[var(--surface)] shadow-[-4px_0_8px_rgba(0,0,0,0.06)]" : "text-left"}`}
                     style={{ color: "var(--text-muted)" }}
                   >
                     {h}
@@ -445,7 +262,6 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                 const onboardingPending = !u.domain;
                 const hasWebhook = !!u.webhook_url;
                 const webhookExpanded = expandedWebhook === u.user_id;
-                const brandExpanded = expandedBrand === u.user_id;
 
                 return (
                   <React.Fragment key={u.id}>
@@ -530,32 +346,11 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         )}
                       </td>
 
-                      {/* Brand */}
+                      {/* Brand (read-only; set by user in onboarding) */}
                       <td className="px-6 py-4">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedBrand(expandedBrand === u.user_id ? null : u.user_id)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                          style={{
-                            background: u.brand_name ? "rgba(124,92,252,0.1)" : "var(--surface-raised)",
-                            color: u.brand_name ? "var(--accent)" : "var(--text-muted)",
-                            border: u.brand_name ? "1px solid rgba(124,92,252,0.25)" : "1px solid var(--border)",
-                          }}
-                        >
-                          {u.brand_name ? (
-                            <>
-                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                              {u.brand_name}
-                            </>
-                          ) : (
-                            <>
-                              <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-                                <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                              </svg>
-                              Set brand
-                            </>
-                          )}
-                        </button>
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                          {u.company_name ?? u.brand_name ?? "—"}
+                        </span>
                       </td>
 
                       {/* Webhook */}
@@ -593,57 +388,51 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         })}
                       </td>
 
-                      {/* Actions */}
-                      <td className="px-6 py-4">
+                      {/* Actions — sticky so delete is always visible when table scrolls */}
+                      <td
+                        className="px-6 py-4 text-right sticky right-0"
+                        style={{
+                          background: "inherit",
+                          boxShadow: "-4px 0 8px rgba(0,0,0,0.06)",
+                        }}
+                      >
                         <button
+                          type="button"
                           onClick={() => handleDelete(u.user_id, u.email ?? u.user_id)}
                           disabled={isDeleting || isPending}
-                          className="text-xs font-semibold transition-colors disabled:opacity-40"
-                          style={{ color: "var(--text-muted)" }}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                          style={{
+                            color: "var(--danger)",
+                            background: "rgba(255,92,106,0.08)",
+                            border: "1px solid rgba(255,92,106,0.25)",
+                          }}
                           onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.color = "var(--danger)";
+                            if (!isDeleting && !isPending) {
+                              e.currentTarget.style.background = "rgba(255,92,106,0.15)";
+                              e.currentTarget.style.borderColor = "var(--danger)";
+                            }
                           }}
                           onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)";
+                            e.currentTarget.style.background = "rgba(255,92,106,0.08)";
+                            e.currentTarget.style.borderColor = "rgba(255,92,106,0.25)";
                           }}
+                          title={t("confirmDelete", { email: u.email ?? u.user_id })}
                         >
-                          {isDeleting ? "…" : tCommon("delete")}
+                          {isDeleting ? (
+                            "…"
+                          ) : (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                              {tCommon("delete")}
+                            </>
+                          )}
                         </button>
                       </td>
                     </tr>
-
-                    {/* Expanded brand editor */}
-                    {brandExpanded && (
-                      <tr
-                        key={`${u.id}-brand`}
-                        style={{ borderBottom: (webhookExpanded || isLast) ? "none" : "1px solid var(--border-subtle)" }}
-                      >
-                        <td colSpan={8} className="px-8 pb-5 pt-2">
-                          <div
-                            className="rounded-xl p-4"
-                            style={{
-                              background: "var(--surface-raised)",
-                              border: "1px solid var(--border)",
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-                                Brand identity
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedBrand(null)}
-                                className="text-xs"
-                                style={{ color: "var(--text-faint)" }}
-                              >
-                                Close
-                              </button>
-                            </div>
-                            <BrandBookViewer user={u} onRegenerate={() => router.refresh()} />
-                          </div>
-                        </td>
-                      </tr>
-                    )}
 
                     {/* Expanded webhook editor */}
                     {webhookExpanded && (

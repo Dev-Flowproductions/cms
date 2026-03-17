@@ -407,7 +407,7 @@ RULES:
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
 - Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
-- The cover image placeholder ![Cover image]({COVER_IMAGE_PLACEHOLDER}) must remain exactly as-is.
+- Do not add a date line or cover image in content_md; the website template shows them above the body.
 - Do NOT add, remove, or change any facts, statistics, or claims — only translate.
 - Use natural, fluent ${langName} — not word-for-word translation.
 

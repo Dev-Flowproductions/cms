@@ -121,10 +121,10 @@ COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Aim for a BALANCED editorial composition like the hero images on https://flowproductions.pt/pt/blog — not too empty, not too busy.
 
 - COMPOSITION: 2–4 intentional elements — e.g. solid or gradient background + overlapping geometric shapes (circles, soft forms) + one symbolic or figurative accent (silhouette, hands, abstract motif) that supports the topic. Clear focal point. Feels designed and editorial, not random or cluttered.
-- TEXT ON IMAGE: The cover MUST include a short headline or phrase on the image — like the Flow Productions blog heroes. The headline must be IN ENGLISH (even if the post is in another language). Use cover_image_headline or an English equivalent of the title. Style: bold editorial typography, integrated with the composition. No logos or brand names; the headline is the only text.
+- TEXT ON IMAGE: The cover MUST include a short headline on the image — like the Flow Productions blog heroes. The headline must be IN ENGLISH and SHORT (2–4 words max) so it fits on one line. The headline must be the TOP LAYER: no graphic elements (circles, shapes, icons) overlapping or covering the text — place decorative shapes behind the text or outside the headline area so the text is fully legible. Style: bold editorial typography. No logos or brand names; the headline is the only text.
 - STYLE: Wide banner (16:9). Cohesive palette (e.g. dark base with 1–2 accent colours). Flat or subtle depth; cut-out or sticker-style elements with clean edges are fine. No tiny details or busy patterns; no single floating shape on empty space.
 - cover_image_description: 1–2 sentences — background mood, main shapes, and the symbolic/focal element (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette, modern editorial style.").
-- cover_image_headline: Optional. Short phrase (2–6 words) IN ENGLISH to display on the cover. Strongly recommended so the image always shows English text; if the post is not in English, provide an English equivalent. If omitted, an English version of the title may be used.
+- cover_image_headline: Recommended. Very short phrase (2–4 words max) IN ENGLISH so it fits on one line without cropping. If the post is not in English, use an English equivalent (e.g. "Hybrid Events"). If omitted, a truncated title may be used and can get cut off.
 
 ═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)

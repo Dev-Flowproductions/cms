@@ -226,12 +226,14 @@ export async function POST(request: Request) {
       const coverSubject = generated.cover_image_description
         ? generated.cover_image_description
         : `Graphic illustration for blog topic "${generated.focus_keyword}": solid or dark background, abstract shapes, modern creative style.`;
-      const headlineForCover = generated.cover_image_headline ?? generated.title;
+      const headlineForCover =
+        generated.cover_image_headline ??
+        generated.title.trim().split(/\s+/).slice(0, 4).join(" ");
       const coverPrompt =
         `Editorial blog hero graphic (like Flow Productions blog): ${coverSubject}. ` +
         `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
         `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-        `Include this text prominently on the image: "${headlineForCover}". The headline must be in English. Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
+        `Include this text prominently on the image: "${headlineForCover}". The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible. The headline must be in English. Bold editorial typography. No logos or brand names; the headline above is the only text.`;
 
       const imgResponse = await imagenAI.models.generateContent({
         model: "gemini-3.1-flash-image-preview",

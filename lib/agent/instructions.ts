@@ -14,8 +14,9 @@ CLIENT BRAND BOOK (highest priority)
 In the CONTEXT below you will receive the client's own brand information:
 - BRAND IDENTITY (user-provided): company name, brand voice, font style, colours. Use these EXACTLY.
 - BRAND ANALYSIS (brand book): industry, voice attributes, tone, writing style, target audience, value proposition, content themes, topics to avoid, key messages, CTA style, image style.
+- BRAND VISUAL — COVER IMAGE: exact colours (primary, secondary), typography/font style, and brand voice for the cover image. Use these EXACTLY in cover_image_description so the generated cover matches the brand.
 
-When the context includes BRAND IDENTITY or BRAND ANALYSIS, they OVERRIDE any domain-based guess. Use the exact company name given. Match the voice, tone, and themes the client provided. Do not substitute your own interpretation of the brand — follow the client's brand book.
+When the context includes BRAND IDENTITY, BRAND ANALYSIS, or BRAND VISUAL, they OVERRIDE any domain-based guess. Use the exact company name given. Match the voice, tone, colours, and themes the client provided. Do not substitute your own interpretation of the brand — follow the client's brand book.
 
 If no brand context is provided, fall back to domain-based detection below.
 
@@ -121,8 +122,9 @@ COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Aim for a BALANCED editorial composition like the hero images on https://flowproductions.pt/pt/blog — not too empty, not too busy.
 
 - COMPOSITION: 2–4 intentional elements — e.g. solid or gradient background + overlapping geometric shapes (circles, soft forms) + one symbolic or figurative accent (silhouette, hands, abstract motif) that supports the topic. Clear focal point. Feels designed and editorial, not random or cluttered.
+- COLOURS & STYLE: Use the EXACT colours, font style, and brand voice from the BRAND VISUAL — COVER IMAGE variables in the context below. The cover palette must match the brand (primary and secondary colours or the given colour palette). Typography mood should match the brand's font style and voice.
 - TEXT ON IMAGE: The cover MUST include a short headline on the image — like the Flow Productions blog heroes. The headline must be IN ENGLISH and SHORT (2–4 words max) so it fits on one line. The headline must be the TOP LAYER: no graphic elements (circles, shapes, icons) overlapping or covering the text — place decorative shapes behind the text or outside the headline area so the text is fully legible. Style: bold editorial typography. No logos or brand names; the headline is the only text.
-- STYLE: Wide banner (16:9). Cohesive palette (e.g. dark base with 1–2 accent colours). Flat or subtle depth; cut-out or sticker-style elements with clean edges are fine. No tiny details or busy patterns; no single floating shape on empty space.
+- STYLE: Wide banner (16:9). Flat or subtle depth; cut-out or sticker-style elements with clean edges are fine. No tiny details or busy patterns; no single floating shape on empty space.
 - cover_image_description: 1–2 sentences — background mood, main shapes, and the symbolic/focal element (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette, modern editorial style.").
 - cover_image_headline: Recommended. Very short phrase (2–4 words max) IN ENGLISH so it fits on one line without cropping. If the post is not in English, use an English equivalent (e.g. "Hybrid Events"). If omitted, a truncated title may be used and can get cut off.
 
@@ -214,9 +216,30 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     if (mb.logoUrl) lines.push(`Logo: ${mb.logoUrl}`);
   }
 
-  // Include brand book for additional context (defensive for missing fields)
+  // BRAND VISUAL — COVER IMAGE: exact variables for cover image (colours, font, voice)
   const rawBook = client.brandBook;
   const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as import("@/lib/brand-book/types").BrandBook; } catch { return null; } })() : rawBook;
+  if (client.manualBrand || (bb && bb.visualIdentity)) {
+    lines.push("");
+    lines.push("═══════════════════════════════");
+    lines.push("BRAND VISUAL — COVER IMAGE (use these EXACTLY for cover_image_description)");
+    lines.push("═══════════════════════════════");
+    if (client.manualBrand) {
+      const mb = client.manualBrand;
+      lines.push(`Cover colours: Primary ${mb.primaryColor}, Secondary ${mb.secondaryColor} (use these exact hex/brand colours for background and accents)`);
+      lines.push(`Cover typography / font style: ${mb.fontStyle}`);
+      lines.push(`Cover brand voice / mood: ${mb.brandVoice}`);
+    } else if (bb?.visualIdentity) {
+      lines.push(`Cover colour palette: ${bb.visualIdentity.colorPalette}`);
+      lines.push(`Cover aesthetic / typography: ${bb.visualIdentity.aestheticStyle}`);
+      lines.push(`Cover image style: ${bb.visualIdentity.imageStyle}`);
+      if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
+        lines.push(`Cover brand voice / mood: ${bb.voiceAttributes.join(", ")}`);
+      }
+    }
+  }
+
+  // Include brand book for additional context (defensive for missing fields)
   if (bb && typeof bb === "object") {
     lines.push("");
     lines.push("═══════════════════════════════");
@@ -294,7 +317,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
-  lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Cover MUST show headline text on the image IN ENGLISH (use cover_image_headline in English, or English equivalent of title). No logos or brand names.");
+  lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Use the EXACT colours, font style, and brand voice from BRAND VISUAL — COVER IMAGE above. Cover MUST show a SHORT headline (2–4 words) IN ENGLISH (use cover_image_headline). No logos or brand names.");
 
   return lines.join("\n");
 }

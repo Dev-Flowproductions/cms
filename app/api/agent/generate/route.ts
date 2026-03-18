@@ -220,7 +220,7 @@ export async function POST(request: Request) {
 
     if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
 
-    // ── Auto-generate cover image: graphic illustration (not photography)
+    // ── Auto-generate cover image: graphic illustration (not photography), using brand book colours/font/voice
     let coverPublicUrl: string | null = null;
     try {
       const coverSubject = generated.cover_image_description
@@ -229,9 +229,23 @@ export async function POST(request: Request) {
       const headlineForCover =
         generated.cover_image_headline ??
         generated.title.trim().split(/\s+/).slice(0, 4).join(" ");
+      const rawBook = clientCtx.brandBook;
+      const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } }; } catch { return null; } })() : rawBook;
+      const visualIdentity = bb?.visualIdentity;
+      const brandStyleParts: string[] = [];
+      if (clientCtx.manualBrand) {
+        const mb = clientCtx.manualBrand;
+        brandStyleParts.push(`Use EXACTLY these brand colours: primary ${mb.primaryColor}, secondary ${mb.secondaryColor} (for background and accents). Typography/font style: ${mb.fontStyle}. Brand voice/mood: ${mb.brandVoice}.`);
+      } else if (visualIdentity) {
+        if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
+        if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);
+        if (visualIdentity.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
+      }
+      const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
       const coverPrompt =
         `Editorial blog hero graphic (like Flow Productions blog): ${coverSubject}. ` +
         `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
+        brandStyle +
         `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
         `Include this text prominently on the image: "${headlineForCover}". The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible. The headline must be in English. Bold editorial typography. No logos or brand names; the headline above is the only text.`;
 

@@ -115,14 +115,15 @@ FORMATTING
 - All content in the specified locale language
 
 ═══════════════════════════════════════
-COVER IMAGE — GRAPHIC ILLUSTRATION (not photography)
+COVER IMAGE — SIMPLISTIC BANNER (graphic illustration)
 ═══════════════════════════════════════
 
-The cover is generated as a GRAPHIC ILLUSTRATION, not a photograph. Style reference: modern blog hero art like at https://flowproductions.pt/pt/blog — collage/sticker aesthetic, bold and playful.
+The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Keep it SIMPLISTIC so it scales well and stays sharp. Style reference: https://flowproductions.pt/pt/blog — minimal, clean hero banners.
 
-- Describe a GRAPHIC ILLUSTRATION concept: solid or gradient background, abstract or symbolic elements (cut-out shapes with white borders, simple 3D spheres or geometric forms), optional central concept (e.g. handshake, connection, flow). No real-world photography.
-- IMPORTANT: The image must NOT contain any logos, brand marks, icons, symbols, or company names. No text, letters, numbers, or words rendered in the image. Describe only abstract or generic figurative elements (e.g. "two hands shaking", "overlapping circles", "floating spheres") and mood/colors.
-- cover_image_description: 1–2 sentences describing the illustration composition and style (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette in foreground, modern corporate creative style.").
+- SIMPLICITY: Describe a MINIMAL composition — solid or soft gradient background, at most 2–3 simple elements (e.g. overlapping circles, one abstract shape, or a single symbolic silhouette). No busy collage, no many small details. Clean and uncluttered so it reads well at all sizes.
+- Format: Wide banner (16:9), flat or subtle depth. Bold shapes, limited palette (e.g. dark background with one accent color).
+- IMPORTANT: No logos, brand marks, icons, symbols, or company names. No text, letters, numbers, or words in the image. Only abstract or generic shapes and mood/colors.
+- cover_image_description: One short sentence — background color/mood plus 1–2 simple elements (e.g. "Dark charcoal background with two overlapping circles, purple and yellow, minimal flat style.").
 
 ═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)
@@ -291,7 +292,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
-  lines.push("CRITICAL: cover_image_description must describe a GRAPHIC ILLUSTRATION (not a photo): composition, shapes, colors, mood. No logos, brand marks, or text to be drawn in the image.");
+  lines.push("CRITICAL: cover_image_description must be SIMPLISTIC: one sentence, minimal elements (e.g. solid background + 1–2 shapes). No logos, brands, or text. Designed for a clean wide banner.");
 
   return lines.join("\n");
 }

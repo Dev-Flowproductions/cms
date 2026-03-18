@@ -218,13 +218,17 @@ export async function POST(request: Request) {
 
     if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
 
-    // ── Auto-generate cover image with Imagen
+    // ── Auto-generate cover image: graphic illustration (not photography)
     let coverPublicUrl: string | null = null;
     try {
+      const coverSubject = generated.cover_image_description
+        ? generated.cover_image_description
+        : `Graphic illustration for blog topic "${generated.focus_keyword}": solid or dark background, abstract shapes, modern creative style.`;
       const coverPrompt =
-        `Professional hero image for a blog post about: "${generated.focus_keyword}". ` +
-        `Wide landscape format, 16:9 ratio. High quality, modern, editorial photography style. ` +
-        `Clean composition, no text overlays, no watermarks.`;
+        `Graphic illustration (NOT photography) for a blog hero: ${coverSubject}. ` +
+        `Style: modern blog art — collage/sticker aesthetic, solid or gradient background, cut-out elements with white borders, simple 3D spheres or geometric shapes, bold composition. 4:3 aspect ratio. ` +
+        `High quality, flat design with depth, editorial illustration. ` +
+        `CRITICAL: Do NOT include any logos, brand marks, icons, symbols, or company names. NO text, NO letters, NO numbers, NO words in the image. Only abstract or generic figurative shapes and forms.`;
 
       const imgResponse = await imagenAI.models.generateContent({
         model: "gemini-3.1-flash-image-preview",

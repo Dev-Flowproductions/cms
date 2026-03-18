@@ -535,31 +535,28 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
   // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
-    // Build the Imagen prompt — use Gemini's specific description as the subject,
-    // but wrap it with strict negative constraints to prevent text/code/UI hallucinations.
+    // Graphic illustration (not photography). Style ref: flowproductions.pt blog.
     const coverSubject = coverImageDescription
       ? coverImageDescription
-      : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
+      : `Graphic illustration concept for "${titleForCoverPrompt}": solid or dark background, abstract shapes, modern creative style.`;
 
-    // Brand guidance: user-provided first, then brand book visual identity
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
     const brandStyleParts: string[] = [];
     if (manualBrand) {
-      brandStyleParts.push(`Color palette: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}.`);
-      brandStyleParts.push(`Visual style: ${manualBrand.fontStyle} aesthetic, ${manualBrand.brandVoice} mood.`);
+      brandStyleParts.push(`Colors: palette that complements ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}.`);
+      brandStyleParts.push(`Mood: ${manualBrand.fontStyle}, ${manualBrand.brandVoice}.`);
     }
     if (visualIdentity?.aestheticStyle) brandStyleParts.push(visualIdentity.aestheticStyle);
-    if (visualIdentity?.imageStyle) brandStyleParts.push(`Image style: ${visualIdentity.imageStyle}`);
+    if (visualIdentity?.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
     if (visualIdentity?.colorPalette && !manualBrand) brandStyleParts.push(visualIdentity.colorPalette);
     const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
 
     const coverPrompt =
-      `Editorial photography: ${coverSubject}. ` +
-      `4:3 aspect ratio, full-width hero image. ` +
+      `Graphic illustration (NOT photography) for a blog hero: ${coverSubject}. ` +
+      `Style: modern blog art like Flow Productions — collage/sticker aesthetic, solid or gradient background, cut-out elements with white borders, simple 3D spheres or geometric shapes, bold composition. 4:3 aspect ratio. ` +
       brandStyle +
-      `High quality, cinematic lighting, sharp focus, photorealistic. ` +
-      `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
-      `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
+      `High quality, flat design with depth, editorial illustration. ` +
+      `CRITICAL: Do NOT include any logos, brand marks, icons, symbols, or company names. NO text, NO letters, NO numbers, NO words in the image. Only abstract or generic figurative shapes and forms.`;
     const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: coverPrompt,

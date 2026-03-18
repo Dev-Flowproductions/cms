@@ -27,14 +27,13 @@ export async function POST(request: Request) {
   let contentType = "image/jpeg";
   let source = "gemini";
 
-  // ── Imagen via Gemini API ──────────────────────────────────────────────────
+  // ── Imagen via Gemini API: graphic illustration (not photography) ───────────
   try {
     const imagePrompt =
-      `Editorial photography: a professional scene related to "${query}". ` +
-      `4:3 aspect ratio, full-width hero image. ` +
-      `High quality, cinematic lighting, sharp focus, photorealistic. ` +
-      `IMPORTANT: pure photography only — absolutely NO text, NO letters, NO numbers, NO words, NO code, NO HTML, NO CSS, NO UI elements, NO screenshots, NO diagrams, NO overlays, NO watermarks, NO borders, NO captions. ` +
-      `The entire frame must be a real-world photographic scene with no written characters of any kind.`;
+      `Graphic illustration (NOT photography) for a blog hero about: "${query}". ` +
+      `Style: modern blog art — collage/sticker aesthetic, solid or gradient background, cut-out elements with white borders, simple 3D spheres or geometric shapes, bold composition. 4:3 aspect ratio. ` +
+      `High quality, flat design with depth, editorial illustration. ` +
+      `CRITICAL: Do NOT include any logos, brand marks, icons, symbols, or company names. NO text, NO letters, NO numbers, NO words in the image. Only abstract or generic figurative shapes and forms.`;
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",

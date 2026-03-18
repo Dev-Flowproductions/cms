@@ -115,6 +115,16 @@ FORMATTING
 - All content in the specified locale language
 
 ═══════════════════════════════════════
+COVER IMAGE — GRAPHIC ILLUSTRATION (not photography)
+═══════════════════════════════════════
+
+The cover is generated as a GRAPHIC ILLUSTRATION, not a photograph. Style reference: modern blog hero art like at https://flowproductions.pt/pt/blog — collage/sticker aesthetic, bold and playful.
+
+- Describe a GRAPHIC ILLUSTRATION concept: solid or gradient background, abstract or symbolic elements (cut-out shapes with white borders, simple 3D spheres or geometric forms), optional central concept (e.g. handshake, connection, flow). No real-world photography.
+- IMPORTANT: The image must NOT contain any logos, brand marks, icons, symbols, or company names. No text, letters, numbers, or words rendered in the image. Describe only abstract or generic figurative elements (e.g. "two hands shaking", "overlapping circles", "floating spheres") and mood/colors.
+- cover_image_description: 1–2 sentences describing the illustration composition and style (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette in foreground, modern corporate creative style.").
+
+═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)
 ═══════════════════════════════════════
 
@@ -122,7 +132,7 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "Physical scene matching post topic, 1-2 sentences",
+  "cover_image_description": "Graphic illustration concept for the post topic: composition, shapes, colors, mood — no logos, brands, or text (1-2 sentences)",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
@@ -281,6 +291,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
+  lines.push("CRITICAL: cover_image_description must describe a GRAPHIC ILLUSTRATION (not a photo): composition, shapes, colors, mood. No logos, brand marks, or text to be drawn in the image.");
 
   return lines.join("\n");
 }

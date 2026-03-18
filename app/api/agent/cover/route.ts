@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       `Editorial blog hero graphic (like Flow Productions blog) about: "${query}". ` +
       `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
       `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include a short headline in English prominently on the image (2–6 words that fit the topic; if the topic is in another language, use an English phrase that captures it). Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline is the only text.`;
+      `Include a short headline in English on the image (2–4 words). The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible. Bold editorial typography. No logos or brand names; the headline is the only text.`;
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",

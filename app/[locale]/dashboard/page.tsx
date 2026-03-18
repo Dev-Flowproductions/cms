@@ -8,6 +8,7 @@ import { UserMenu } from "./UserMenu";
 import { AccountSettingsCard } from "./AccountSettingsCard";
 import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppLogo } from "@/components/AppLogo";
 import { getUserReviewPosts } from "./review/actions";
 import { UserReviewQueue } from "./review/UserReviewQueue";
 
@@ -33,19 +34,9 @@ export default async function DashboardPage() {
       >
         <div className="max-w-7xl mx-auto px-6 py-0 flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "var(--accent)" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2.5 4h11M2.5 8h7M2.5 12h4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="font-bold text-sm tracking-tight" style={{ color: "var(--text)" }}>
-              {t("common.appName")}
-            </span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <AppLogo className="h-8 w-auto object-contain" />
+          </Link>
 
           {/* Right side */}
           <div className="flex items-center gap-4">

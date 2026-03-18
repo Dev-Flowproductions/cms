@@ -150,6 +150,8 @@ export type ClientContext = {
   gaTopPages?: string[] | null;
   gaTopKeywords?: string[] | null;
   searchConsoleQueries?: string[] | null;
+  /** Recent post titles for this client (scheduler only) — model must choose a different topic */
+  recentPostTitles?: string[] | null;
 };
 
 export type PostContext = {
@@ -259,6 +261,15 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     client.searchConsoleQueries.slice(0, 8).forEach((q) => lines.push(`  - ${q}`));
   }
 
+  if (client.recentPostTitles?.length) {
+    lines.push("");
+    lines.push("═══════════════════════════════");
+    lines.push("RECENT ARTICLES — CHOOSE A DIFFERENT TOPIC");
+    lines.push("═══════════════════════════════");
+    lines.push("The client already has these posts. Generate a NEW article on a completely different topic or angle. Do NOT repeat or closely mimic these titles or subjects:");
+    client.recentPostTitles.slice(0, 10).forEach((title) => lines.push(`  - ${title}`));
+  }
+
   lines.push("");
   lines.push("═══════════════════════════════");
   lines.push("CHECKLIST");
@@ -266,6 +277,9 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
   lines.push("SEO: keyword in title/intro/H2s/seo_title/meta, 5-8 variants, sentence case");
   lines.push("AEO: core argument, definition block, 5 FAQs, bold claims, EEAT signals");
   lines.push("GEO: 3+ attributed stats, 5+ named entities, date-anchored facts");
+  if (client.recentPostTitles?.length) {
+    lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
+  }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
 
   return lines.join("\n");

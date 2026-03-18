@@ -7,6 +7,7 @@ import { AdminLogoutButton } from "./AdminLogoutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RunSchedulerButton } from "./RunSchedulerButton";
 import { AdminSidebarShell } from "./AdminSidebarShell";
+import { AppLogo } from "@/components/AppLogo";
 
 export default async function AdminLayout({
   children,
@@ -24,14 +25,7 @@ export default async function AdminLayout({
           className="px-5 py-5 flex items-center gap-3"
           style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "var(--accent)" }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2.5 4h11M2.5 8h7M2.5 12h4.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </div>
+          <AppLogo className="h-8 w-auto flex-shrink-0 object-contain" />
           <div className="flex-1 min-w-0">
             <div className="font-bold text-sm leading-tight" style={{ color: "var(--text)" }}>
               {t("common.appName")}

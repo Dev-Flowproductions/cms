@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslations } from "next-intl";
+import { AppLogo } from "@/components/AppLogo";
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -77,19 +78,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--accent)" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 4.5h12M3 9h8M3 13.5h5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="font-bold text-lg" style={{ color: "var(--text)" }}>
-              {t("common.appName")}
-            </span>
-          </div>
+          <AppLogo className="h-10 w-auto object-contain" />
         </div>
 
         {/* Tagline */}
@@ -129,16 +118,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm animate-slide-up">
           {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--accent)" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 4.5h12M3 9h8M3 13.5h5" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="font-bold text-lg" style={{ color: "var(--text)" }}>{t("common.appName")}</span>
+          <div className="mb-10 lg:hidden">
+            <AppLogo className="h-9 w-auto object-contain" />
           </div>
 
           <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>

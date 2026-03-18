@@ -1,5 +1,4 @@
 import { requireTeamMember } from "@/lib/auth";
-import { Link } from "@/lib/navigation";
 import { getTranslations } from "next-intl/server";
 import { AdminNav } from "./AdminNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
@@ -45,16 +44,6 @@ export default async function AdminLayout({
         {/* Sidebar footer */}
         <div className="px-3 py-4 space-y-1" style={{ borderTop: "1px solid var(--border)" }}>
           <RunSchedulerButton />
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all w-full"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M6 2L2 6l4 4M2 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {t("admin.backToDashboard")}
-          </Link>
           <AdminLogoutButton />
         </div>
       </AdminSidebarShell>

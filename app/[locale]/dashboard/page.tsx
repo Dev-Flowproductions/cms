@@ -1,6 +1,7 @@
 import { getAuthUserWithRoles, hasAdminRole } from "@/lib/auth";
 import { getPostsForDashboard } from "@/lib/data/posts";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { Link } from "@/lib/navigation";
 import { DashboardPostsTable } from "./DashboardPostsTable";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
@@ -15,10 +16,17 @@ import { UserReviewQueue } from "./review/UserReviewQueue";
 export default async function DashboardPage() {
   const { user, roles } = await getAuthUserWithRoles();
   const isAdmin = hasAdminRole(roles);
+
+  // Admins land in the admin panel; no separate dashboard header link
+  if (isAdmin) {
+    const locale = await getLocale();
+    redirect(`/${locale}/admin`);
+  }
+
   const t = await getTranslations();
-  const posts = await getPostsForDashboard(user.id, isAdmin);
-  const clientSettings = isAdmin ? null : await getClientSettings(user.id).catch(() => null);
-  const reviewPosts = isAdmin ? [] : await getUserReviewPosts().catch(() => []);
+  const posts = await getPostsForDashboard(user.id, false);
+  const clientSettings = await getClientSettings(user.id).catch(() => null);
+  const reviewPosts = await getUserReviewPosts().catch(() => []);
 
   const initial = (user.email ?? "?")[0].toUpperCase();
 
@@ -42,21 +50,6 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <LocaleSwitcher />
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all admin-panel-link"
-                style={{
-                  border: "1px solid var(--border)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {t("dashboard.goToAdmin")}
-              </Link>
-            )}
-
-            {/* Avatar / user menu */}
             <UserMenu email={user.email ?? ""} initial={initial} />
           </div>
         </div>
@@ -77,17 +70,13 @@ export default async function DashboardPage() {
             className="text-xs font-semibold uppercase tracking-widest mb-2"
             style={{ color: "var(--accent)" }}
           >
-            {isAdmin ? t("dashboard.workspaceAdmin") : t("dashboard.workspaceUser")}
+            {t("dashboard.workspaceUser")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
-            {isAdmin
-              ? t("dashboard.adminWelcome")
-              : t("dashboard.welcome", { email: user.email ?? "" })}
+            {t("dashboard.welcome", { email: user.email ?? "" })}
           </h1>
           <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-            {isAdmin
-              ? t("dashboard.adminSubtitle")
-              : t("dashboard.userSubtitle")}
+            {t("dashboard.userSubtitle")}
           </p>
         </div>
 

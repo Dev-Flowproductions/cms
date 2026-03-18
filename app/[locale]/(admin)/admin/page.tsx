@@ -56,12 +56,12 @@ export default async function AdminPage() {
       {/* Live stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-10">
         {[
-          { label: "Total posts", value: stats.totalPosts, accent: false },
-          { label: "In review", value: stats.reviewQueue, accent: stats.reviewQueue > 0, href: "/admin/review-queue" },
-          { label: "Clients", value: stats.totalUsers, accent: false },
+          { labelKey: "statTotalPosts" as const, value: stats.totalPosts, accent: false },
+          { labelKey: "statInReview" as const, value: stats.reviewQueue, accent: stats.reviewQueue > 0, href: "/admin/review-queue" },
+          { labelKey: "statClients" as const, value: stats.totalUsers, accent: false },
         ].map((stat) => (
           <div
-            key={stat.label}
+            key={stat.labelKey}
             className="rounded-2xl p-5"
             style={{
               background: "var(--surface)",
@@ -76,7 +76,7 @@ export default async function AdminPage() {
               {stat.value}
             </div>
             <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {stat.label}
+              {t(stat.labelKey)}
             </div>
           </div>
         ))}
@@ -98,10 +98,10 @@ export default async function AdminPage() {
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-              {stats.reviewQueue} post{stats.reviewQueue > 1 ? "s" : ""} waiting for review
+              {t("reviewWaiting", { count: stats.reviewQueue })}
             </p>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Open the review queue to approve or reject them
+              {t("reviewOpenQueue")}
             </p>
           </div>
           <svg

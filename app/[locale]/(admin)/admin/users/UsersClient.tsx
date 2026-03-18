@@ -177,7 +177,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -270,277 +270,181 @@ export function UsersClient({ initialUsers, initialError }: Props) {
           </p>
         </div>
       ) : (
-        <div
-          className="rounded-2xl overflow-x-auto overflow-y-hidden"
-          style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
-        >
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {[
-                  t("colUser"),
-                  t("colDomain"),
-                  t("colFrequency"),
-                  t("colNextPost"),
-                  t("colGoogle"),
-                  "Brand",
-                  t("colWebhook"),
-                  t("colCreated"),
-                  t("colActions"),
-                ].map((h, i) => (
-                  <th
-                    key={i}
-                    className={`px-6 py-4 text-xs font-semibold uppercase tracking-widest ${i === 8 ? "text-right sticky right-0 bg-[var(--surface)] shadow-[-4px_0_8px_rgba(0,0,0,0.06)]" : "text-left"}`}
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u, i) => {
-                const isLast = i === users.length - 1;
-                const profileData = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles;
-                const displayName = profileData?.display_name;
-                const initial = (displayName ?? u.email ?? "?")[0].toUpperCase();
-                const isDeleting = deletingId === u.user_id;
-                const googleConnected = !!u.google_connected_at;
-                const onboardingPending = !u.domain;
-                const hasWebhook = !!u.webhook_url;
-                const webhookExpanded = expandedWebhook === u.user_id;
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {users.map((u) => {
+            const profileData = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles;
+            const displayName = profileData?.display_name;
+            const initial = (displayName ?? u.email ?? "?")[0].toUpperCase();
+            const isDeleting = deletingId === u.user_id;
+            const googleConnected = !!u.google_connected_at;
+            const onboardingPending = !u.domain;
+            const hasWebhook = !!u.webhook_url;
+            const webhookExpanded = expandedWebhook === u.user_id;
 
-                return (
-                  <React.Fragment key={u.id}>
-                    <tr
+            return (
+              <div
+                key={u.id}
+                className="rounded-2xl overflow-hidden flex flex-col"
+                style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+              >
+                {/* Top bar: identity + Delete */}
+                <div
+                  className="flex items-center justify-between gap-3 px-4 py-3 flex-shrink-0"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0"
                       style={{
-                        borderBottom: webhookExpanded ? "none" : (isLast ? "none" : "1px solid var(--border-subtle)"),
-                        transition: "background 0.15s",
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "var(--surface-raised)";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "transparent";
+                        background: "rgba(124,92,252,0.12)",
+                        border: "1px solid rgba(124,92,252,0.2)",
+                        color: "var(--accent)",
                       }}
                     >
-                      {/* User */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0"
-                            style={{
-                              background: "rgba(124,92,252,0.12)",
-                              border: "1px solid rgba(124,92,252,0.2)",
-                              color: "var(--accent)",
-                            }}
-                          >
-                            {initial}
-                          </span>
-                          <div>
-                            {displayName && (
-                              <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
-                                {displayName}
-                              </div>
-                            )}
-                            <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                              {u.email}
-                            </div>
-                          </div>
+                      {initial}
+                    </span>
+                    <div className="min-w-0">
+                      {displayName && (
+                        <div className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                          {displayName}
                         </div>
-                      </td>
-
-                      {/* Domain */}
-                      <td className="px-6 py-4">
-                        {onboardingPending ? (
-                          <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{ background: "rgba(245,166,35,0.1)", color: "#f5a623" }}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#f5a623" }} />
-                            {t("onboardingPending")}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-mono" style={{ color: "var(--text)" }}>
-                            {u.domain}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Frequency */}
-                      <td className="px-6 py-4">
-                        <span
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                          style={{ background: "rgba(124,92,252,0.1)", color: "var(--accent)" }}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                          {FREQUENCY_LABELS[u.frequency] ?? u.frequency}
-                        </span>
-                      </td>
-
-                      {/* Next post */}
-                      <td className="px-6 py-4">
-                        <span
-                          className="text-xs font-medium"
-                          style={{
-                            color: getNextPostLabel(u) === t("nextPostDueNow") ? "var(--accent)" : "var(--text-muted)",
-                          }}
-                        >
-                          {getNextPostLabel(u)}
-                        </span>
-                      </td>
-
-                      {/* Google */}
-                      <td className="px-6 py-4">
-                        {googleConnected ? (
-                          <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{ background: "rgba(34,211,160,0.1)", color: "#22d3a0" }}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
-                            {t("googleConnected")}
-                          </span>
-                        ) : (
-                          <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
-                        )}
-                      </td>
-
-                      {/* Brand (read-only; set by user in onboarding) */}
-                      <td className="px-6 py-4">
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          {u.company_name ?? u.brand_name ?? "—"}
-                        </span>
-                      </td>
-
-                      {/* Webhook */}
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedWebhook(webhookExpanded ? null : u.user_id)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all w-fit"
-                            style={{
-                              background: hasWebhook ? "rgba(34,211,160,0.1)" : "var(--surface-raised)",
-                              color: hasWebhook ? "#22d3a0" : "var(--text-muted)",
-                              border: hasWebhook ? "1px solid rgba(34,211,160,0.25)" : "1px solid var(--border)",
-                            }}
-                          >
-                            {hasWebhook ? (
-                              <>
-                                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
-                                {t("webhookConfigured")}
-                              </>
-                            ) : (
-                              <>
-                                <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-                                  <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                                </svg>
-                                {t("webhookNotSet")}
-                              </>
-                            )}
-                          </button>
-                          {u.last_generation_error && (
-                            <span
-                              className="text-[10px] font-medium max-w-[140px] truncate"
-                              style={{ color: "#f59e0b" }}
-                              title={u.last_generation_error}
-                            >
-                              {t("lastRunFailed")}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Created */}
-                      <td className="px-6 py-4 text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                        {new Date(u.created_at).toLocaleDateString(undefined, {
-                          day: "numeric", month: "short", year: "numeric",
-                        })}
-                      </td>
-
-                      {/* Actions — sticky so delete is always visible when table scrolls */}
-                      <td
-                        className="px-6 py-4 text-right sticky right-0"
-                        style={{
-                          background: "inherit",
-                          boxShadow: "-4px 0 8px rgba(0,0,0,0.06)",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(u.user_id, u.email ?? u.user_id)}
-                          disabled={isDeleting || isPending}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                          style={{
-                            color: "var(--danger)",
-                            background: "rgba(255,92,106,0.08)",
-                            border: "1px solid rgba(255,92,106,0.25)",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isDeleting && !isPending) {
-                              e.currentTarget.style.background = "rgba(255,92,106,0.15)";
-                              e.currentTarget.style.borderColor = "var(--danger)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(255,92,106,0.08)";
-                            e.currentTarget.style.borderColor = "rgba(255,92,106,0.25)";
-                          }}
-                          title={t("confirmDelete", { email: u.email ?? u.user_id })}
-                        >
-                          {isDeleting ? (
-                            "…"
-                          ) : (
-                            <>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                              </svg>
-                              {tCommon("delete")}
-                            </>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-
-                    {/* Expanded webhook editor */}
-                    {webhookExpanded && (
-                      <tr
-                        key={`${u.id}-webhook`}
-                        style={{ borderBottom: isLast ? "none" : "1px solid var(--border-subtle)" }}
-                      >
-                        <td colSpan={9} className="px-8 pb-5 pt-2">
-                          <div
-                            className="rounded-xl p-4"
-                            style={{
-                              background: "var(--surface-raised)",
-                              border: "1px solid var(--border)",
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-                                Publishing webhook
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedWebhook(null)}
-                                className="text-xs"
-                                style={{ color: "var(--text-faint)" }}
-                              >
-                                {t("webhookClose")}
-                              </button>
-                            </div>
-                            <WebhookRow user={u} t={t} />
-                          </div>
-                        </td>
-                      </tr>
+                      )}
+                      <div className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                        {u.email}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(u.user_id, u.email ?? u.user_id)}
+                    disabled={isDeleting || isPending}
+                    className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                    style={{
+                      color: "var(--danger)",
+                      background: "rgba(255,92,106,0.08)",
+                      border: "1px solid rgba(255,92,106,0.25)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isDeleting && !isPending) {
+                        e.currentTarget.style.background = "rgba(255,92,106,0.15)";
+                        e.currentTarget.style.borderColor = "var(--danger)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,92,106,0.08)";
+                      e.currentTarget.style.borderColor = "rgba(255,92,106,0.25)";
+                    }}
+                    title={t("confirmDelete", { email: u.email ?? u.user_id })}
+                  >
+                    {isDeleting ? "…" : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        {tCommon("delete")}
+                      </>
                     )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                  </button>
+                </div>
+
+                {/* Info grid */}
+                <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colDomain")}</p>
+                    {onboardingPending ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(245,166,35,0.1)", color: "#f5a623" }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#f5a623" }} />
+                        {t("onboardingPending")}
+                      </span>
+                    ) : (
+                      <span className="font-mono truncate block" style={{ color: "var(--text)" }} title={u.domain ?? undefined}>{u.domain ?? "—"}</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colFrequency")}</p>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(124,92,252,0.1)", color: "var(--accent)" }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} />
+                      {FREQUENCY_LABELS[u.frequency] ?? u.frequency}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colNextPost")}</p>
+                    <span className="font-medium" style={{ color: getNextPostLabel(u) === t("nextPostDueNow") ? "var(--accent)" : "var(--text-muted)" }}>
+                      {getNextPostLabel(u)}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colGoogle")}</p>
+                    {googleConnected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(34,211,160,0.1)", color: "#22d3a0" }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
+                        {t("googleConnected")}
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-faint)" }}>—</span>
+                    )}
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colBrand")}</p>
+                    <span className="truncate block" style={{ color: "var(--text-muted)" }}>{u.company_name ?? u.brand_name ?? "—"}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colWebhook")}</p>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedWebhook(webhookExpanded ? null : u.user_id)}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-all w-fit"
+                      style={{
+                        background: hasWebhook ? "rgba(34,211,160,0.1)" : "var(--surface-raised)",
+                        color: hasWebhook ? "#22d3a0" : "var(--text-muted)",
+                        border: hasWebhook ? "1px solid rgba(34,211,160,0.25)" : "1px solid var(--border)",
+                      }}
+                    >
+                      {hasWebhook ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22d3a0" }} />
+                          {t("webhookConfigured")}
+                        </>
+                      ) : (
+                        t("webhookNotSet")
+                      )}
+                    </button>
+                    {u.last_generation_error && (
+                      <span className="block text-[10px] font-medium mt-0.5 truncate" style={{ color: "#f59e0b" }} title={u.last_generation_error}>
+                        {t("lastRunFailed")}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{t("colCreated")}</p>
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {new Date(u.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Expanded webhook editor */}
+                {webhookExpanded && (
+                  <div
+                    className="px-4 pb-4 pt-0 flex-shrink-0"
+                    style={{ borderTop: "1px solid var(--border)" }}
+                  >
+                    <div className="rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Publishing webhook</p>
+                        <button type="button" onClick={() => setExpandedWebhook(null)} className="text-xs" style={{ color: "var(--text-faint)" }}>
+                          {t("webhookClose")}
+                        </button>
+                      </div>
+                      <WebhookRow user={u} t={t} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -544,12 +544,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
     const brandStyleParts: string[] = [];
     if (manualBrand) {
-      brandStyleParts.push(`Colors: palette that complements ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}.`);
-      brandStyleParts.push(`Mood: ${manualBrand.fontStyle}, ${manualBrand.brandVoice}.`);
+      brandStyleParts.push(`Use EXACTLY these brand colours: primary ${manualBrand.primaryColor}, secondary ${manualBrand.secondaryColor} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
+    } else if (visualIdentity) {
+      if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
+      if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);
+      if (visualIdentity.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
     }
-    if (visualIdentity?.aestheticStyle) brandStyleParts.push(visualIdentity.aestheticStyle);
-    if (visualIdentity?.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
-    if (visualIdentity?.colorPalette && !manualBrand) brandStyleParts.push(visualIdentity.colorPalette);
     const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
 
     const headlineForCover =

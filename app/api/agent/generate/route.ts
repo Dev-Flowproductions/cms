@@ -126,6 +126,7 @@ export async function POST(request: Request) {
 
     let generated: {
       title: string;
+      cover_image_description?: string | null;
       seo_title: string;
       seo_description: string;
       focus_keyword: string;

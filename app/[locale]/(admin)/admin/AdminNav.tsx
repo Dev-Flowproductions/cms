@@ -6,6 +6,15 @@ import { usePathname } from "@/lib/navigation";
 
 const NAV_ITEMS = [
   {
+    key: "dashboard",
+    href: "/admin",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path d="M1.5 3h4v4h-4V3zM9.5 3h4v4h-4V3zM1.5 8h4v4h-4V8zM9.5 8h4v4h-4V8z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     key: "posts",
     href: "/admin/posts",
     icon: (
@@ -58,7 +67,7 @@ export function AdminNav() {
         {t("navigationLabel")}
       </p>
       {NAV_ITEMS.map((item) => {
-        const isActive = pathname.includes(item.href);
+        const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.key}

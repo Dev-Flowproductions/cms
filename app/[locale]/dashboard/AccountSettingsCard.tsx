@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   updateClientFrequency,
+  updateClientDomain,
   updateUserAutoPublish,
   type Frequency,
 } from "@/app/[locale]/(admin)/admin/users/actions";
@@ -75,6 +76,11 @@ export function AccountSettingsCard({
   const [brandSaving, setBrandSaving] = useState(false);
   const [brandSaved, setBrandSaved] = useState(false);
   const [brandError, setBrandError] = useState<string | null>(null);
+
+  const [domain, setDomain] = useState(settings?.domain ?? "");
+  const [domainSaving, setDomainSaving] = useState(false);
+  const [domainSaved, setDomainSaved] = useState(false);
+  const [domainError, setDomainError] = useState<string | null>(null);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
     { value: "daily",    label: t("frequency.daily"),    sublabel: t("frequency.dailySublabel") },
@@ -168,21 +174,60 @@ export function AccountSettingsCard({
             {t("title")}
           </h2>
         </div>
-        {settings.domain && (
-          <span
-            className="text-xs font-mono px-3 py-1 rounded-lg"
-            style={{
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border)",
-              color: "var(--text-muted)",
-            }}
-          >
-            {settings.domain}
-          </span>
-        )}
       </div>
 
       <div className="px-6 py-6 space-y-8">
+
+        {/* Website domain — editable */}
+        <div
+          className="rounded-xl p-5 space-y-3"
+          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {tBrand("domainLabel")}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => { setDomain(e.target.value); setDomainError(null); }}
+              placeholder="yourdomain.com"
+              className="flex-1 min-w-[200px] px-4 py-2.5 rounded-lg text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              style={inputStyle}
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                setDomainSaving(true);
+                setDomainError(null);
+                setDomainSaved(false);
+                const result = await updateClientDomain(userId, domain);
+                setDomainSaving(false);
+                if (result.error) {
+                  setDomainError(result.error === "domain_taken" ? tBrand("errorDomainTaken") : result.error);
+                  return;
+                }
+                setDomainSaved(true);
+                setTimeout(() => setDomainSaved(false), 3000);
+                router.refresh();
+              }}
+              disabled={domainSaving || domain.trim() === "" || domain.trim().toLowerCase().replace(/^https?:\/\//, "") === (settings.domain ?? "")}
+              className="px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+              }}
+            >
+              {domainSaving ? t("saving") : domainSaved ? t("saved") : t("saveChanges")}
+            </button>
+          </div>
+          {domainError && (
+            <p className="text-xs" style={{ color: "var(--danger)" }}>{domainError}</p>
+          )}
+        </div>
 
         {/* Google connection */}
         <div

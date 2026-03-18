@@ -162,6 +162,32 @@ export async function saveGoogleTokens(
   return { success: true };
 }
 
+export async function updateClientDomain(userId: string, domain: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) return { error: "Forbidden" };
+
+  const normalized = domain.trim().toLowerCase().replace(/^https?:\/\//, "");
+  if (!normalized) return { error: "Domain is required" };
+
+  const admin = createAdminClient();
+  const { data: taken } = await admin
+    .from("clients")
+    .select("user_id")
+    .eq("domain", normalized)
+    .maybeSingle();
+  if (taken && taken.user_id !== userId) {
+    return { error: "domain_taken" };
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ domain: normalized, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 export async function updateClientFrequency(userId: string, frequency: Frequency) {
   const supabase = await createClient();
   const { error } = await supabase

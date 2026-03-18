@@ -18,28 +18,55 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Domain is required" }, { status: 400 });
   }
 
-  // Check if another client already registered this domain
   const admin = createAdminClient();
-  const { data: existing } = await admin
+
+  // Ensure client row exists
+  const { data: existingClient } = await admin
     .from("clients")
-    .select("user_id")
-    .eq("domain", domain)
+    .select("id")
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  if (existing && existing.user_id !== user.id) {
-    return NextResponse.json(
-      { error: "domain_taken" },
-      { status: 409 }
-    );
-  }
+  if (!existingClient) {
+    const { data: domainTaken } = await admin
+      .from("clients")
+      .select("user_id")
+      .eq("domain", domain)
+      .maybeSingle();
+    if (domainTaken) {
+      return NextResponse.json({ error: "domain_taken" }, { status: 409 });
+    }
+    const { error: insertErr } = await admin.from("clients").insert({
+      user_id: user.id,
+      domain,
+      frequency: "weekly",
+    });
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
+  } else {
+    // Check if domain is taken by another user
+    const { data: existing } = await admin
+      .from("clients")
+      .select("user_id")
+      .eq("domain", domain)
+      .maybeSingle();
 
-  const { error } = await supabase
-    .from("clients")
-    .update({ domain })
-    .eq("user_id", user.id);
+    if (existing && existing.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "domain_taken" },
+        { status: 409 }
+      );
+    }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error } = await supabase
+      .from("clients")
+      .update({ domain })
+      .eq("user_id", user.id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
   // Generate brand book in background (don't block onboarding)

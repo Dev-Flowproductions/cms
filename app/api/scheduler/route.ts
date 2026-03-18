@@ -143,6 +143,7 @@ type GeneratedContent = {
   slug?: string;
   core_argument?: string;
   cover_image_description?: string;
+  cover_image_headline?: string;
   seo_title: string;
   seo_description: string;
   focus_keyword: string;
@@ -551,15 +552,20 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     if (visualIdentity?.colorPalette && !manualBrand) brandStyleParts.push(visualIdentity.colorPalette);
     const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
 
+    const headlineForCover = primaryContent.cover_image_headline ?? primaryContent.title;
     const coverPrompt =
-      `Simplistic graphic banner for a blog hero: ${coverSubject}. ` +
-      `MINIMAL composition only: solid or soft gradient background, at most 2–3 simple shapes (e.g. overlapping circles, one abstract form). No busy details, no collage. Clean wide banner, 16:9 aspect ratio. ` +
+      `Editorial blog hero graphic (like Flow Productions blog): ${coverSubject}. ` +
+      `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
       brandStyle +
-      `Flat or subtle depth, bold shapes, limited palette. High clarity so it scales well. ` +
-      `CRITICAL: No logos, brand marks, icons, symbols, or company names. NO text, letters, numbers, or words. Only abstract shapes and colors.`;
+      `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
+      `Include this text prominently on the image: "${headlineForCover}". Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
     const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: coverPrompt,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
+      },
     });
 
     const parts = imgResponse.candidates?.[0]?.content?.parts ?? [];

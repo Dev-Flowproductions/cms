@@ -29,15 +29,20 @@ export async function POST(request: Request) {
 
   // ── Imagen via Gemini API: graphic illustration (not photography) ───────────
   try {
+    const headlineForCover = query.length > 50 ? query.slice(0, 50).trim() + "…" : query;
     const imagePrompt =
-      `Simplistic graphic banner for a blog hero about: "${query}". ` +
-      `MINIMAL composition only: solid or soft gradient background, at most 2–3 simple shapes (e.g. overlapping circles, one abstract form). No busy details, no collage. Clean wide banner, 16:9 aspect ratio. ` +
-      `Flat or subtle depth, bold shapes, limited palette. High clarity so it scales well. ` +
-      `CRITICAL: No logos, brand marks, icons, symbols, or company names. NO text, letters, numbers, or words. Only abstract shapes and colors.`;
+      `Editorial blog hero graphic (like Flow Productions blog) about: "${query}". ` +
+      `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
+      `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
+      `Include this text prominently on the image: "${headlineForCover}". Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: imagePrompt,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
+      },
     });
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];

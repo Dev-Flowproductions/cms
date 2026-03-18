@@ -128,6 +128,36 @@ export function UsersClient({ initialUsers, initialError }: Props) {
     monthly: tSettings("monthly"),
   };
 
+  const FREQUENCY_INTERVAL_MS: Record<string, number> = {
+    daily: 1 * 24 * 60 * 60 * 1000,
+    weekly: 7 * 24 * 60 * 60 * 1000,
+    biweekly: 14 * 24 * 60 * 60 * 1000,
+    monthly: 30 * 24 * 60 * 60 * 1000,
+  };
+
+  function getNextPostLabel(user: ClientRow): string {
+    if (!user.domain) return "—";
+    const intervalMs = FREQUENCY_INTERVAL_MS[user.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
+    const lastRun = user.last_post_generated_at ? new Date(user.last_post_generated_at).getTime() : 0;
+    const dueInMs = intervalMs - (Date.now() - lastRun);
+    if (dueInMs <= 0) return t("nextPostDueNow");
+    const days = Math.floor(dueInMs / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((dueInMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const minutes = Math.max(1, Math.floor(dueInMs / 60000));
+    if (days >= 1) return days === 1 ? t("nextPostInOneDay") : t("nextPostInDays", { count: days });
+    if (hours >= 1) return hours === 1 ? t("nextPostInOneHour") : t("nextPostInHours", { count: hours });
+    return minutes === 1 ? t("nextPostInOneMinute") : t("nextPostInMinutes", { count: minutes });
+  }
+
+  function isDueNow(user: ClientRow): boolean {
+    if (!user.domain) return false;
+    const intervalMs = FREQUENCY_INTERVAL_MS[user.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
+    const lastRun = user.last_post_generated_at ? new Date(user.last_post_generated_at).getTime() : 0;
+    return intervalMs - (Date.now() - lastRun) <= 0;
+  }
+
+  const dueNowCount = users.filter(isDueNow).length;
+
   function handleSuccess() {
     setShowForm(false);
     startTransition(() => { router.refresh(); });
@@ -202,6 +232,22 @@ export function UsersClient({ initialUsers, initialError }: Props) {
         </div>
       )}
 
+      {dueNowCount > 0 && (
+        <div
+          className="mb-6 px-4 py-3 rounded-xl text-sm flex items-center gap-3"
+          style={{
+            background: "rgba(124,92,252,0.08)",
+            border: "1px solid rgba(124,92,252,0.25)",
+            color: "var(--text)",
+          }}
+        >
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
+          <span>
+            {t("dueNowHint", { count: dueNowCount })}
+          </span>
+        </div>
+      )}
+
       {users.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center py-20 rounded-2xl text-center"
@@ -235,6 +281,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                   t("colUser"),
                   t("colDomain"),
                   t("colFrequency"),
+                  t("colNextPost"),
                   t("colGoogle"),
                   "Brand",
                   t("colWebhook"),
@@ -243,7 +290,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                 ].map((h, i) => (
                   <th
                     key={i}
-                    className={`px-6 py-4 text-xs font-semibold uppercase tracking-widest ${i === 7 ? "text-right sticky right-0 bg-[var(--surface)] shadow-[-4px_0_8px_rgba(0,0,0,0.06)]" : "text-left"}`}
+                    className={`px-6 py-4 text-xs font-semibold uppercase tracking-widest ${i === 8 ? "text-right sticky right-0 bg-[var(--surface)] shadow-[-4px_0_8px_rgba(0,0,0,0.06)]" : "text-left"}`}
                     style={{ color: "var(--text-muted)" }}
                   >
                     {h}
@@ -328,6 +375,18 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} />
                           {FREQUENCY_LABELS[u.frequency] ?? u.frequency}
+                        </span>
+                      </td>
+
+                      {/* Next post */}
+                      <td className="px-6 py-4">
+                        <span
+                          className="text-xs font-medium"
+                          style={{
+                            color: getNextPostLabel(u) === t("nextPostDueNow") ? "var(--accent)" : "var(--text-muted)",
+                          }}
+                        >
+                          {getNextPostLabel(u)}
                         </span>
                       </td>
 
@@ -451,7 +510,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         key={`${u.id}-webhook`}
                         style={{ borderBottom: isLast ? "none" : "1px solid var(--border-subtle)" }}
                       >
-                        <td colSpan={8} className="px-8 pb-5 pt-2">
+                        <td colSpan={9} className="px-8 pb-5 pt-2">
                           <div
                             className="rounded-xl p-4"
                             style={{

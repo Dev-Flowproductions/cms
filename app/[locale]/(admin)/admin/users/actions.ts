@@ -94,6 +94,7 @@ export type ClientRow = {
   email?: string;
   last_generation_error?: string | null;
   last_generation_error_at?: string | null;
+  last_post_generated_at?: string | null;
 };
 
 export async function listUsers(): Promise<ClientRow[]> {
@@ -102,7 +103,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, last_generation_error, last_generation_error_at, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 

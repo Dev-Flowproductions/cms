@@ -152,27 +152,29 @@ type GeneratedContent = {
   seo_score?: { seo: number; aeo: number; geo: number; notes: string };
 };
 
+type SchedulerClient = {
+  id: string;
+  user_id: string;
+  domain: string;
+  frequency: string;
+  google_access_token: string | null;
+  google_scope: string | null;
+  auto_publish?: boolean | null;
+  webhook_url?: string | null;
+  post_locale?: string | null;
+  brand_name?: string | null;
+  brand_tone?: string | null;
+  brand_book?: unknown;
+  company_name?: string | null;
+  logo_url?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  font_style?: string | null;
+  brand_voice?: string | null;
+};
+
 async function generatePostForClient(
-  client: {
-    id: string;
-    user_id: string;
-    domain: string;
-    frequency: string;
-    google_access_token: string | null;
-    google_scope: string | null;
-    auto_publish?: boolean | null;
-    webhook_url?: string | null;
-    post_locale?: string | null;
-    brand_name?: string | null;
-    brand_tone?: string | null;
-    brand_book?: import("@/lib/brand-book/types").BrandBook | null;
-    company_name?: string | null;
-    logo_url?: string | null;
-    primary_color?: string | null;
-    secondary_color?: string | null;
-    font_style?: string | null;
-    brand_voice?: string | null;
-  },
+  client: SchedulerClient,
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
   imagenAI: GoogleGenAI,
@@ -183,6 +185,21 @@ async function generatePostForClient(
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());
+
+  // Fetch recent post titles so the model chooses a different topic
+  const { data: recentPosts } = await admin
+    .from("posts")
+    .select("id, post_localizations(locale, title)")
+    .eq("author_id", client.user_id)
+    .order("created_at", { ascending: false })
+    .limit(15);
+  const recentPostTitles = (recentPosts ?? [])
+    .map((p) => {
+      const locs = (p as { post_localizations?: Array<{ locale: string; title: string | null }> }).post_localizations ?? [];
+      const pt = locs.find((l) => l.locale === "pt");
+      return pt?.title?.trim() ?? null;
+    })
+    .filter((t): t is string => !!t);
 
   // Use brand name if set, otherwise domain as topic hint (Gemini will generate the actual focus keyword)
   const topicHint = client.brand_name ?? client.domain.replace(/^www\./, "").replace(/\.[a-z]+$/, "");
@@ -216,20 +233,22 @@ async function generatePostForClient(
     brandVoice: client.brand_voice ?? "professional",
   } : null;
 
+  const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
   const clientCtx: ClientContext = {
     domain: client.domain,
     brandName: client.company_name ?? client.brand_name ?? null,
     brandTone: client.brand_voice ?? client.brand_tone ?? null,
-    brandBook: client.brand_book ?? null,
+    brandBook: brandBook ?? null,
     manualBrand,
     websiteSummary: null,
-    industry: client.brand_book?.industry ?? null,
+    industry: (brandBook as { industry?: string } | null)?.industry ?? null,
     gaTopPages: null,
     gaTopKeywords: null,
     searchConsoleQueries: null,
+    recentPostTitles: recentPostTitles.length > 0 ? recentPostTitles : null,
   };
 
-  const brandName = client.brand_book?.brandName ?? client.brand_name ?? client.domain;
+  const brandName = (brandBook as { brandName?: string } | null)?.brandName ?? client.brand_name ?? client.domain;
   const publisherEntity = {
     "@type": "Organization",
     "name": brandName,
@@ -407,7 +426,7 @@ RULES:
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
 - Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
-- The cover image placeholder ![Cover image]({COVER_IMAGE_PLACEHOLDER}) must remain exactly as-is.
+- Do not add a date line or cover image in content_md; the website template shows them above the body.
 - Do NOT add, remove, or change any facts, statistics, or claims — only translate.
 - Use natural, fluent ${langName} — not word-for-word translation.
 
@@ -523,7 +542,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       : `A professional scene related to "${titleForCoverPrompt}" in the digital production industry`;
 
     // Brand guidance: user-provided first, then brand book visual identity
-    const visualIdentity = (client.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
+    const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
     const brandStyleParts: string[] = [];
     if (manualBrand) {
       brandStyleParts.push(`Color palette: tones that complement ${manualBrand.primaryColor} and ${manualBrand.secondaryColor}.`);

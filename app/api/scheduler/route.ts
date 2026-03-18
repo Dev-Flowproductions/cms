@@ -552,11 +552,11 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
 
     const coverPrompt =
-      `Graphic illustration (NOT photography) for a blog hero: ${coverSubject}. ` +
-      `Style: modern blog art like Flow Productions — collage/sticker aesthetic, solid or gradient background, cut-out elements with white borders, simple 3D spheres or geometric shapes, bold composition. 4:3 aspect ratio. ` +
+      `Simplistic graphic banner for a blog hero: ${coverSubject}. ` +
+      `MINIMAL composition only: solid or soft gradient background, at most 2–3 simple shapes (e.g. overlapping circles, one abstract form). No busy details, no collage. Clean wide banner, 16:9 aspect ratio. ` +
       brandStyle +
-      `High quality, flat design with depth, editorial illustration. ` +
-      `CRITICAL: Do NOT include any logos, brand marks, icons, symbols, or company names. NO text, NO letters, NO numbers, NO words in the image. Only abstract or generic figurative shapes and forms.`;
+      `Flat or subtle depth, bold shapes, limited palette. High clarity so it scales well. ` +
+      `CRITICAL: No logos, brand marks, icons, symbols, or company names. NO text, letters, numbers, or words. Only abstract shapes and colors.`;
     const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: coverPrompt,

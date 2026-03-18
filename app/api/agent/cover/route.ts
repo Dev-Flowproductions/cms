@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
       brandStyle +
       `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include a short headline in English on the image (2–4 words). The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible. Bold editorial typography. No logos or brand names; the headline is the only text.`;
+      `Include a short headline in English on the image ONCE only (2–4 words, one line). Do not repeat or duplicate the headline — show it one time only. The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible and never cut. Bold editorial typography. No logos or brand names; the headline is the only text.`;
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",

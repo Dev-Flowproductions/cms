@@ -24,8 +24,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Domain and company name are required" }, { status: 400 });
   }
 
-  // Check if domain is taken by another user
   const admin = createAdminClient();
+
+  // Ensure client row exists (onboarding may run before admin has created it, or row was missing)
+  const { data: existingClient } = await admin
+    .from("clients")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!existingClient) {
+    const { error: insertErr } = await admin.from("clients").insert({
+      user_id: user.id,
+      domain: null,
+      frequency: "weekly",
+    });
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
+  }
+
+  // Check if domain is taken by another user
   const { data: existing } = await admin
     .from("clients")
     .select("user_id")

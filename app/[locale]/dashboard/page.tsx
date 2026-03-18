@@ -28,6 +28,12 @@ export default async function DashboardPage() {
   const clientSettings = await getClientSettings(user.id).catch(() => null);
   const reviewPosts = await getUserReviewPosts().catch(() => []);
 
+  // Incomplete onboarding: no client row or domain not set — send to onboarding
+  if (!clientSettings || !clientSettings.domain) {
+    const locale = await getLocale();
+    redirect(`/${locale}/onboarding/domain`);
+  }
+
   const initial = (user.email ?? "?")[0].toUpperCase();
 
   return (

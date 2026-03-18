@@ -29,12 +29,11 @@ export async function POST(request: Request) {
 
   // ── Imagen via Gemini API: graphic illustration (not photography) ───────────
   try {
-    const headlineForCover = query.length > 50 ? query.slice(0, 50).trim() + "…" : query;
     const imagePrompt =
       `Editorial blog hero graphic (like Flow Productions blog) about: "${query}". ` +
       `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
       `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include this text prominently on the image: "${headlineForCover}". Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
+      `Include a short headline in English prominently on the image (2–6 words that fit the topic; if the topic is in another language, use an English phrase that captures it). Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline is the only text.`;
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",

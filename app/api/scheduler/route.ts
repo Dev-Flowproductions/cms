@@ -558,7 +558,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
       brandStyle +
       `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include this text prominently on the image: "${headlineForCover}". Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
+      `Include this text prominently on the image: "${headlineForCover}". The headline must be in English. Bold editorial typography, integrated with the composition (like Flow Productions blog). No logos or brand names; the headline above is the only text.`;
     const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: coverPrompt,

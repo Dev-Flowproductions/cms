@@ -121,10 +121,10 @@ COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Aim for a BALANCED editorial composition like the hero images on https://flowproductions.pt/pt/blog — not too empty, not too busy.
 
 - COMPOSITION: 2–4 intentional elements — e.g. solid or gradient background + overlapping geometric shapes (circles, soft forms) + one symbolic or figurative accent (silhouette, hands, abstract motif) that supports the topic. Clear focal point. Feels designed and editorial, not random or cluttered.
-- TEXT ON IMAGE: The cover MUST include a short headline or phrase on the image — like the Flow Productions blog heroes. Use the post title or a punchy 2–6 word variation in the post language. Style: bold editorial typography, integrated with the composition. No logos or brand names; the headline is the only text.
+- TEXT ON IMAGE: The cover MUST include a short headline or phrase on the image — like the Flow Productions blog heroes. The headline must be IN ENGLISH (even if the post is in another language). Use cover_image_headline or an English equivalent of the title. Style: bold editorial typography, integrated with the composition. No logos or brand names; the headline is the only text.
 - STYLE: Wide banner (16:9). Cohesive palette (e.g. dark base with 1–2 accent colours). Flat or subtle depth; cut-out or sticker-style elements with clean edges are fine. No tiny details or busy patterns; no single floating shape on empty space.
 - cover_image_description: 1–2 sentences — background mood, main shapes, and the symbolic/focal element (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette, modern editorial style.").
-- cover_image_headline: Optional. Short phrase (2–6 words) to display on the cover, in the post language. If omitted, the title is used.
+- cover_image_headline: Optional. Short phrase (2–6 words) IN ENGLISH to display on the cover. Strongly recommended so the image always shows English text; if the post is not in English, provide an English equivalent. If omitted, an English version of the title may be used.
 
 ═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)
@@ -135,7 +135,7 @@ OUTPUT (JSON only, no markdown fences)
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
   "cover_image_description": "Graphic illustration concept: composition, shapes, colors, mood (1-2 sentences). Headline text will be added from title or cover_image_headline.",
-  "cover_image_headline": "Optional. 2-6 word phrase for the image (post language). If omitted, title is used.",
+  "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
@@ -294,7 +294,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
-  lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Cover MUST show headline text on the image (title or cover_image_headline). No logos or brand names.");
+  lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Cover MUST show headline text on the image IN ENGLISH (use cover_image_headline in English, or English equivalent of title). No logos or brand names.");
 
   return lines.join("\n");
 }

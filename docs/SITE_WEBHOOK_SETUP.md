@@ -70,7 +70,23 @@ For `post.deleted`, the payload is minimal (event, siteId, post id/slug, timesta
 
 ---
 
-## 4. Configure the webhook in the CMS
+## 4. Pre-flight checklist (before registering the webhook)
+
+Before you register the webhook URL in CMS Admin, confirm:
+
+1. **Webhook endpoint is live and returns 401 (not 404).**  
+   The route `/api/cms-webhook` (or your equivalent) must already be deployed. Check with:  
+   `curl -X POST https://yourdomain.com/api/cms-webhook`  
+   You should get **401 Unauthorized** (missing or wrong secret), **not** **404 Not Found**. If you get 404, the deployment has not included the webhook route yet (e.g. if Vercel’s git-triggered deployment was blocked by plan restrictions, deploy manually with `npx vercel deploy --prod`).
+
+2. **`cover_image_url` is a full absolute HTTPS URL** pointing to a publicly accessible resource (your CMS image CDN or storage).
+
+3. **Next.js: allow external images.**  
+   Next.js blocks remote images by default. Any Next.js site using the CMS must either add a wildcard `remotePatterns` entry or explicitly add the CMS image CDN hostname in `next.config.ts`. Otherwise cover images will render broken even when the URL is valid. See [§5.1 Next.js: allowing external cover images](#51-nextjs-allowing-external-cover-images) below.
+
+---
+
+## 5. Configure the webhook in the CMS
 
 A CMS admin must set **your** site’s webhook details:
 
@@ -82,9 +98,52 @@ A CMS admin must set **your** site’s webhook details:
 
 After this, when a post is published (manually or via auto-publish), the CMS will `POST` to your URL with the payload above.
 
+### 5.1 Next.js: allowing external cover images
+
+Next.js requires you to explicitly whitelist the domains from which `<Image>` components can load remote URLs. Until a domain (or a wildcard pattern) is declared in `next.config.ts` under `images.remotePatterns`, any external image URL will render as broken — even if the URL is valid and publicly accessible.
+
+Any Next.js site using the CMS must either:
+
+- Add a wildcard pattern (e.g. allow all HTTPS origins), or  
+- Explicitly add the CMS image CDN hostname to `next.config.ts`
+
+before deploying. Example (wildcard):
+
+```ts
+// next.config.ts
+export default {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**', pathname: '/**' },
+    ],
+  },
+}
+```
+
+Or list the CMS image host explicitly:
+
+```ts
+remotePatterns: [
+  { protocol: 'https', hostname: 'your-cms-cdn.example.com', pathname: '/**' },
+],
+```
+
+### 5.2 Verify the webhook endpoint before registering
+
+After you deploy your site, **verify the webhook URL is reachable** before testing from the CMS. From a terminal:
+
+```bash
+curl -X POST https://yourdomain.com/api/cms-webhook
+```
+
+- **401 Unauthorized** — correct. The route exists and is rejecting the request (no/invalid secret).
+- **404 Not Found** — the route is not deployed yet. Ensure the deployment included the webhook route (e.g. deploy manually with `npx vercel deploy --prod` if git-triggered deploys are blocked).
+
 ---
 
-## 5. Quick checklist
+## 6. Quick checklist
+
+**Before registering in CMS Admin:** complete the [Pre-flight checklist (§4)](#4-pre-flight-checklist-before-registering-the-webhook) (endpoint returns 401, `cover_image_url` is HTTPS, Next.js `remotePatterns` if applicable).
 
 | Step | Where | Action |
 |------|--------|--------|
@@ -96,7 +155,7 @@ After this, when a post is published (manually or via auto-publish), the CMS wil
 
 ---
 
-## 6. Testing
+## 7. Testing
 
 - Use **CMS Admin** to set the webhook URL to a test endpoint (e.g. [webhook.site](https://webhook.site) or a local tunnel) and publish a post to inspect the payload.
 - The CMS also exposes a test endpoint: `POST /api/test-webhook` (on the CMS host) — you can send a sample payload there to see the logging format; your **site** must still implement its own URL that the CMS will call.

@@ -20,9 +20,9 @@ const FREQUENCY_INTERVAL_MS: Record<string, number> = {
 /**
  * POST /api/scheduler/run
  *
- * Called by Vercel Cron (hourly). When run, it processes all clients whose
- * frequency interval has elapsed ("due now"); with auto_publish + webhook they get published to the site.
- * Also callable manually with a CRON_SECRET header for testing.
+ * Triggered by GET /api/scheduler/trigger (called on app traffic, rate-limited) or by manual POST with CRON_SECRET.
+ * When run, it checks last_post_generated_at + frequency per client and only processes clients who are due.
+ * With auto_publish + webhook, due clients get generated and published to their site. No cron required.
  *
  * For each client whose frequency interval has elapsed since last_post_generated_at,
  * this route:
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     message: "Scheduler endpoint is live. POST to trigger a run (or GET ?secret=CRON_SECRET for cron).",
-    next_run: "Hourly (on the hour) via Vercel Cron",
+    next_run: "On app traffic (GET /api/scheduler/trigger) or manual POST with CRON_SECRET",
   });
 }
 

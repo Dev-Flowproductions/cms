@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { SchedulerTrigger } from "@/components/SchedulerTrigger";
 
 export const metadata: Metadata = {
   title: "CMS — AI-native editorial platform",
@@ -30,6 +31,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <SchedulerTrigger />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

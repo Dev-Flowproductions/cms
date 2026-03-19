@@ -116,6 +116,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
   const [users, setUsers] = useState<ClientRow[]>(initialUsers);
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [generatingUserId, setGeneratingUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError);
   const [isPending, startTransition] = useTransition();
   const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
@@ -174,6 +175,27 @@ export function UsersClient({ initialUsers, initialError }: Props) {
       return;
     }
     setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+  }
+
+  async function handleGeneratePost(userId: string) {
+    setGeneratingUserId(userId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/scheduler?userId=${encodeURIComponent(userId)}&force=true`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Generation failed");
+        return;
+      }
+      const generated = json.results?.find((r: { status: string }) => r.status === "generated");
+      if (generated?.post_id) {
+        startTransition(() => router.refresh());
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setGeneratingUserId(null);
+    }
   }
 
   return (
@@ -424,6 +446,38 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                     </span>
                   </div>
                 </div>
+
+                {!onboardingPending && (
+                  <div className="px-4 pb-4">
+                    <button
+                      type="button"
+                      onClick={() => handleGeneratePost(u.user_id)}
+                      disabled={generatingUserId === u.user_id || isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                      style={{
+                        background: generatingUserId === u.user_id ? "var(--surface-raised)" : "linear-gradient(135deg, #22d3a0, #34d399)",
+                        color: generatingUserId === u.user_id ? "var(--text-muted)" : "var(--bg)",
+                        border: generatingUserId === u.user_id ? "1px solid var(--border)" : "none",
+                      }}
+                    >
+                      {generatingUserId === u.user_id ? (
+                        <>
+                          <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                          </svg>
+                          {t("generatePostGenerating")}
+                        </>
+                      ) : (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                          {t("generatePost")}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
 
                 {/* Expanded webhook editor */}
                 {webhookExpanded && (

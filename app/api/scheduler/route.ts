@@ -20,7 +20,8 @@ const FREQUENCY_INTERVAL_MS: Record<string, number> = {
 /**
  * POST /api/scheduler/run
  *
- * Called by Vercel Cron (daily at 07:00 UTC).
+ * Called by Vercel Cron (hourly). When run, it processes all clients whose
+ * frequency interval has elapsed ("due now"); with auto_publish + webhook they get published to the site.
  * Also callable manually with a CRON_SECRET header for testing.
  *
  * For each client whose frequency interval has elapsed since last_post_generated_at,
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
 
   // ?force=true bypasses the frequency interval check â€” useful for testing
   const force = new URL(req.url).searchParams.get("force") === "true";
+  const userIdParam = new URL(req.url).searchParams.get("userId");
 
   const admin = createAdminClient();
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -72,15 +74,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: clientsError.message }, { status: 500 });
   }
 
+  let clientsToConsider = clients ?? [];
+  let singleUserForce = false;
+  if (userIdParam) {
+    const match = clientsToConsider.filter((c) => c.user_id === userIdParam);
+    if (match.length === 0) {
+      return NextResponse.json(
+        { error: "User not found or has no client with domain (onboarding incomplete)." },
+        { status: 400 }
+      );
+    }
+    clientsToConsider = match;
+    singleUserForce = true;
+  }
+
   const now = Date.now();
   const results: Array<{ client_id: string; domain: string; status: string; post_id?: string; error?: string }> = [];
 
-  // Collect clients that are due so we can stagger their generation
   const dueClients: NonNullable<typeof clients> = [];
-  for (const client of clients ?? []) {
+  for (const client of clientsToConsider) {
     const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
     const lastRun = client.last_post_generated_at ? new Date(client.last_post_generated_at).getTime() : 0;
-    const due = force || now - lastRun >= intervalMs;
+    const due = force || singleUserForce || now - lastRun >= intervalMs;
     if (due) {
       dueClients.push(client);
     } else {
@@ -129,7 +144,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     message: "Scheduler endpoint is live. POST to trigger a run (or GET ?secret=CRON_SECRET for cron).",
-    next_run: "Daily at 07:00 UTC via Vercel Cron",
+    next_run: "Hourly (on the hour) via Vercel Cron",
   });
 }
 

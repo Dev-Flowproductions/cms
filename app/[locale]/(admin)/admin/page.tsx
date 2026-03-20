@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/lib/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getClientsPendingWebhook } from "./users/actions";
 
 async function getAdminStats() {
   const admin = createAdminClient();
@@ -28,10 +29,46 @@ const QUICK_LINKS = [
 
 export default async function AdminPage() {
   const t = await getTranslations("admin");
-  const stats = await getAdminStats();
+  const [stats, pendingWebhook] = await Promise.all([
+    getAdminStats(),
+    getClientsPendingWebhook().catch(() => []),
+  ]);
 
   return (
     <div className="max-w-3xl">
+      {/* Webhook missing warning */}
+      {pendingWebhook.length > 0 && (
+        <div
+          className="mb-6 px-4 py-4 rounded-xl"
+          style={{
+            background: "rgba(245,158,11,0.12)",
+            border: "1px solid rgba(245,158,11,0.35)",
+          }}
+        >
+          <p className="text-sm font-semibold mb-2" style={{ color: "#b45309" }}>
+            {t("webhookMissingWarning")}
+          </p>
+          <ul className="text-sm space-y-1 mb-3" style={{ color: "var(--text-muted)" }}>
+            {pendingWebhook.map((u) => (
+              <li key={u.user_id}>
+                {u.display_name?.trim() || u.email || u.user_id}
+                {u.email && u.display_name?.trim() ? ` (${u.email})` : u.email ? "" : ` — ${u.user_id.slice(0, 8)}…`}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/admin/users"
+            className="inline-flex items-center gap-2 text-sm font-medium"
+            style={{ color: "var(--accent)" }}
+          >
+            {t("webhookMissingCta")}
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-10">
         <p

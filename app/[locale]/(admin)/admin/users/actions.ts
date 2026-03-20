@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
+import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
 import { z } from "zod";
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
@@ -21,6 +22,7 @@ const createUserSchema = z.object({
   logo_url: z.union([z.string().url(), z.literal("")]).optional(),
   primary_color: z.string().optional(),
   secondary_color: z.string().optional(),
+  tertiary_color: z.string().optional(),
   font_style: z.string().optional(),
   brand_voice: z.string().optional(),
   webhook_url: z.union([z.string().url(), z.literal("")]).optional(),
@@ -49,6 +51,7 @@ export async function createUser(formData: FormData) {
     logo_url: formData.get("logo_url")?.toString().trim() || undefined,
     primary_color: formData.get("primary_color")?.toString() || undefined,
     secondary_color: formData.get("secondary_color")?.toString() || undefined,
+    tertiary_color: formData.get("tertiary_color")?.toString() || undefined,
     font_style: formData.get("font_style")?.toString().trim() || undefined,
     brand_voice: formData.get("brand_voice")?.toString() || undefined,
     webhook_url: formData.get("webhook_url")?.toString().trim() || undefined,
@@ -74,6 +77,7 @@ export async function createUser(formData: FormData) {
     logo_url,
     primary_color,
     secondary_color,
+    tertiary_color,
     font_style,
     brand_voice,
     webhook_url,
@@ -125,6 +129,7 @@ export async function createUser(formData: FormData) {
     logo_url: logo_url || null,
     primary_color: primary_color || null,
     secondary_color: secondary_color || null,
+    tertiary_color: tertiary_color || null,
     font_style: font_style || null,
     brand_voice: brand_voice || null,
     brand_name: company_name || null,
@@ -168,6 +173,12 @@ export type ClientRow = {
   last_generation_error_at?: string | null;
   last_post_generated_at?: string | null;
   logo_url?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  tertiary_color?: string | null;
+  font_style?: string | null;
+  brand_voice?: string | null;
+  custom_instructions?: string | null;
 };
 
 export async function listUsers(): Promise<ClientRow[]> {
@@ -176,7 +187,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -198,11 +209,38 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, last_generation_error, last_generation_error_at")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/** Admin: list clients waiting for admin to set webhook (config_pending_admin or has domain but no webhook). */
+export async function getClientsPendingWebhook(): Promise<Array<{ user_id: string; email: string; display_name: string | null }>> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("clients")
+    .select("user_id, webhook_url, config_pending_admin, domain, profiles(display_name)")
+    .not("domain", "is", null);
+  if (error) throw error;
+  const pending = (rows ?? []).filter(
+    (r: { config_pending_admin?: boolean; webhook_url?: string | null }) =>
+      r.config_pending_admin === true || !(r.webhook_url?.trim())
+  );
+  const emailMap: Record<string, string> = {};
+  await Promise.all(
+    pending.map(async (r: { user_id: string }) => {
+      const { data: u } = await admin.auth.admin.getUserById(r.user_id);
+      if (u?.user?.email) emailMap[r.user_id] = u.user.email;
+    })
+  );
+  return pending.map((r: { user_id: string; profiles?: { display_name: string | null } | { display_name: string | null }[] }) => ({
+    user_id: r.user_id,
+    email: emailMap[r.user_id] ?? "",
+    display_name: Array.isArray(r.profiles) ? r.profiles[0]?.display_name ?? null : (r.profiles as { display_name: string | null } | null)?.display_name ?? null,
+  }));
 }
 
 /** Current user's profile (for dashboard author section). */
@@ -237,7 +275,7 @@ export async function getClientSettingsByAdmin(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
   const [clientRes, profileRes] = await Promise.all([
-    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
+    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
     admin.from("profiles").select("id, display_name, avatar_url, bio, job_title").eq("id", userId).maybeSingle(),
   ]);
   if (clientRes.error) throw clientRes.error;
@@ -340,8 +378,56 @@ export async function updateUserWebhookByAdmin(
 ) {
   await requireAdmin();
   const admin = createAdminClient();
-  const payload: Record<string, unknown> = { ...data, updated_at: new Date().toISOString() };
+  const payload: Record<string, unknown> = {
+    ...data,
+    updated_at: new Date().toISOString(),
+    // Admin has finished config for this user (webhook set)
+    config_pending_admin: data.webhook_url?.trim() ? false : undefined,
+  };
+  if (payload.config_pending_admin === undefined) delete payload.config_pending_admin;
   const { error } = await admin.from("clients").update(payload).eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/** Regenerates and saves clients.custom_instructions for the given user (e.g. after admin updates brand/domain). */
+async function regenerateClientInstructions(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<{ error?: string }> {
+  const { data: client, error: fetchError } = await admin
+    .from("clients")
+    .select("domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, font_style, brand_voice, logo_url")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (fetchError) return { error: fetchError.message };
+  if (!client) return { error: "Client not found" };
+  const customInstructions = generateClientSpecificInstructions(client);
+  const { error: updateError } = await admin
+    .from("clients")
+    .update({ custom_instructions: customInstructions.trim() || null, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (updateError) return { error: updateError.message };
+  return {};
+}
+
+/** Admin: generate client-specific instructions from current brand/client data and save. Use when instructions don't exist yet. */
+export async function createClientInstructions(userId: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const result = await regenerateClientInstructions(admin, userId);
+  if (result.error) return { error: result.error };
+  return { success: true };
+}
+
+/** Admin: update client-specific instructions with raw edited content. */
+export async function updateClientInstructions(userId: string, content: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clients")
+    .update({ custom_instructions: content.trim() || null, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };
 }
@@ -359,6 +445,7 @@ export async function updateClientDomainByAdmin(userId: string, domain: string) 
     .update({ domain: normalized, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
+  await regenerateClientInstructions(admin, userId);
   return { success: true };
 }
 
@@ -380,6 +467,7 @@ export async function updateClientBrandByAdmin(
     logo_url?: string | null;
     primary_color?: string | null;
     secondary_color?: string | null;
+    tertiary_color?: string | null;
     font_style?: string | null;
     brand_voice?: string | null;
   }
@@ -391,6 +479,7 @@ export async function updateClientBrandByAdmin(
     .update({ ...data, brand_name: data.company_name ?? undefined, brand_tone: data.brand_voice ?? undefined, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
+  await regenerateClientInstructions(admin, userId);
   return { success: true };
 }
 

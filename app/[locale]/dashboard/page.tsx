@@ -61,6 +61,24 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
+        {/* Pending admin config banner */}
+        {clientSettings?.config_pending_admin && (
+          <div
+            className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3"
+            style={{
+              background: "rgba(245,158,11,0.12)",
+              border: "1px solid rgba(245,158,11,0.35)",
+              color: "#b45309",
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
+            <p className="text-sm font-medium">{t("dashboard.waitingForAdmin")}</p>
+          </div>
+        )}
+
         {/* Hero section */}
         <div className="mb-10 relative">
           {/* Glow */}

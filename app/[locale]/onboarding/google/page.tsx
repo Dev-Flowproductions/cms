@@ -129,16 +129,24 @@ export default function OnboardingGooglePage() {
           {connecting ? t("connecting") : t("connectButton")}
         </button>
 
-        {/* Skip */}
-        <button
-          onClick={handleSkip}
-          className="w-full py-2 text-xs font-medium transition-all"
-          style={{ color: "var(--text-faint)" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text-faint)"; }}
-        >
-          {t("skip")}
-        </button>
+        {/* Finish — admin will complete webhook */}
+        <div className="mt-6 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+            {t("finishForAdmin")}
+          </p>
+          <button
+            onClick={handleSkip}
+            disabled={connecting}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+            style={{
+              background: "var(--accent-bg)",
+              color: "var(--accent)",
+              border: "1px solid rgba(124,92,252,0.4)",
+            }}
+          >
+            {t("finishButton")}
+          </button>
+        </div>
       </div>
 
       <p className="mt-4 text-center text-xs" style={{ color: "var(--text-faint)" }}>

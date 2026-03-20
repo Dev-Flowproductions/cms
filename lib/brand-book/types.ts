@@ -9,6 +9,7 @@ export interface ManualBrandInfo {
   logoUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  tertiaryColor?: string | null;
   fontStyle: string;
   brandVoice: string;
 }

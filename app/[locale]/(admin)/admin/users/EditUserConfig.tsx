@@ -57,6 +57,7 @@ export function EditUserConfig({
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
   const [secondaryColor, setSecondaryColor] = useState("#22d3a0");
+  const [tertiaryColor, setTertiaryColor] = useState("#f59e0b");
   const [fontStyle, setFontStyle] = useState("");
   const [brandVoice, setBrandVoice] = useState("professional");
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -81,6 +82,7 @@ export function EditUserConfig({
         setLogoUrl(data.client.logo_url ?? "");
         setPrimaryColor(data.client.primary_color ?? "#7c5cfc");
         setSecondaryColor(data.client.secondary_color ?? "#22d3a0");
+        setTertiaryColor(data.client.tertiary_color ?? "#f59e0b");
         setFontStyle(data.client.font_style ?? "");
         setBrandVoice(data.client.brand_voice ?? "professional");
         setWebhookUrl(data.client.webhook_url ?? "");
@@ -123,6 +125,7 @@ export function EditUserConfig({
         logo_url: logoUrl.trim() || null,
         primary_color: primaryColor || null,
         secondary_color: secondaryColor || null,
+        tertiary_color: tertiaryColor || null,
         font_style: fontStyle.trim() || null,
         brand_voice: brandVoice,
       }),
@@ -223,6 +226,10 @@ export function EditUserConfig({
         <div>
           <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Secondary color</label>
           <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tertiary color</label>
+          <input type="text" value={tertiaryColor} onChange={(e) => setTertiaryColor(e.target.value)} placeholder="#f59e0b" style={inputStyle} />
         </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Font style</label>

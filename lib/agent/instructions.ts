@@ -1,160 +1,19 @@
 /**
  * Gemini system instructions for blog post generation.
- * Target: 10/10 across SEO, AEO, and GEO.
+ * Uses general instructions + per-user CLIENT-SPECIFIC INSTRUCTIONS (generated after onboarding).
  */
 
-export const SYSTEM_INSTRUCTIONS = `
-You are an expert content strategist writing publish-ready blog posts.
-Write in the client's brand voice. NEVER invent statistics.
+import { SYSTEM_INSTRUCTIONS_GENERAL } from "./instructions-general";
 
-═══════════════════════════════════════
-CLIENT BRAND BOOK (highest priority)
-═══════════════════════════════════════
-
-In the CONTEXT below you will receive the client's own brand information:
-- BRAND IDENTITY (user-provided): company name, brand voice, font style, colours. Use these EXACTLY.
-- BRAND ANALYSIS (brand book): industry, voice attributes, tone, writing style, target audience, value proposition, content themes, topics to avoid, key messages, CTA style, image style.
-- BRAND VISUAL — COVER IMAGE: exact colours (primary, secondary), typography/font style, and brand voice for the cover image. Use these EXACTLY in cover_image_description so the generated cover matches the brand.
-
-When the context includes BRAND IDENTITY, BRAND ANALYSIS, or BRAND VISUAL, they OVERRIDE any domain-based guess. Use the exact company name given. Match the voice, tone, colours, and themes the client provided. Do not substitute your own interpretation of the brand — follow the client's brand book.
-
-If no brand context is provided, fall back to domain-based detection below.
-
-═══════════════════════════════════════
-BRAND DETECTION (fallback when no brand book in context)
-═══════════════════════════════════════
-
-From the domain, extract the PROPER brand name:
-- flowproductions.pt → "Flow Productions" (add spaces, proper caps)
-- nike.com → "Nike"
-- hubspot.com → "HubSpot" (respect camelCase brands)
-- flowproductions → "Flow Productions" (NOT "flowproductions")
-
-Brand voice detection from domain:
-- Creative/agency sites → confident, bold, forward-thinking
-- Corporate/B2B sites → professional, authoritative, precise
-- Tech/SaaS sites → modern, clear, feature-focused
-- E-commerce sites → benefit-driven, persuasive, urgent
-
-Use the PROPER brand name throughout the article, not the domain slug.
-
-═══════════════════════════════════════
-POST STRUCTURE (exact order in content_md)
-═══════════════════════════════════════
-
-IMPORTANT: Do NOT include the H1 title in content_md — the website template
-renders the "title" field as H1 automatically. Do NOT include a date line or
-cover image in content_md — the template shows the cover image and publication
-date above the body. Start content_md with the INTRO paragraph.
-
-1. INTRO: 2-3 sentences
-   - Hook with surprising fact, mention focus keyword
-   - Include definition: "**{Term}** is..."
-
-2-4. BODY SECTIONS: ## H2 + ### H3 + body
-   - Each section: 2-4 paragraphs, at least one H3
-   - Include: attributed statistics, named entities, bullet/numbered lists
-   - **Bold key claims** for AI scannability
-   - All headings in content_md must be ## (H2) or ### (H3) — never #
-
-5. FAQ SECTION
-   - H2 title IN THE POST'S LANGUAGE:
-     • Portuguese: "## Perguntas frequentes"
-     • English: "## Frequently asked questions"
-     • French: "## Questions fréquentes"
-   - Format: **{question}** followed by answer
-   - EXACTLY 5 Q&As, 40-60 words each, quotable standalone
-
-6. CONCLUSION: ## {action-oriented heading}
-   - 2 paragraphs, reinforce core argument, specific CTA
-
-═══════════════════════════════════════
-SEO RULES
-═══════════════════════════════════════
-
-- Focus keyword in: title (H1), intro, 2+ H2s, SEO title, meta description
-- Generate your OWN focus_keyword based on the topic — don't use the one passed
-- 5-8 semantic variants throughout
-- The "title" field IS the H1 — content_md only has H2/H3
-- 1200+ words (1800+ for hero content)
-- SEO title: 50-60 chars | Meta: 145-158 chars
-- Sentence case headings (European style)
-
-═══════════════════════════════════════
-AEO RULES (AI citability)
-═══════════════════════════════════════
-
-- CORE ARGUMENT: One specific, data-backed claim AI will cite
-  ✗ "Communication is important"
-  ✓ "Companies using intent-based scoring reduce cycles by 30%"
-
-- DEFINITION: "**{Term}** is..." in intro (AI cites definitions heavily)
-
-- FAQ: 5 Q&As phrased as real user queries, each answer standalone
-
-- EEAT: First-person examples, named methodologies, specific sources
-
-- **Bold key claims** — AI scans for bold text
-
-═══════════════════════════════════════
-GEO RULES (generative engine citation)
-═══════════════════════════════════════
-
-- 3+ attributed statistics: "According to [Source], [fact]."
-- 5+ named entities (orgs, tools, frameworks)
-- 2+ date-anchored facts: "In 2026...", "As of March 2026..."
-- Avoid vague: "various tools", "studies show" — always name them
-
-═══════════════════════════════════════
-FORMATTING
-═══════════════════════════════════════
-
-- Sentence case (European): first word + proper nouns only
-- **Bold** key terms on first use
-- No em dashes, no horizontal rules
-- No images in content_md (the template shows the cover above the body)
-- All content in the specified locale language
-
-═══════════════════════════════════════
-INTERNAL LINKS (automatic — do not add in body)
-═══════════════════════════════════════
-
-Do NOT add internal site links or "learn more" links inside content_md. A separate step will append one localized "Learn more" (or equivalent) link at the very end of the article after generation.
-
-═══════════════════════════════════════
-COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
-═══════════════════════════════════════
-
-The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Aim for a BALANCED editorial composition like the hero images on https://flowproductions.pt/pt/blog — not too empty, not too busy.
-
-- COMPOSITION: 2–4 intentional elements — e.g. solid or gradient background + overlapping geometric shapes (circles, soft forms) + one symbolic or figurative accent (silhouette, hands, abstract motif) that supports the topic. Clear focal point. Feels designed and editorial, not random or cluttered.
-- COLOURS & STYLE: Use the EXACT colours, font style, and brand voice from the BRAND VISUAL — COVER IMAGE variables in the context below. The cover palette must match the brand (primary and secondary colours or the given colour palette). Typography mood should match the brand's font style and voice.
-- TEXT ON IMAGE: The cover MUST include a short headline on the image — like the Flow Productions blog heroes. Show the headline ONLY ONCE (do not repeat or duplicate it); one line only, 2–4 words max, IN ENGLISH. The headline must be the TOP LAYER: no graphic elements (circles, shapes, icons) overlapping or covering the text — place decorative shapes behind the text or outside the headline area so the text is fully legible and never cut. Style: bold editorial typography. No logos or brand names; the headline is the only text.
-- STYLE: Wide banner (16:9). Flat or subtle depth; cut-out or sticker-style elements with clean edges are fine. No tiny details or busy patterns; no single floating shape on empty space.
-- cover_image_description: 1–2 sentences — background mood, main shapes, and the symbolic/focal element (e.g. "Dark charcoal background with overlapping purple and yellow circles, grayscale handshake silhouette, modern editorial style.").
-- cover_image_headline: Recommended. Very short phrase (2–4 words max) IN ENGLISH so it fits on one line without cropping. If the post is not in English, use an English equivalent (e.g. "Hybrid Events"). If omitted, a truncated title may be used and can get cut off.
-
-═══════════════════════════════════════
-OUTPUT (JSON only, no markdown fences)
-═══════════════════════════════════════
-
-{
-  "title": "The H1 title (rendered by website, NOT in content_md)",
-  "slug": "1-3 keywords from title, lowercase, hyphens",
-  "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "Graphic illustration concept: composition, shapes, colors, mood (1-2 sentences). Headline text will be added from title or cover_image_headline.",
-  "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
-  "seo_title": "50-60 chars",
-  "seo_description": "145-158 chars",
-  "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
-  "excerpt": "1-2 sentences, under 160 chars",
-  "content_md": "Markdown starting with intro — NO H1, NO date line, NO cover image, only H2/H3",
-  "faq_blocks": [{ "question": "...", "answer": "40-60 words" }],
-  "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
+/** Combined system instructions: general + client-specific (when provided). */
+export function getSystemInstructions(clientSpecificInstructions: string | null): string {
+  const base = SYSTEM_INSTRUCTIONS_GENERAL;
+  if (!clientSpecificInstructions?.trim()) return base;
+  return `${base}\n\n${clientSpecificInstructions.trim()}`;
 }
 
-Each score in seo_score must be an integer from 0 to 100 (inclusive). seo, aeo, geo are out of 100.
-`.trim();
+/** @deprecated Use getSystemInstructions(client.custom_instructions) for new code. */
+export const SYSTEM_INSTRUCTIONS = SYSTEM_INSTRUCTIONS_GENERAL;
 
 // ─── Context builders ──────────────────────────────────────────────────────
 
@@ -191,7 +50,13 @@ const CONTENT_TYPE_GUIDE: Record<string, string> = {
   hygiene: "600-900 words, FAQ/how-to, snippet-optimised",
 };
 
-export function buildPrompt(post: PostContext, client: ClientContext): string {
+export type BuildPromptOptions = {
+  /** When true, brand identity/visual/analysis are in system (client-specific instructions); do not duplicate in prompt. */
+  hasCustomInstructions?: boolean;
+};
+
+export function buildPrompt(post: PostContext, client: ClientContext, options?: BuildPromptOptions): string {
+  const hasCustomInstructions = options?.hasCustomInstructions === true;
   const lines: string[] = [];
   const now = new Date();
   const currentDate = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -208,84 +73,91 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
 
   if (client.domain) lines.push(`Website: ${client.domain}`);
 
-  // Include manual brand identity (user-provided, highest priority)
-  if (client.manualBrand) {
-    const mb = client.manualBrand;
-    lines.push("");
-    lines.push("═══════════════════════════════");
-    lines.push("BRAND IDENTITY (user-provided — FOLLOW EXACTLY)");
-    lines.push("═══════════════════════════════");
-    lines.push(`Company name: ${mb.companyName} (use this exact name everywhere)`);
-    lines.push(`Brand voice: ${mb.brandVoice} (match this tone)`);
-    lines.push(`Font style: ${mb.fontStyle}`);
-    lines.push(`Colors: Primary ${mb.primaryColor}, Secondary ${mb.secondaryColor}`);
-    if (mb.logoUrl) lines.push(`Logo: ${mb.logoUrl}`);
-  }
-
-  // BRAND VISUAL — COVER IMAGE: exact variables for cover image (colours, font, voice)
-  const rawBook = client.brandBook;
-  const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as import("@/lib/brand-book/types").BrandBook; } catch { return null; } })() : rawBook;
-  if (client.manualBrand || (bb && bb.visualIdentity)) {
-    lines.push("");
-    lines.push("═══════════════════════════════");
-    lines.push("BRAND VISUAL — COVER IMAGE (use these EXACTLY for cover_image_description)");
-    lines.push("═══════════════════════════════");
+  // Brand blocks only when NOT using client-specific system instructions (so legacy / no custom_instructions still get brand in prompt)
+  if (!hasCustomInstructions) {
+    // Include manual brand identity (user-provided, highest priority)
     if (client.manualBrand) {
       const mb = client.manualBrand;
-      lines.push(`Cover colours: Primary ${mb.primaryColor}, Secondary ${mb.secondaryColor} (use these exact hex/brand colours for background and accents)`);
-      lines.push(`Cover typography / font style: ${mb.fontStyle}`);
-      lines.push(`Cover brand voice / mood: ${mb.brandVoice}`);
-    } else if (bb?.visualIdentity) {
-      lines.push(`Cover colour palette: ${bb.visualIdentity.colorPalette}`);
-      lines.push(`Cover aesthetic / typography: ${bb.visualIdentity.aestheticStyle}`);
-      lines.push(`Cover image style: ${bb.visualIdentity.imageStyle}`);
-      if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
-        lines.push(`Cover brand voice / mood: ${bb.voiceAttributes.join(", ")}`);
+      lines.push("");
+      lines.push("═══════════════════════════════");
+      lines.push("BRAND IDENTITY (user-provided — FOLLOW EXACTLY)");
+      lines.push("═══════════════════════════════");
+      lines.push(`Company name: ${mb.companyName} (use this exact name everywhere)`);
+      lines.push(`Brand voice: ${mb.brandVoice} (match this tone)`);
+      lines.push(`Font style: ${mb.fontStyle}`);
+      const colorParts = [`Primary ${mb.primaryColor}`, `Secondary ${mb.secondaryColor}`];
+      if (mb.tertiaryColor) colorParts.push(`Tertiary ${mb.tertiaryColor}`);
+      lines.push(`Colors: ${colorParts.join(", ")}`);
+      if (mb.logoUrl) lines.push(`Logo: ${mb.logoUrl}`);
+    }
+
+    // BRAND VISUAL — COVER IMAGE: exact variables for cover image (colours, font, voice)
+    const rawBook = client.brandBook;
+    const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as import("@/lib/brand-book/types").BrandBook; } catch { return null; } })() : rawBook;
+    if (client.manualBrand || (bb && bb.visualIdentity)) {
+      lines.push("");
+      lines.push("═══════════════════════════════");
+      lines.push("BRAND VISUAL — COVER IMAGE (use these EXACTLY for cover_image_description)");
+      lines.push("═══════════════════════════════");
+      if (client.manualBrand) {
+        const mb = client.manualBrand;
+        const coverParts = [`Primary ${mb.primaryColor}`, `Secondary ${mb.secondaryColor}`];
+        if (mb.tertiaryColor) coverParts.push(`Tertiary ${mb.tertiaryColor}`);
+        lines.push(`Cover colours: ${coverParts.join(", ")} (use these exact hex/brand colours for background and accents)`);
+        lines.push(`Cover typography / font style: ${mb.fontStyle}`);
+        lines.push(`Cover brand voice / mood: ${mb.brandVoice}`);
+      } else if (bb?.visualIdentity) {
+        lines.push(`Cover colour palette: ${bb.visualIdentity.colorPalette}`);
+        lines.push(`Cover aesthetic / typography: ${bb.visualIdentity.aestheticStyle}`);
+        lines.push(`Cover image style: ${bb.visualIdentity.imageStyle}`);
+        if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
+          lines.push(`Cover brand voice / mood: ${bb.voiceAttributes.join(", ")}`);
+        }
       }
     }
-  }
 
-  // Include brand book for additional context (defensive for missing fields)
-  if (bb && typeof bb === "object") {
-    lines.push("");
-    lines.push("═══════════════════════════════");
-    lines.push("BRAND ANALYSIS (follow this context)");
-    lines.push("═══════════════════════════════");
-    if (!client.manualBrand && bb.brandName) {
-      lines.push(`Brand name: ${bb.brandName} (use this exact name)`);
+    // Include brand book for additional context (defensive for missing fields)
+    if (bb && typeof bb === "object") {
+      lines.push("");
+      lines.push("═══════════════════════════════");
+      lines.push("BRAND ANALYSIS (follow this context)");
+      lines.push("═══════════════════════════════");
+      if (!client.manualBrand && bb.brandName) {
+        lines.push(`Brand name: ${bb.brandName} (use this exact name)`);
+      }
+      if (bb.tagline) lines.push(`Tagline: ${bb.tagline}`);
+      if (bb.industry || bb.niche) lines.push(`Industry: ${bb.industry ?? ""} / ${bb.niche ?? ""}`);
+      if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
+        lines.push(`Voice: ${bb.voiceAttributes.join(", ")}`);
+      }
+      if (bb.toneDescription) lines.push(`Tone: ${bb.toneDescription}`);
+      if (bb.writingStyle) lines.push(`Writing style: ${bb.writingStyle}`);
+      if (bb.targetAudience?.primary) lines.push(`Target audience: ${bb.targetAudience.primary}`);
+      if (bb.uniqueValueProposition) lines.push(`Value proposition: ${bb.uniqueValueProposition}`);
+      if (bb.marketPosition) lines.push(`Market position: ${bb.marketPosition}`);
+      if (Array.isArray(bb.contentThemes) && bb.contentThemes.length > 0) {
+        lines.push(`Content themes: ${bb.contentThemes.join(", ")}`);
+      }
+      if (Array.isArray(bb.topicsToAvoid) && bb.topicsToAvoid.length > 0) {
+        lines.push(`Topics to AVOID: ${bb.topicsToAvoid.join(", ")}`);
+      }
+      if (Array.isArray(bb.keyMessages) && bb.keyMessages.length > 0) {
+        lines.push(`Key messages: ${bb.keyMessages.slice(0, 3).join("; ")}`);
+      }
+      if (bb.contentGuidelines?.callToActionStyle) {
+        lines.push(`CTA style: ${bb.contentGuidelines.callToActionStyle}`);
+      }
+      if (bb.visualIdentity?.imageStyle) {
+        lines.push(`Image style: ${bb.visualIdentity.imageStyle}`);
+      }
+    } else if (!client.manualBrand) {
+      // Fallback to simple brand info
+      if (client.brandName) {
+        lines.push(`Brand name: ${client.brandName} (use this exact name, not the domain)`);
+      }
+      if (client.brandTone) lines.push(`Brand tone: ${client.brandTone}`);
+      if (client.industry) lines.push(`Industry: ${client.industry}`);
     }
-    if (bb.tagline) lines.push(`Tagline: ${bb.tagline}`);
-    if (bb.industry || bb.niche) lines.push(`Industry: ${bb.industry ?? ""} / ${bb.niche ?? ""}`);
-    if (Array.isArray(bb.voiceAttributes) && bb.voiceAttributes.length > 0) {
-      lines.push(`Voice: ${bb.voiceAttributes.join(", ")}`);
-    }
-    if (bb.toneDescription) lines.push(`Tone: ${bb.toneDescription}`);
-    if (bb.writingStyle) lines.push(`Writing style: ${bb.writingStyle}`);
-    if (bb.targetAudience?.primary) lines.push(`Target audience: ${bb.targetAudience.primary}`);
-    if (bb.uniqueValueProposition) lines.push(`Value proposition: ${bb.uniqueValueProposition}`);
-    if (bb.marketPosition) lines.push(`Market position: ${bb.marketPosition}`);
-    if (Array.isArray(bb.contentThemes) && bb.contentThemes.length > 0) {
-      lines.push(`Content themes: ${bb.contentThemes.join(", ")}`);
-    }
-    if (Array.isArray(bb.topicsToAvoid) && bb.topicsToAvoid.length > 0) {
-      lines.push(`Topics to AVOID: ${bb.topicsToAvoid.join(", ")}`);
-    }
-    if (Array.isArray(bb.keyMessages) && bb.keyMessages.length > 0) {
-      lines.push(`Key messages: ${bb.keyMessages.slice(0, 3).join("; ")}`);
-    }
-    if (bb.contentGuidelines?.callToActionStyle) {
-      lines.push(`CTA style: ${bb.contentGuidelines.callToActionStyle}`);
-    }
-    if (bb.visualIdentity?.imageStyle) {
-      lines.push(`Image style: ${bb.visualIdentity.imageStyle}`);
-    }
-  } else if (!client.manualBrand) {
-    // Fallback to simple brand info
-    if (client.brandName) {
-      lines.push(`Brand name: ${client.brandName} (use this exact name, not the domain)`);
-    }
-    if (client.brandTone) lines.push(`Brand tone: ${client.brandTone}`);
-    if (client.industry) lines.push(`Industry: ${client.industry}`);
   }
 
   if (client.gaTopPages?.length) {

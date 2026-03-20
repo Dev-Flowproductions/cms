@@ -33,19 +33,21 @@ export async function POST(request: Request) {
   if (postRow?.author_id) {
     const { data: clientRow } = await admin
       .from("clients")
-      .select("primary_color, secondary_color, font_style, brand_voice, brand_book")
+      .select("primary_color, secondary_color, tertiary_color, font_style, brand_voice, brand_book")
       .eq("user_id", postRow.author_id)
       .maybeSingle();
     if (clientRow) {
-      const hasManualColors = clientRow.primary_color != null || clientRow.secondary_color != null;
+      const hasManualColors = clientRow.primary_color != null || clientRow.secondary_color != null || clientRow.tertiary_color != null;
       const manualBrand = hasManualColors
-        ? { primaryColor: clientRow.primary_color ?? "#7c5cfc", secondaryColor: clientRow.secondary_color ?? "#22d3a0", fontStyle: clientRow.font_style ?? "modern", brandVoice: clientRow.brand_voice ?? "professional" }
+        ? { primaryColor: clientRow.primary_color ?? "#7c5cfc", secondaryColor: clientRow.secondary_color ?? "#22d3a0", tertiaryColor: clientRow.tertiary_color ?? null, fontStyle: clientRow.font_style ?? "modern", brandVoice: clientRow.brand_voice ?? "professional" }
         : null;
       const rawBook = clientRow.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null | undefined;
       const visualIdentity = rawBook?.visualIdentity;
       const brandStyleParts: string[] = [];
       if (manualBrand) {
-        brandStyleParts.push(`Use EXACTLY these brand colours: primary ${manualBrand.primaryColor}, secondary ${manualBrand.secondaryColor} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
+        const colorParts = [`primary ${manualBrand.primaryColor}`, `secondary ${manualBrand.secondaryColor}`];
+        if (manualBrand.tertiaryColor) colorParts.push(`tertiary ${manualBrand.tertiaryColor}`);
+        brandStyleParts.push(`Use EXACTLY these brand colours: ${colorParts.join(", ")} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
       } else if (visualIdentity) {
         if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
         if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);

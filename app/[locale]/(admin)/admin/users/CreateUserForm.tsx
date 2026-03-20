@@ -212,6 +212,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
             <Field label="Logo URL" name="logo_url" type="text" placeholder="https://..." />
             <Field label="Primary color" name="primary_color" type="text" placeholder="#7c5cfc" />
             <Field label="Secondary color" name="secondary_color" type="text" placeholder="#22d3a0" />
+            <Field label="Tertiary color" name="tertiary_color" type="text" placeholder="#f59e0b" />
             <Field label="Font style" name="font_style" placeholder="modern" />
             <div className="sm:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Brand voice</p>

@@ -19,6 +19,7 @@ async function saveBrandInfo(data: {
   logoFile: File | null;
   primaryColor: string;
   secondaryColor: string;
+  tertiaryColor: string | null;
   fontStyle: string;
   brandVoice: string;
 }) {
@@ -27,6 +28,7 @@ async function saveBrandInfo(data: {
   formData.append("companyName", data.companyName);
   formData.append("primaryColor", data.primaryColor);
   formData.append("secondaryColor", data.secondaryColor);
+  if (data.tertiaryColor) formData.append("tertiaryColor", data.tertiaryColor);
   formData.append("fontStyle", data.fontStyle);
   formData.append("brandVoice", data.brandVoice);
   if (data.logoFile) {
@@ -53,6 +55,7 @@ export default function OnboardingBrandPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
   const [secondaryColor, setSecondaryColor] = useState("#22d3a0");
+  const [tertiaryColor, setTertiaryColor] = useState<string | null>("#f59e0b");
   const [fontStyle, setFontStyle] = useState("");
   const [brandVoice, setBrandVoice] = useState("professional");
   const [loading, setLoading] = useState(false);
@@ -81,6 +84,7 @@ export default function OnboardingBrandPage() {
       logoFile,
       primaryColor,
       secondaryColor,
+      tertiaryColor: tertiaryColor || null,
       fontStyle: fontStyle.trim() || "modern",
       brandVoice,
     });
@@ -238,6 +242,19 @@ export default function OnboardingBrandPage() {
                 <div>
                   <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{t("secondaryColor")}</p>
                   <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{secondaryColor}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                <input
+                  type="color"
+                  value={tertiaryColor ?? "#f59e0b"}
+                  onChange={(e) => setTertiaryColor(e.target.value)}
+                  className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                  style={{ background: "transparent" }}
+                />
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{t("tertiaryColor")}</p>
+                  <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{tertiaryColor ?? "—"}</p>
                 </div>
               </div>
             </div>

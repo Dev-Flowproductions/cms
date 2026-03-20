@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { deleteUser, updateUserWebhookByAdmin, type ClientRow } from "./actions";
+import { deleteUser, updateUserWebhookByAdmin, createClientInstructions, updateClientInstructions, type ClientRow } from "./actions";
 import { CreateUserForm } from "./CreateUserForm";
 import { EditUserConfig } from "./EditUserConfig";
 import { useRouter } from "next/navigation";
@@ -118,6 +118,12 @@ export function UsersClient({ initialUsers, initialError }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generatingUserId, setGeneratingUserId] = useState<string | null>(null);
+  const [instructionsExpandedUserId, setInstructionsExpandedUserId] = useState<string | null>(null);
+  const [instructionsCreatingUserId, setInstructionsCreatingUserId] = useState<string | null>(null);
+  const [instructionsSavingUserId, setInstructionsSavingUserId] = useState<string | null>(null);
+  const [instructionsEditContent, setInstructionsEditContent] = useState<Record<string, string>>({});
+  const [instructionsError, setInstructionsError] = useState<string | null>(null);
+  const [instructionsErrorUserId, setInstructionsErrorUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError);
   const [isPending, startTransition] = useTransition();
   const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
@@ -463,6 +469,74 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                     >
                       {expandedEditUserId === u.user_id ? "Hide config" : "Edit full config"}
                     </button>
+                    {!u.custom_instructions?.trim() ? (
+                      <button
+                        type="button"
+                        disabled={instructionsCreatingUserId === u.user_id}
+                        onClick={async () => {
+                          setInstructionsCreatingUserId(u.user_id);
+                          setInstructionsError(null);
+                          setInstructionsErrorUserId(null);
+                          const result = await createClientInstructions(u.user_id);
+                          setInstructionsCreatingUserId(null);
+                          if (result.error) {
+                            setInstructionsError(result.error);
+                            setInstructionsErrorUserId(u.user_id);
+                          } else {
+                            startTransition(() => router.refresh());
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                        style={{
+                          background: instructionsCreatingUserId === u.user_id ? "var(--surface-raised)" : "rgba(124,92,252,0.12)",
+                          color: instructionsCreatingUserId === u.user_id ? "var(--text-muted)" : "var(--accent)",
+                          border: "1px solid rgba(124,92,252,0.35)",
+                        }}
+                      >
+                        {instructionsCreatingUserId === u.user_id ? (
+                          <>
+                            <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                            </svg>
+                            {t("instructionsCreating")}
+                          </>
+                        ) : (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                            </svg>
+                            {t("createInstructions")}
+                          </>
+                        )}
+                      </button>
+                    ) : null}
+                    {!u.custom_instructions?.trim() && instructionsError && instructionsErrorUserId === u.user_id && (
+                      <p className="text-xs px-2" style={{ color: "var(--danger)" }}>{instructionsError}</p>
+                    )}
+                    {u.custom_instructions?.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInstructionsExpandedUserId(instructionsExpandedUserId === u.user_id ? null : u.user_id);
+                          setInstructionsEditContent((prev) => ({ ...prev, [u.user_id]: u.custom_instructions ?? "" }));
+                          setInstructionsError(null);
+                          setInstructionsErrorUserId(null);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all"
+                        style={{
+                          background: instructionsExpandedUserId === u.user_id ? "var(--surface-raised)" : "rgba(245,158,11,0.12)",
+                          color: instructionsExpandedUserId === u.user_id ? "var(--accent)" : "#f59e0b",
+                          border: "1px solid rgba(245,158,11,0.35)",
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                          <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        {instructionsExpandedUserId === u.user_id ? t("instructionsHide") : t("editInstructions")}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => handleGeneratePost(u.user_id)}
@@ -520,6 +594,63 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         </button>
                       </div>
                       <WebhookRow user={u} t={t} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Expanded instructions editor */}
+                {instructionsExpandedUserId === u.user_id && (
+                  <div
+                    className="px-4 pb-4 pt-0 flex-shrink-0"
+                    style={{ borderTop: "1px solid var(--border)" }}
+                  >
+                    <div className="rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{t("instructionsTitle")}</p>
+                        <button type="button" onClick={() => setInstructionsExpandedUserId(null)} className="text-xs" style={{ color: "var(--text-faint)" }}>
+                          {t("instructionsClose")}
+                        </button>
+                      </div>
+                      <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>{t("instructionsDescription")}</p>
+                      <textarea
+                        value={instructionsEditContent[u.user_id] ?? u.custom_instructions ?? ""}
+                        onChange={(e) => setInstructionsEditContent((prev) => ({ ...prev, [u.user_id]: e.target.value }))}
+                        rows={14}
+                        className="w-full px-3 py-2 rounded-lg text-xs font-mono resize-y transition-all outline-none mb-3"
+                        style={{
+                          background: "var(--surface)",
+                          border: "1px solid var(--border)",
+                          color: "var(--text)",
+                          minHeight: "200px",
+                        }}
+                        placeholder={t("instructionsPlaceholder")}
+                      />
+                      {instructionsError && <p className="text-xs mb-2" style={{ color: "var(--danger)" }}>{instructionsError}</p>}
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          disabled={instructionsSavingUserId === u.user_id}
+                          onClick={async () => {
+                            setInstructionsSavingUserId(u.user_id);
+                            setInstructionsError(null);
+                            const content = instructionsEditContent[u.user_id] ?? u.custom_instructions ?? "";
+                            const result = await updateClientInstructions(u.user_id, content);
+                            setInstructionsSavingUserId(null);
+                            if (result.error) setInstructionsError(result.error);
+                            else {
+                              startTransition(() => router.refresh());
+                              setInstructionsExpandedUserId(null);
+                            }
+                          }}
+                          className="px-4 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                          style={{
+                            background: "var(--accent)",
+                            color: "white",
+                          }}
+                        >
+                          {instructionsSavingUserId === u.user_id ? t("instructionsSaving") : tCommon("save")}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

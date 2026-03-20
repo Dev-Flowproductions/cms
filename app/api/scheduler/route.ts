@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
 import type { Locale } from "@/lib/types/db";
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -192,6 +192,8 @@ type SchedulerClient = {
   secondary_color?: string | null;
   font_style?: string | null;
   brand_voice?: string | null;
+  tertiary_color?: string | null;
+  custom_instructions?: string | null;
 };
 
 async function generatePostForClient(
@@ -250,6 +252,7 @@ async function generatePostForClient(
     logoUrl: client.logo_url ?? null,
     primaryColor: client.primary_color ?? "#7c5cfc",
     secondaryColor: client.secondary_color ?? "#22d3a0",
+    tertiaryColor: client.tertiary_color ?? null,
     fontStyle: client.font_style ?? "modern",
     brandVoice: client.brand_voice ?? "professional",
   } : null;
@@ -279,7 +282,7 @@ async function generatePostForClient(
 
   const geminiModel = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: SYSTEM_INSTRUCTIONS,
+    systemInstruction: getSystemInstructions(client.custom_instructions ?? null),
     generationConfig: {
       temperature: 0.4,
       maxOutputTokens: 8192,
@@ -310,7 +313,7 @@ async function generatePostForClient(
     .single();
   const primaryRunId = primaryRun?.id;
 
-  const primaryPrompt = buildPrompt(postCtx, clientCtx);
+  const primaryPrompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!client.custom_instructions });
   const MAX_RETRIES = 3;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -597,7 +600,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
     const brandStyleParts: string[] = [];
     if (manualBrand) {
-      brandStyleParts.push(`Use EXACTLY these brand colours: primary ${manualBrand.primaryColor}, secondary ${manualBrand.secondaryColor} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
+      const colorParts = [`primary ${manualBrand.primaryColor}`, `secondary ${manualBrand.secondaryColor}`];
+      if (manualBrand.tertiaryColor) colorParts.push(`tertiary ${manualBrand.tertiaryColor}`);
+      brandStyleParts.push(`Use EXACTLY these brand colours: ${colorParts.join(", ")} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
     } else if (visualIdentity) {
       if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
       if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);

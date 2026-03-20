@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
 import type { Locale } from "@/lib/types/db";
 
@@ -49,10 +49,10 @@ export async function POST(request: Request) {
 
   const keyword = focus_keyword ?? existing?.focus_keyword ?? post.slug.replace(/-/g, " ");
 
-  // Fetch client context (domain, brand book, manual brand info)
+  // Fetch client context (domain, brand book, manual brand info, custom_instructions)
   const { data: clientRow } = await admin
     .from("clients")
-    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, brand_name, brand_tone")
+    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         logoUrl: clientRow.logo_url ?? null,
         primaryColor: clientRow.primary_color ?? "#7c5cfc",
         secondaryColor: clientRow.secondary_color ?? "#22d3a0",
+        tertiaryColor: clientRow.tertiary_color ?? null,
         fontStyle: clientRow.font_style ?? "modern",
         brandVoice: clientRow.brand_voice ?? "professional",
       }
@@ -112,10 +113,10 @@ export async function POST(request: Request) {
   try {
     const model = genAI.getGenerativeModel({
       model: MODEL,
-      systemInstruction: SYSTEM_INSTRUCTIONS,
+      systemInstruction: getSystemInstructions(clientRow?.custom_instructions ?? null),
     });
 
-    const prompt = buildPrompt(postCtx, clientCtx);
+    const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!clientRow?.custom_instructions });
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
@@ -262,7 +263,9 @@ export async function POST(request: Request) {
       const brandStyleParts: string[] = [];
       if (clientCtx.manualBrand) {
         const mb = clientCtx.manualBrand;
-        brandStyleParts.push(`Use EXACTLY these brand colours: primary ${mb.primaryColor}, secondary ${mb.secondaryColor} (for background and accents). Typography/font style: ${mb.fontStyle}. Brand voice/mood: ${mb.brandVoice}.`);
+        const colorParts = [`primary ${mb.primaryColor}`, `secondary ${mb.secondaryColor}`];
+        if (mb.tertiaryColor) colorParts.push(`tertiary ${mb.tertiaryColor}`);
+        brandStyleParts.push(`Use EXACTLY these brand colours: ${colorParts.join(", ")} (for background and accents). Typography/font style: ${mb.fontStyle}. Brand voice/mood: ${mb.brandVoice}.`);
       } else if (visualIdentity) {
         if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
         if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);

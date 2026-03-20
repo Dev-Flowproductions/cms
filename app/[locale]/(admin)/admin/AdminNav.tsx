@@ -24,15 +24,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: "reviewQueue",
-    href: "/admin/review-queue",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12zM7.5 4v4l2.5 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
     key: "users",
     href: "/admin/users",
     icon: (

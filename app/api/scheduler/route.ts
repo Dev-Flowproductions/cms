@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import type { Locale } from "@/lib/types/db";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -29,7 +31,7 @@ const FREQUENCY_INTERVAL_MS: Record<string, number> = {
  *   1. Creates a new draft post row
  *   2. Generates content with Gemini (same pipeline as manual "Generate with AI")
  *   3. Generates a cover image with Imagen 4
- *   4. Sets post status to "review" so the admin can approve it
+ *   4. Publishes the post (and optionally sends to webhook if configured)
  *   5. Updates clients.last_post_generated_at
  */
 export async function POST(req: NextRequest) {
@@ -378,6 +380,20 @@ async function generatePostForClient(
   slug = candidate;
   await admin.from("posts").update({ slug }).eq("id", post.id);
 
+  // AI agent: discover site URLs, pick best page for this post, append localized "Learn more" at end
+  let bestInternalUrl: string | null = null;
+  try {
+    bestInternalUrl = await resolveBestInternalLink({
+      domain: client.domain,
+      postTitle: primaryContent.title,
+      excerpt: primaryContent.excerpt,
+      contentMdSnippet: primaryContent.content_md,
+    });
+  } catch (linkErr) {
+    console.warn(`[scheduler] Internal link resolution failed for ${client.domain}:`, linkErr);
+  }
+  const ptContentMd = appendLearnMoreFooter(primaryContent.content_md, bestInternalUrl, "pt");
+
   // Save PT localization
   const ptJsonld = {
     "@context": "https://schema.org",
@@ -410,7 +426,7 @@ async function generatePostForClient(
       locale: "pt",
       title: primaryContent.title,
       excerpt: primaryContent.excerpt,
-      content_md: primaryContent.content_md,
+      content_md: ptContentMd,
       seo_title: primaryContent.seo_title,
       seo_description: primaryContent.seo_description,
       focus_keyword: primaryContent.focus_keyword,
@@ -421,7 +437,12 @@ async function generatePostForClient(
     { onConflict: "post_id,locale" }
   );
 
-  if (primaryRunId) await admin.from("agent_runs").update({ status: "done", output: primaryContent }).eq("id", primaryRunId);
+  if (primaryRunId) {
+    await admin.from("agent_runs").update({
+      status: "done",
+      output: { ...primaryContent, content_md: ptContentMd, internal_link_url: bestInternalUrl },
+    }).eq("id", primaryRunId);
+  }
 
   // ── STEP 2: Translate to other locales (EN, FR) ─────────────────────────────
   const translationLocales = ALL_LOCALES.filter((l) => l !== primaryLocale);
@@ -505,6 +526,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // Carry over SEO scores from primary content
     translated.seo_score = primaryContent.seo_score;
 
+    const translatedMd = appendLearnMoreFooter(
+      translated.content_md,
+      bestInternalUrl,
+      locale as Locale
+    );
+
     const localeJsonld = {
       "@context": "https://schema.org",
       "@graph": [
@@ -536,7 +563,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         locale,
         title: translated.title,
         excerpt: translated.excerpt,
-        content_md: translated.content_md,
+        content_md: translatedMd,
         seo_title: translated.seo_title,
         seo_description: translated.seo_description,
         focus_keyword: translated.focus_keyword,
@@ -547,7 +574,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       { onConflict: "post_id,locale" }
     );
 
-    if (transRunId) await admin.from("agent_runs").update({ status: "done", output: translated }).eq("id", transRunId);
+    if (transRunId) await admin.from("agent_runs").update({ status: "done", output: { ...translated, content_md: translatedMd, internal_link_url: bestInternalUrl } }).eq("id", transRunId);
   }
 
 
@@ -608,9 +635,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   }
 
 
-  // Auto-publish or send to review queue
-  if (client.auto_publish && client.webhook_url) {
-    // Inline publish — no self-fetch to avoid cold-start timeouts on Vercel
+  // All posts are published directly (no review queue). Optionally call webhook if configured.
+  await admin.from("posts").update({
+    status: "published",
+    published_at: new Date().toISOString(),
+    webhook_status: client.webhook_url ? "pending" : null,
+    webhook_sent_at: client.webhook_url ? new Date().toISOString() : null,
+    webhook_error: null,
+  }).eq("id", post.id);
+
+  if (client.webhook_url) {
     try {
       const { data: freshPost } = await admin
         .from("posts")
@@ -655,6 +689,22 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         .eq("user_id", client.user_id)
         .maybeSingle();
 
+      // Fetch author profile to include in the webhook payload
+      const { data: authorProfile } = await admin
+        .from("profiles")
+        .select("display_name, avatar_url, bio, job_title")
+        .eq("id", client.user_id)
+        .maybeSingle();
+
+      const webhookAuthor = authorProfile
+        ? {
+            name: authorProfile.display_name ?? null,
+            jobTitle: authorProfile.job_title ?? null,
+            bio: authorProfile.bio ?? null,
+            avatarUrl: authorProfile.avatar_url ?? null,
+          }
+        : null;
+
       const webhookHeaders: Record<string, string> = { "Content-Type": "application/json" };
       if (clientConfig?.webhook_secret) webhookHeaders["x-webhook-secret"] = clientConfig.webhook_secret;
 
@@ -664,6 +714,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
           id: post.id,
           slug: freshPost?.slug ?? slug,
           cover_image_url: coverImageUrl,
+          author: webhookAuthor,
           title: primary.title,
           excerpt: primary.excerpt,
           content_md: primary.content_md,
@@ -685,14 +736,6 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         timestamp: new Date().toISOString(),
       };
 
-      await admin.from("posts").update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        webhook_status: "pending",
-        webhook_sent_at: new Date().toISOString(),
-        webhook_error: null,
-      }).eq("id", post.id);
-
       const webhookRes = await fetch(client.webhook_url, {
         method: "POST",
         headers: webhookHeaders,
@@ -707,20 +750,13 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         console.warn(`[scheduler] Webhook failed for ${client.domain}: ${errMsg}`);
       } else {
         await admin.from("posts").update({ webhook_status: "success" }).eq("id", post.id);
-        console.log(`[scheduler] Auto-published to ${client.webhook_url}`);
+        console.log(`[scheduler] Webhook sent to ${client.webhook_url}`);
       }
-    } catch (publishErr) {
-      const msg = publishErr instanceof Error ? publishErr.message : "Unknown error";
-      await admin.from("posts").update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        webhook_status: "failed",
-        webhook_error: msg,
-      }).eq("id", post.id);
-      console.warn(`[scheduler] Auto-publish error for ${client.domain}:`, msg);
+    } catch (webhookErr) {
+      const msg = webhookErr instanceof Error ? webhookErr.message : "Unknown error";
+      await admin.from("posts").update({ webhook_status: "failed", webhook_error: msg }).eq("id", post.id);
+      console.warn(`[scheduler] Webhook error for ${client.domain}:`, msg);
     }
-  } else {
-    await admin.from("posts").update({ status: "review" }).eq("id", post.id);
   }
 
   await admin.from("clients").update({

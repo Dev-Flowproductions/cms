@@ -3,6 +3,7 @@
     "loading": "A carregar...",
     "save": "Guardar",
     "cancel": "Cancelar",
+    "close": "Fechar",
     "delete": "Eliminar",
     "edit": "Editar",
     "new": "Novo",
@@ -13,6 +14,10 @@
     "appName": "CMS",
     "email": "Email",
     "password": "Palavra-passe"
+  },
+  "blog": {
+    "aboutAuthor": "Sobre o autor",
+    "backToBlog": "← Voltar ao blog"
   },
   "nav": {
     "home": "Início",

@@ -116,6 +116,12 @@ FORMATTING
 - All content in the specified locale language
 
 ═══════════════════════════════════════
+INTERNAL LINKS (automatic — do not add in body)
+═══════════════════════════════════════
+
+Do NOT add internal site links or "learn more" links inside content_md. A separate step will append one localized "Learn more" (or equivalent) link at the very end of the article after generation.
+
+═══════════════════════════════════════
 COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 ═══════════════════════════════════════
 
@@ -317,6 +323,7 @@ export function buildPrompt(post: PostContext, client: ClientContext): string {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
+  lines.push("CRITICAL: Do NOT add internal links or a trailing learn more line in content_md — those are added automatically after generation.");
   lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Use the EXACT colours, font style, and brand voice from BRAND VISUAL — COVER IMAGE above. Cover MUST show a SHORT headline (2–4 words) IN ENGLISH (use cover_image_headline). No logos or brand names.");
 
   return lines.join("\n");

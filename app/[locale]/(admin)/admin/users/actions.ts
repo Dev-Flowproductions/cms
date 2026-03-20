@@ -12,17 +12,48 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   display_name: z.string().optional(),
+  avatar_url: z.union([z.string().url(), z.literal("")]).optional(),
+  bio: z.string().optional(),
+  job_title: z.string().optional(),
   frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+  domain: z.string().optional(),
+  company_name: z.string().optional(),
+  logo_url: z.union([z.string().url(), z.literal("")]).optional(),
+  primary_color: z.string().optional(),
+  secondary_color: z.string().optional(),
+  font_style: z.string().optional(),
+  brand_voice: z.string().optional(),
+  webhook_url: z.union([z.string().url(), z.literal("")]).optional(),
+  webhook_secret: z.string().optional(),
+  auto_publish: z.enum(["on", "off"]).optional(),
 });
 
 export async function createUser(formData: FormData) {
   await requireAdmin();
 
+  const rawDomain = formData.get("domain")?.toString().trim();
+  const normalizedDomain = rawDomain
+    ? rawDomain.toLowerCase().replace(/^https?:\/\//, "")
+    : null;
+
   const parsed = createUserSchema.safeParse({
     email: formData.get("email")?.toString().trim(),
     password: formData.get("password")?.toString(),
     display_name: formData.get("display_name")?.toString().trim() || undefined,
+    avatar_url: formData.get("avatar_url")?.toString().trim() || undefined,
+    bio: formData.get("bio")?.toString().trim() || undefined,
+    job_title: formData.get("job_title")?.toString().trim() || undefined,
     frequency: formData.get("frequency")?.toString() ?? "weekly",
+    domain: normalizedDomain ?? undefined,
+    company_name: formData.get("company_name")?.toString().trim() || undefined,
+    logo_url: formData.get("logo_url")?.toString().trim() || undefined,
+    primary_color: formData.get("primary_color")?.toString() || undefined,
+    secondary_color: formData.get("secondary_color")?.toString() || undefined,
+    font_style: formData.get("font_style")?.toString().trim() || undefined,
+    brand_voice: formData.get("brand_voice")?.toString() || undefined,
+    webhook_url: formData.get("webhook_url")?.toString().trim() || undefined,
+    webhook_secret: formData.get("webhook_secret")?.toString().trim() || undefined,
+    auto_publish: formData.get("auto_publish")?.toString() || undefined,
   });
 
   if (!parsed.success) {
@@ -30,8 +61,32 @@ export async function createUser(formData: FormData) {
     return { error: firstError ?? "Invalid input" };
   }
 
-  const { email, password, display_name, frequency } = parsed.data;
+  const {
+    email,
+    password,
+    display_name,
+    avatar_url,
+    bio,
+    job_title,
+    frequency,
+    domain,
+    company_name,
+    logo_url,
+    primary_color,
+    secondary_color,
+    font_style,
+    brand_voice,
+    webhook_url,
+    webhook_secret,
+    auto_publish,
+  } = parsed.data;
+
   const admin = createAdminClient();
+
+  if (normalizedDomain) {
+    const { data: taken } = await admin.from("clients").select("user_id").eq("domain", normalizedDomain).maybeSingle();
+    if (taken) return { error: "Domain already in use" };
+  }
 
   // 1. Create auth user
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -42,9 +97,14 @@ export async function createUser(formData: FormData) {
   if (authError) return { error: authError.message };
   const userId = authData.user.id;
 
-  // 2. Upsert profile display name if provided
-  if (display_name) {
-    await admin.from("profiles").update({ display_name }).eq("id", userId);
+  // 2. Profile: display_name, avatar_url, bio, job_title
+  const profilePayload: Record<string, string | null> = {};
+  if (display_name != null) profilePayload.display_name = display_name || null;
+  if (avatar_url != null) profilePayload.avatar_url = avatar_url || null;
+  if (bio != null) profilePayload.bio = bio || null;
+  if (job_title != null) profilePayload.job_title = job_title || null;
+  if (Object.keys(profilePayload).length > 0) {
+    await admin.from("profiles").update(profilePayload).eq("id", userId);
   }
 
   // 3. Assign contributor role
@@ -56,12 +116,24 @@ export async function createUser(formData: FormData) {
     return { error: roleError.message };
   }
 
-  // 4. Create clients row — domain is null until onboarding completes
-  const { error: clientError } = await admin.from("clients").insert({
+  // 4. Create clients row with full config
+  const clientPayload = {
     user_id: userId,
-    domain: null,
+    domain: normalizedDomain,
     frequency,
-  });
+    company_name: company_name || null,
+    logo_url: logo_url || null,
+    primary_color: primary_color || null,
+    secondary_color: secondary_color || null,
+    font_style: font_style || null,
+    brand_voice: brand_voice || null,
+    brand_name: company_name || null,
+    brand_tone: brand_voice || null,
+    webhook_url: webhook_url || null,
+    webhook_secret: webhook_secret || null,
+    auto_publish: auto_publish === "on",
+  };
+  const { error: clientError } = await admin.from("clients").insert(clientPayload);
   if (clientError) {
     await admin.auth.admin.deleteUser(userId);
     return { error: clientError.message };
@@ -90,11 +162,12 @@ export type ClientRow = {
   brand_tone: string | null;
   brand_book: BrandBook | null;
   company_name: string | null;
-  profiles: { display_name: string | null; id: string } | { display_name: string | null; id: string }[] | null;
+  profiles: { display_name: string | null; avatar_url: string | null; bio: string | null; job_title: string | null; id: string } | { display_name: string | null; avatar_url: string | null; bio: string | null; job_title: string | null; id: string }[] | null;
   email?: string;
   last_generation_error?: string | null;
   last_generation_error_at?: string | null;
   last_post_generated_at?: string | null;
+  logo_url?: string | null;
 };
 
 export async function listUsers(): Promise<ClientRow[]> {
@@ -103,7 +176,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name)")
+    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)")
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -130,6 +203,46 @@ export async function getClientSettings(userId: string) {
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/** Current user's profile (for dashboard author section). */
+export async function getMyProfile() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, avatar_url, bio, job_title")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Update current user's profile (display_name, avatar_url, bio, job_title). */
+export async function updateProfile(
+  userId: string,
+  data: { display_name?: string | null; avatar_url?: string | null; bio?: string | null; job_title?: string | null }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) return { error: "Forbidden" };
+  const { error } = await supabase.from("profiles").update(data).eq("id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/** Admin: get full client + profile for any user (for edit form). */
+export async function getClientSettingsByAdmin(userId: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const [clientRes, profileRes] = await Promise.all([
+    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
+    admin.from("profiles").select("id, display_name, avatar_url, bio, job_title").eq("id", userId).maybeSingle(),
+  ]);
+  if (clientRes.error) throw clientRes.error;
+  if (profileRes.error) throw profileRes.error;
+  return { client: clientRes.data, profile: profileRes.data };
 }
 
 export async function saveOnboardingDomain(userId: string, domain: string) {
@@ -223,13 +336,86 @@ export async function updateUserAutoPublish(userId: string, auto_publish: boolea
 
 export async function updateUserWebhookByAdmin(
   userId: string,
-  data: { webhook_url: string | null; webhook_secret: string | null }
+  data: { webhook_url: string | null; webhook_secret: string | null; auto_publish?: boolean }
 ) {
   await requireAdmin();
-  const supabase = await createClient();
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const payload: Record<string, unknown> = { ...data, updated_at: new Date().toISOString() };
+  const { error } = await admin.from("clients").update(payload).eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientDomainByAdmin(userId: string, domain: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const normalized = domain.trim().toLowerCase().replace(/^https?:\/\//, "") || null;
+  const { data: taken } = normalized
+    ? await admin.from("clients").select("user_id").eq("domain", normalized).maybeSingle()
+    : { data: null };
+  if (taken && taken.user_id !== userId) return { error: "domain_taken" };
+  const { error } = await admin
     .from("clients")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ domain: normalized, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientFrequencyByAdmin(userId: string, frequency: Frequency) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clients")
+    .update({ frequency, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateClientBrandByAdmin(
+  userId: string,
+  data: {
+    company_name?: string | null;
+    logo_url?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    font_style?: string | null;
+    brand_voice?: string | null;
+  }
+) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clients")
+    .update({ ...data, brand_name: data.company_name ?? undefined, brand_tone: data.brand_voice ?? undefined, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateProfileByAdmin(
+  userId: string,
+  data: { display_name?: string | null; avatar_url?: string | null; bio?: string | null; job_title?: string | null }
+) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update(data).eq("id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export type InternalLinkEntry = { url: string; label?: string | null };
+
+export async function updateClientInternalLinksByAdmin(userId: string, internal_links: InternalLinkEntry[]) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const sanitized = internal_links
+    .filter((l) => l?.url?.trim())
+    .map((l) => ({ url: l.url.trim(), label: l.label?.trim() || null }));
+  const { error } = await admin
+    .from("clients")
+    .update({ internal_links: sanitized, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };

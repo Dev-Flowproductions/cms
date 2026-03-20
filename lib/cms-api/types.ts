@@ -6,6 +6,7 @@ export interface ApiAuthor {
   id: string;
   name: string;
   slug: string;
+  jobTitle: string | null;
   bio: string | null;
   avatarUrl: string | null;
 }

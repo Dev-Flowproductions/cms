@@ -23,13 +23,31 @@ function Field({
   type = "text",
   required = false,
   placeholder,
+  textarea,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   placeholder?: string;
+  textarea?: boolean;
 }) {
+  const inputProps = {
+    id: name,
+    name,
+    required,
+    placeholder,
+    autoComplete: "off" as const,
+    style: inputBase,
+    onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      e.currentTarget.style.borderColor = "var(--accent)";
+      e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
+    },
+    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      e.currentTarget.style.borderColor = "var(--border)";
+      e.currentTarget.style.boxShadow = "none";
+    },
+  };
   return (
     <div>
       <label
@@ -40,23 +58,11 @@ function Field({
         {label}
         {required && <span style={{ color: "var(--accent)" }}> *</span>}
       </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        placeholder={placeholder}
-        autoComplete="off"
-        style={inputBase}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = "var(--accent)";
-          e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = "var(--border)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      />
+      {textarea ? (
+        <textarea {...inputProps} rows={3} />
+      ) : (
+        <input {...inputProps} type={type} />
+      )}
     </div>
   );
 }
@@ -72,12 +78,23 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
   const [frequency, setFrequency] = useState<Frequency>("weekly");
   const formRef = useRef<HTMLFormElement>(null);
 
+  const [brandVoice, setBrandVoice] = useState("professional");
+  const [autoPublish, setAutoPublish] = useState(false);
+
   const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
     { value: "daily",    label: tSettings("frequency.daily") },
     { value: "weekly",   label: tSettings("frequency.weekly") },
     { value: "biweekly", label: tSettings("frequency.biweekly") },
     { value: "monthly",  label: tSettings("frequency.monthly") },
   ];
+
+  const BRAND_VOICES = [
+    { id: "professional", label: "Professional & Authoritative" },
+    { id: "friendly", label: "Friendly & Approachable" },
+    { id: "innovative", label: "Innovative & Forward-thinking" },
+    { id: "luxurious", label: "Luxurious & Premium" },
+    { id: "casual", label: "Casual & Conversational" },
+  ] as const;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +103,8 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
     setError(null);
     const fd = new FormData(formRef.current);
     fd.set("frequency", frequency);
+    fd.set("brand_voice", brandVoice);
+    fd.set("auto_publish", autoPublish ? "on" : "off");
     const result = await createUser(fd);
     setLoading(false);
     if (result.error) {
@@ -133,6 +152,20 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
           <Field label={t("createForm.displayName")} name="display_name" placeholder={t("createForm.displayNamePlaceholder")} />
         </div>
 
+        {/* Author (shown on blog posts) */}
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+            Author (for blog posts)
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Avatar URL" name="avatar_url" type="text" placeholder="https://..." />
+            <Field label="Job title" name="job_title" placeholder="e.g. Content Lead" />
+            <div className="sm:col-span-2">
+              <Field label="Short bio" name="bio" placeholder="One line shown under author name" textarea />
+            </div>
+          </div>
+        </div>
+
         {/* Frequency */}
         <div className="mb-6">
           <p
@@ -161,6 +194,68 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Domain */}
+        <div className="mb-6">
+          <Field label="Website domain" name="domain" type="text" placeholder="yourdomain.com" />
+        </div>
+
+        {/* Brand */}
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+            Brand
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Company name" name="company_name" placeholder="Your Company" />
+            <Field label="Logo URL" name="logo_url" type="text" placeholder="https://..." />
+            <Field label="Primary color" name="primary_color" type="text" placeholder="#7c5cfc" />
+            <Field label="Secondary color" name="secondary_color" type="text" placeholder="#22d3a0" />
+            <Field label="Font style" name="font_style" placeholder="modern" />
+            <div className="sm:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Brand voice</p>
+              <div className="flex flex-wrap gap-2">
+                {BRAND_VOICES.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setBrandVoice(v.id)}
+                    className="px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                    style={{
+                      background: brandVoice === v.id ? "var(--accent)" : "var(--surface)",
+                      color: brandVoice === v.id ? "white" : "var(--text)",
+                      border: `1px solid ${brandVoice === v.id ? "var(--accent)" : "var(--border)"}`,
+                    }}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Webhook & auto-publish */}
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+            Publishing
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Webhook URL" name="webhook_url" type="text" placeholder="https://yoursite.com/api/cms-webhook" />
+            <Field label="Webhook secret" name="webhook_secret" type="text" placeholder="Optional" />
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="auto_publish"
+                checked={autoPublish}
+                onChange={(e) => setAutoPublish(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="auto_publish" className="text-sm" style={{ color: "var(--text)" }}>
+                Auto-publish (send new posts to webhook when generated)
+              </label>
+            </div>
           </div>
         </div>
 

@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import type { Locale } from "@/lib/types/db";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -193,6 +195,21 @@ export async function POST(request: Request) {
       "@graph": [articleEntity, ...(faqEntity ? [faqEntity] : [])],
     };
 
+    let contentMdOut = generated.content_md;
+    if (clientRow?.domain) {
+      try {
+        const bestUrl = await resolveBestInternalLink({
+          domain: clientRow.domain,
+          postTitle: generated.title,
+          excerpt: generated.excerpt,
+          contentMdSnippet: generated.content_md,
+        });
+        contentMdOut = appendLearnMoreFooter(generated.content_md, bestUrl, locale as Locale);
+      } catch (e) {
+        console.warn("[generate] Internal link step failed:", e);
+      }
+    }
+
     // Save to DB
     const { error: upsertError } = await admin
       .from("post_localizations")
@@ -202,7 +219,7 @@ export async function POST(request: Request) {
           locale,
           title: generated.title,
           excerpt: generated.excerpt,
-          content_md: generated.content_md,
+          content_md: contentMdOut,
           seo_title: generated.seo_title,
           seo_description: generated.seo_description,
           focus_keyword: generated.focus_keyword,
@@ -218,7 +235,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
 
-    if (runId) await admin.from("agent_runs").update({ status: "done", output: generated }).eq("id", runId);
+    if (runId) await admin.from("agent_runs").update({ status: "done", output: { ...generated, content_md: contentMdOut } }).eq("id", runId);
 
     // ── Auto-generate cover image: graphic illustration (not photography), using brand book colours/font/voice
     let coverPublicUrl: string | null = null;
@@ -279,7 +296,12 @@ export async function POST(request: Request) {
       console.warn("[generate] Auto-cover failed (non-fatal):", coverErr);
     }
 
-    return NextResponse.json({ success: true, data: generated, coverPublicUrl, seoScore: generated.seo_score ?? null });
+    return NextResponse.json({
+      success: true,
+      data: { ...generated, content_md: contentMdOut },
+      coverPublicUrl,
+      seoScore: generated.seo_score ?? null,
+    });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

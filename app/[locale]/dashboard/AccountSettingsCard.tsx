@@ -8,6 +8,7 @@ import {
   updateClientFrequency,
   updateClientDomain,
   updateUserAutoPublish,
+  updateProfile,
   type Frequency,
 } from "@/app/[locale]/(admin)/admin/users/actions";
 
@@ -43,12 +44,22 @@ const inputStyle = {
   color: "var(--text)",
 } as const;
 
+type Profile = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  job_title: string | null;
+} | null;
+
 export function AccountSettingsCard({
   userId,
   settings,
+  profile,
 }: {
   userId: string;
   settings: Settings | null;
+  profile?: Profile;
 }) {
   const t = useTranslations("settings");
   const tBrand = useTranslations("onboarding.brand");
@@ -81,6 +92,14 @@ export function AccountSettingsCard({
   const [domainSaving, setDomainSaving] = useState(false);
   const [domainSaved, setDomainSaved] = useState(false);
   const [domainError, setDomainError] = useState<string | null>(null);
+
+  const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
+  const [bio, setBio] = useState(profile?.bio ?? "");
+  const [jobTitle, setJobTitle] = useState(profile?.job_title ?? "");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
     { value: "daily",    label: t("frequency.daily"),    sublabel: t("frequency.dailySublabel") },
@@ -177,6 +196,99 @@ export function AccountSettingsCard({
       </div>
 
       <div className="px-6 py-6 space-y-8">
+
+        {/* Author (shown on blog posts) */}
+        <div
+          className="rounded-xl p-5 space-y-3"
+          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Author (for blog posts)
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Display name</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => { setDisplayName(e.target.value); setProfileError(null); }}
+                placeholder="Your name"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Avatar URL</label>
+              <input
+                type="text"
+                value={avatarUrl}
+                onChange={(e) => { setAvatarUrl(e.target.value); setProfileError(null); }}
+                placeholder="https://..."
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Job title</label>
+              <input
+                type="text"
+                value={jobTitle}
+                onChange={(e) => { setJobTitle(e.target.value); setProfileError(null); }}
+                placeholder="e.g. Content Lead"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Short bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => { setBio(e.target.value); setProfileError(null); }}
+                placeholder="One line shown under your name on posts"
+                rows={2}
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+          {profileError && <p className="text-xs" style={{ color: "var(--danger)" }}>{profileError}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                setProfileSaving(true);
+                setProfileError(null);
+                setProfileSaved(false);
+                const result = await updateProfile(userId, {
+                  display_name: displayName.trim() || null,
+                  avatar_url: avatarUrl.trim() || null,
+                  bio: bio.trim() || null,
+                  job_title: jobTitle.trim() || null,
+                });
+                setProfileSaving(false);
+                if (result.error) { setProfileError(result.error); return; }
+                setProfileSaved(true);
+                router.refresh();
+                setTimeout(() => setProfileSaved(false), 3000);
+              }}
+              disabled={profileSaving}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                boxShadow: !profileSaving ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+              }}
+            >
+              {profileSaving ? t("saving") : t("saveChanges")}
+            </button>
+            {profileSaved && (
+              <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
+            )}
+          </div>
+        </div>
 
         {/* Website domain — editable */}
         <div

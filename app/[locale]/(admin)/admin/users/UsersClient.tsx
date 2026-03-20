@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { deleteUser, updateUserWebhookByAdmin, type ClientRow } from "./actions";
 import { CreateUserForm } from "./CreateUserForm";
+import { EditUserConfig } from "./EditUserConfig";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -120,6 +121,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
   const [error, setError] = useState<string | null>(initialError);
   const [isPending, startTransition] = useTransition();
   const [expandedWebhook, setExpandedWebhook] = useState<string | null>(null);
+  const [expandedEditUserId, setExpandedEditUserId] = useState<string | null>(null);
   const router = useRouter();
 
   const FREQUENCY_LABELS: Record<string, string> = {
@@ -448,7 +450,19 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                 </div>
 
                 {!onboardingPending && (
-                  <div className="px-4 pb-4">
+                  <div className="px-4 pb-4 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedEditUserId(expandedEditUserId === u.user_id ? null : u.user_id)}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all"
+                      style={{
+                        background: "var(--surface-raised)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(124,92,252,0.3)",
+                      }}
+                    >
+                      {expandedEditUserId === u.user_id ? "Hide config" : "Edit full config"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleGeneratePost(u.user_id)}
@@ -476,6 +490,19 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         </>
                       )}
                     </button>
+                  </div>
+                )}
+
+                {/* Expanded full config editor */}
+                {expandedEditUserId === u.user_id && (
+                  <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                    <div className="rounded-xl mt-3 overflow-hidden" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                      <EditUserConfig
+                        user={u}
+                        onClose={() => setExpandedEditUserId(null)}
+                        onSaved={() => startTransition(() => router.refresh())}
+                      />
+                    </div>
                   </div>
                 )}
 

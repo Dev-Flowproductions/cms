@@ -13,7 +13,13 @@ function getCoverUrl(admin: AdminClient, coverPath: string | null): string | nul
   return data?.publicUrl ?? null;
 }
 
-function mapAuthor(profile: { id: string; display_name: string | null } | null): ApiAuthor | null {
+function mapAuthor(profile: {
+  id: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  job_title?: string | null;
+} | null): ApiAuthor | null {
   if (!profile) return null;
   const name = profile.display_name ?? "Unknown";
   const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -21,8 +27,9 @@ function mapAuthor(profile: { id: string; display_name: string | null } | null):
     id: profile.id,
     name,
     slug: slug || "author",
-    bio: null,
-    avatarUrl: null,
+    jobTitle: profile.job_title ?? null,
+    bio: profile.bio ?? null,
+    avatarUrl: profile.avatar_url ?? null,
   };
 }
 
@@ -44,7 +51,7 @@ export async function getPublishedPosts(
       `
       id, slug, cover_image_path, published_at, updated_at,
       post_localizations ( locale, title, excerpt, seo_title ),
-      profiles ( id, display_name )
+      profiles ( id, display_name, avatar_url, bio, job_title )
     `
     )
     .eq("author_id", userId)
@@ -96,7 +103,7 @@ export async function getPublishedPostBySlug(
       `
       id, slug, cover_image_path, published_at, updated_at,
       post_localizations ( locale, title, excerpt, content_md, seo_title, seo_description, jsonld ),
-      profiles ( id, display_name )
+      profiles ( id, display_name, avatar_url, bio, job_title )
     `
     )
     .eq("author_id", userId)
@@ -153,7 +160,7 @@ export async function getPublishedPostBySlug(
 export async function getAuthors(admin: AdminClient, userId: string): Promise<ApiAuthor[]> {
   const { data, error } = await admin
     .from("posts")
-    .select("profiles ( id, display_name )")
+    .select("profiles ( id, display_name, avatar_url, bio, job_title )")
     .eq("author_id", userId)
     .eq("status", "published");
 

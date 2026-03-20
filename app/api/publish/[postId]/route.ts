@@ -68,6 +68,22 @@ export async function POST(
     );
   }
 
+  // Fetch author profile to include in payload
+  const { data: authorProfile } = await admin
+    .from("profiles")
+    .select("display_name, avatar_url, bio, job_title")
+    .eq("id", post.author_id)
+    .maybeSingle();
+
+  const author = authorProfile
+    ? {
+        name: authorProfile.display_name ?? null,
+        jobTitle: authorProfile.job_title ?? null,
+        bio: authorProfile.bio ?? null,
+        avatarUrl: authorProfile.avatar_url ?? null,
+      }
+    : null;
+
   // Build the cover image public URL if available
   let coverImageUrl: string | null = null;
   if (post.cover_image_path) {
@@ -123,6 +139,7 @@ export async function POST(
     post: {
       ...revalidation.post,
       cover_image_url: coverImageUrl,
+      author,
       title: primary.title,
       excerpt: primary.excerpt,
       content_md: primary.content_md,

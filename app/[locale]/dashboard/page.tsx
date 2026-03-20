@@ -7,12 +7,9 @@ import { DashboardPostsTable } from "./DashboardPostsTable";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { UserMenu } from "./UserMenu";
 import { AccountSettingsCard } from "./AccountSettingsCard";
-import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
+import { getClientSettings, getMyProfile } from "@/app/[locale]/(admin)/admin/users/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppLogo } from "@/components/AppLogo";
-import { getUserReviewPosts } from "./review/actions";
-import { UserReviewQueue } from "./review/UserReviewQueue";
-
 export default async function DashboardPage() {
   const { user, roles } = await getAuthUserWithRoles();
   const isAdmin = hasAdminRole(roles);
@@ -25,8 +22,10 @@ export default async function DashboardPage() {
 
   const t = await getTranslations();
   const posts = await getPostsForDashboard(user.id, false);
-  const clientSettings = await getClientSettings(user.id).catch(() => null);
-  const reviewPosts = await getUserReviewPosts().catch(() => []);
+  const [clientSettings, profile] = await Promise.all([
+    getClientSettings(user.id).catch(() => null),
+    getMyProfile().catch(() => null),
+  ]);
 
   // Incomplete onboarding: no client row or domain not set — send to onboarding
   if (!clientSettings || !clientSettings.domain) {
@@ -104,11 +103,6 @@ export default async function DashboardPage() {
               value: posts.filter((p) => p.status === "draft").length,
               accent: false,
             },
-            {
-              label: t("dashboard.stats.review"),
-              value: posts.filter((p) => p.status === "review").length,
-              accent: false,
-            },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -132,17 +126,12 @@ export default async function DashboardPage() {
           ))}
         </div>
 
-        {/* User review queue — AI-generated posts waiting for approval */}
-        {!isAdmin && reviewPosts.length > 0 && (
-          <UserReviewQueue posts={reviewPosts as Parameters<typeof UserReviewQueue>[0]["posts"]} />
-        )}
-
         {/* Posts table */}
         <DashboardPostsTable posts={posts} isAdmin={isAdmin} />
 
         {/* Account settings — only for non-admin users who have a client row */}
         {!isAdmin && clientSettings && (
-          <AccountSettingsCard userId={user.id} settings={clientSettings} />
+          <AccountSettingsCard userId={user.id} settings={clientSettings} profile={profile} />
         )}
       </main>
     </div>

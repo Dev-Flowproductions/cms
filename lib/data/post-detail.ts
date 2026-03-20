@@ -46,7 +46,9 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
   if (postError || !post) return null;
 
   // If embed didn't return profile (e.g. RLS or relation name), fetch profile by author_id so author block always has data
-  let postWithProfile = post as typeof post & { profiles?: { display_name: string | null; avatar_url: string | null; bio: string | null; job_title: string | null } | null };
+  type ProfileRow = { display_name: string | null; avatar_url: string | null; bio: string | null; job_title: string | null };
+  type PostWithProfile = typeof post & { profiles?: ProfileRow | ProfileRow[] | null };
+  let postWithProfile: PostWithProfile = post;
   if (post.author_id) {
     const hasProfile = postWithProfile.profiles != null && typeof postWithProfile.profiles === "object" && !Array.isArray(postWithProfile.profiles);
     const hasProfileArray = Array.isArray(postWithProfile.profiles) && postWithProfile.profiles.length > 0;
@@ -57,7 +59,7 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
         .eq("id", post.author_id)
         .maybeSingle();
       if (profile) {
-        postWithProfile = { ...post, profiles: profile };
+        postWithProfile = { ...post, profiles: profile } as PostWithProfile;
       }
     }
   }

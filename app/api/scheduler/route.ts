@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
 import type { Locale } from "@/lib/types/db";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
@@ -380,6 +380,16 @@ async function generatePostForClient(
   slug = candidate;
   await admin.from("posts").update({ slug }).eq("id", post.id);
 
+  // Fetch author profile so we can append "Sobre o autor" (with avatar) into the post content
+  const { data: authorProfile } = await admin
+    .from("profiles")
+    .select("display_name, job_title, bio, avatar_url")
+    .eq("id", client.user_id)
+    .maybeSingle();
+  const authorForBlock = authorProfile
+    ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
+    : null;
+
   // AI agent: discover site URLs, pick best page for this post, append localized "Learn more" at end
   let bestInternalUrl: string | null = null;
   try {
@@ -392,7 +402,8 @@ async function generatePostForClient(
   } catch (linkErr) {
     console.warn(`[scheduler] Internal link resolution failed for ${client.domain}:`, linkErr);
   }
-  const ptContentMd = appendLearnMoreFooter(primaryContent.content_md, bestInternalUrl, "pt");
+  const ptWithLearnMore = appendLearnMoreFooter(primaryContent.content_md, bestInternalUrl, "pt");
+  const ptContentMd = appendAuthorBlock(ptWithLearnMore, "pt", authorForBlock);
 
   // Save PT localization
   const ptJsonld = {
@@ -526,11 +537,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // Carry over SEO scores from primary content
     translated.seo_score = primaryContent.seo_score;
 
-    const translatedMd = appendLearnMoreFooter(
-      translated.content_md,
-      bestInternalUrl,
-      locale as Locale
-    );
+    const translatedWithLearnMore = appendLearnMoreFooter(translated.content_md, bestInternalUrl, locale as Locale);
+    const translatedMd = appendAuthorBlock(translatedWithLearnMore, locale as Locale, authorForBlock);
 
     const localeJsonld = {
       "@context": "https://schema.org",

@@ -1,5 +1,6 @@
 /**
  * AI picks the best internal URL for a post; we append a localized "Learn more" footer.
+ * Author block is appended into content_md so it appears at the bottom of every post.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -13,6 +14,48 @@ const LEARN_MORE: Record<Locale, string> = {
   en: "Learn more",
   fr: "En savoir plus",
 };
+
+const ABOUT_AUTHOR: Record<Locale, string> = {
+  pt: "Sobre o autor",
+  en: "About the author",
+  fr: "À propos de l'auteur",
+};
+
+export type AuthorForBlock = {
+  displayName: string | null;
+  jobTitle: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+};
+
+/**
+ * Appends a "Sobre o autor" / "About the author" section at the end of content_md
+ * so the author always appears at the bottom of the post, in the content itself.
+ * Avatar image (if present) is shown above the name and bio.
+ */
+export function appendAuthorBlock(
+  contentMd: string,
+  locale: Locale,
+  author: AuthorForBlock | null
+): string {
+  if (!author?.displayName?.trim()) return contentMd;
+  const heading = ABOUT_AUTHOR[locale] ?? ABOUT_AUTHOR.en;
+  const name = author.displayName.trim();
+  const job = author.jobTitle?.trim();
+  const bio = author.bio?.trim();
+  const avatarUrl = author.avatarUrl?.trim();
+  const byline = job ? `**${name}** — ${job}` : `**${name}**`;
+  // Use HTML so we can set size (64px like Flow author block); markdown ![alt](url) would be full-width
+  const avatarLine = avatarUrl
+    ? `\n\n<img src="${avatarUrl.replace(/"/g, "&quot;")}" alt="${name.replace(/"/g, "&quot;")}" width="64" height="64" style="border-radius: 50%; object-fit: cover; display: block;" />\n\n`
+    : "\n\n";
+  const block = bio
+    ? `\n\n## ${heading}${avatarLine}${byline}\n\n${bio}`
+    : `\n\n## ${heading}${avatarLine}${byline}`;
+  const trimmed = contentMd.trimEnd();
+  if (trimmed.includes(`## ${heading}`)) return contentMd;
+  return `${trimmed}${block}`;
+}
 
 export function appendLearnMoreFooter(
   contentMd: string,

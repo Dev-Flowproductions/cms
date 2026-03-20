@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTIONS, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
 import type { Locale } from "@/lib/types/db";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -195,6 +195,15 @@ export async function POST(request: Request) {
       "@graph": [articleEntity, ...(faqEntity ? [faqEntity] : [])],
     };
 
+    const { data: authorProfile } = await admin
+      .from("profiles")
+      .select("display_name, job_title, bio, avatar_url")
+      .eq("id", post.author_id)
+      .maybeSingle();
+    const authorForBlock = authorProfile
+      ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
+      : null;
+
     let contentMdOut = generated.content_md;
     if (clientRow?.domain) {
       try {
@@ -204,11 +213,12 @@ export async function POST(request: Request) {
           excerpt: generated.excerpt,
           contentMdSnippet: generated.content_md,
         });
-        contentMdOut = appendLearnMoreFooter(generated.content_md, bestUrl, locale as Locale);
+        contentMdOut = appendLearnMoreFooter(contentMdOut, bestUrl, locale as Locale);
       } catch (e) {
         console.warn("[generate] Internal link step failed:", e);
       }
     }
+    contentMdOut = appendAuthorBlock(contentMdOut, locale as Locale, authorForBlock);
 
     // Save to DB
     const { error: upsertError } = await admin

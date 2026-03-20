@@ -131,20 +131,23 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, generated, skipped, errors, results });
 }
 
-// GET: health check, or run scheduler when ?secret=CRON_SECRET (for Vercel Cron which uses GET)
+// GET: health check, or run scheduler when authorized (Vercel Cron sends Authorization: Bearer CRON_SECRET, or ?secret=CRON_SECRET)
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const secretParam = url.searchParams.get("secret");
+  const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && secretParam === cronSecret) {
-    // Delegate to POST logic by calling the same flow
+  const authorized =
+    cronSecret &&
+    (secretParam === cronSecret || authHeader === `Bearer ${cronSecret}`);
+  if (authorized) {
     const mockPost = new NextRequest(req.url, { method: "POST", headers: req.headers });
     return POST(mockPost);
   }
   return NextResponse.json({
     ok: true,
-    message: "Scheduler endpoint is live. POST to trigger a run (or GET ?secret=CRON_SECRET for cron).",
-    next_run: "On app traffic (GET /api/scheduler/trigger) or manual POST with CRON_SECRET",
+    message: "Scheduler endpoint is live. Trigger: Vercel Cron (time-based) or GET ?secret=CRON_SECRET or POST with Bearer CRON_SECRET.",
+    next_run: "Vercel Cron runs on schedule (see vercel.json). Manual: Run scheduler in admin or GET /api/scheduler?secret=CRON_SECRET",
   });
 }
 

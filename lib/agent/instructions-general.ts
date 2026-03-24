@@ -116,7 +116,7 @@ The cover is a GRAPHIC ILLUSTRATION banner, not a photograph.
 - BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
 - COMPOSITION: All decorative elements must MATCH the post topic — use thematic shapes and motifs that relate to the subject (e.g. email → envelope; AI → circuits; branding → symbols). Place on borders/edges only. Center stays clear for text.
 - TEXT: Short headline, centered, ONE line, 2–4 words, IN ENGLISH. European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos.
-- cover_image_description: 1–2 sentences — primary-colour background, elements on borders/edges, focal element. Headline: European style (first letter caps, rest lowercase).
+- cover_image_description: 1–2 sentences — primary-colour background; thematic shapes on borders. Vary composition: minimal (1–2 accents), balanced (2–4), rich (4–6), structured (geometric), or organic (soft). Headline: European style.
 - cover_image_headline: 2–4 words, English. If omitted, truncated title is used.
 
 ═══════════════════════════════════════
@@ -127,7 +127,7 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "Graphic illustration: primary background, THEMATIC shapes that match the post (e.g. email → envelope; AI → circuits). Elements on borders. 1-2 sentences.",
+  "cover_image_description": "Graphic illustration: primary background, THEMATIC shapes on borders. Vary: minimal, balanced, rich, structured, or organic. 1-2 sentences.",
   "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",

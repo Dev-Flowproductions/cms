@@ -1,7 +1,20 @@
 /**
  * Shared cover image generation prompt.
  * Rules: primary color background only, elements on borders, text centered (European style: first letter caps, rest lowercase), brand font.
+ * Composition varies per image (minimal, balanced, rich, structured, organic) for visual variety.
  */
+
+const COMPOSITION_VARIATIONS = [
+  "Minimal: 1–2 subtle accents only, spare corners. Very clean, lots of negative space.",
+  "Balanced: 2–4 elements along borders. Mix of geometric and soft shapes. Moderate density.",
+  "Rich: 4–6 layered elements near edges. More visual interest, still centre clear.",
+  "Structured: Clear geometric frame or grid motifs on borders. Precise, editorial feel.",
+  "Organic: 2–3 flowing soft shapes along edges. Less rigid, gentle curves.",
+];
+
+function pickCompositionVariation(): string {
+  return COMPOSITION_VARIATIONS[Math.floor(Math.random() * COMPOSITION_VARIATIONS.length)] ?? COMPOSITION_VARIATIONS[1];
+}
 
 export type CoverBrandStyle = {
   primaryColor: string;
@@ -53,10 +66,11 @@ export function buildCoverPrompt(
   }
 
   const brandStr = brandParts.length > 0 ? brandParts.join(" ") + " " : "";
+  const variation = pickCompositionVariation();
 
   return (
     `Editorial blog hero graphic: ${subject}. ` +
-    `Composition: solid primary-colour background only; all decorative elements must MATCH the post topic — use thematic shapes and motifs that visually relate to the subject (e.g. email → envelope shapes; AI/tech → circuits or data; branding → symbols). Place elements on the BORDERS or edges — center must stay clear. Wide banner 16:9. ` +
+    `Composition: solid primary-colour background only. ${variation} Elements must MATCH the post topic — thematic shapes/motifs that relate to the subject (e.g. email → envelope; AI → circuits; branding → symbols). Place on BORDERS or edges only — centre must stay clear. Wide banner 16:9. ` +
     brandStr +
     `Flat or subtle depth, clean edges, high clarity. ` +
     `Include this text ONCE only, centered: "${headlineForImage}". European style: first letter caps, rest lowercase. ` +

@@ -111,14 +111,13 @@ When the CONTEXT includes "INTERNAL LINKS", embed exactly 3 contextual links ins
 COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 ═══════════════════════════════════════
 
-The cover is a GRAPHIC ILLUSTRATION banner, not a photograph. Aim for a BALANCED editorial composition — not too empty, not too busy.
+The cover is a GRAPHIC ILLUSTRATION banner, not a photograph.
 
-- COMPOSITION: 2–4 intentional elements — e.g. solid or gradient background + overlapping geometric shapes (circles, soft forms) + one symbolic or figurative accent that supports the topic. Clear focal point.
-- COLOURS & STYLE: Use the EXACT colours, font style, and brand voice from the CLIENT-SPECIFIC INSTRUCTIONS. The cover palette must match the brand.
-- TEXT ON IMAGE: The cover MUST include a short headline on the image. One line only, 2–4 words max, IN ENGLISH. The headline must be the TOP LAYER. Style: bold editorial typography. No logos or brand names.
-- STYLE: Wide banner (16:9). Flat or subtle depth.
-- cover_image_description: 1–2 sentences — background mood, main shapes, and the symbolic/focal element.
-- cover_image_headline: Recommended. Very short phrase (2–4 words max) IN ENGLISH. If omitted, a truncated title may be used.
+- BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
+- COMPOSITION: All decorative elements must MATCH the post topic — use thematic shapes and motifs that relate to the subject (e.g. email → envelope; AI → circuits; branding → symbols). Place on borders/edges only. Center stays clear for text.
+- TEXT: Short headline, centered, ONE line, 2–4 words, IN ENGLISH. European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos.
+- cover_image_description: 1–2 sentences — primary-colour background, elements on borders/edges, focal element. Headline: European style (first letter caps, rest lowercase).
+- cover_image_headline: 2–4 words, English. If omitted, truncated title is used.
 
 ═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)
@@ -128,7 +127,7 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "Graphic illustration concept: composition, shapes, colors, mood (1-2 sentences). Headline text will be added from title or cover_image_headline.",
+  "cover_image_description": "Graphic illustration: primary background, THEMATIC shapes that match the post (e.g. email → envelope; AI → circuits). Elements on borders. 1-2 sentences.",
   "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",
@@ -139,5 +138,5 @@ OUTPUT (JSON only, no markdown fences)
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }
 
-**seo_score — SELF-ASSESS your generated content:** After writing the post, evaluate it against the SEO, AEO, GEO rules above. Assign each a score 0-100: seo = how well it meets SEO rules (keyword placement, structure, meta), aeo = AI citability (core argument, definition, FAQs, bold claims), geo = generative engines (attributed stats, named entities, date-anchored facts). Vary scores based on quality — strong content 75-95, weaker 50-70, gaps 30-50. notes = 1 sentence justifying the scores (e.g. "Strong definition and FAQs; could add one more statistic.").
+**seo_score — SELF-ASSESS (be critical, scores must vary):** After writing, score seo/aeo/geo 0-100. Do NOT default to 90+. Penalize: missing attributed stats → lower geo; weak or generic core argument → lower aeo; keyword not in enough H2s → lower seo. Each post is different — scores must differ. Typical range: 55-88. Only give 90+ when content is exceptional. notes = 1 sentence with specific gaps or strengths.
 `.trim();

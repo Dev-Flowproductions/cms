@@ -216,8 +216,8 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   } else {
     lines.push("CRITICAL: No internal site URL list was provided — do not add internal [text](url) links to the site.");
   }
-  lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Use the EXACT colours, font style, and brand voice from BRAND VISUAL — COVER IMAGE above. Cover MUST show a SHORT headline (2–4 words) IN ENGLISH (use cover_image_headline). No logos or brand names.");
-  lines.push("seo_score: SELF-ASSESS the content you wrote. Score seo/aeo/geo 0-100 based on how well it meets each rule. Vary by quality. notes = brief justification.");
+  lines.push("CRITICAL: cover_image_description = primary colour background; thematic elements that MATCH the post topic (e.g. email→envelope, AI→circuits); elements on borders. Headline centered, European style, brand font. Use BRAND VISUAL above.");
+  lines.push("seo_score: Be CRITICAL. Do NOT default to 90+. Penalize gaps. Scores must vary per post (typical 55-88). notes = specific gaps.");
 
   return lines.join("\n");
 }

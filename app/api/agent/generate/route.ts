@@ -4,7 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
+import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import type { Locale } from "@/lib/types/db";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
       }
     : null;
 
+  const rawUrls = clientRow?.domain ? await getCandidateSiteUrls(clientRow.domain) : [];
+  const internalLinkCandidates =
+    rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
   const clientCtx: ClientContext = {
     domain: clientRow?.domain ?? null,
     brandName: clientRow?.company_name ?? clientRow?.brand_name ?? null,
@@ -79,6 +83,7 @@ export async function POST(request: Request) {
     gaTopPages: null,
     gaTopKeywords: null,
     searchConsoleQueries: null,
+    internalLinkCandidates: internalLinkCandidates.length > 0 ? internalLinkCandidates : null,
   };
 
   // Publication date
@@ -147,6 +152,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Gemini returned invalid JSON. Try again." }, { status: 500 });
     }
 
+    generated.content_md = sanitizeInternalMarkdownLinks(
+      generated.content_md,
+      internalLinkCandidates.map((c) => c.url)
+    );
+    if (clientRow?.domain) {
+      generated.content_md = convertInternalLinksToRelative(generated.content_md, clientRow.domain);
+    }
+
     // Build rich JSON-LD (Article + FAQPage + speakable + publisher)
     const publisherEntity = {
       "@type": "Organization",
@@ -205,21 +218,7 @@ export async function POST(request: Request) {
       ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
       : null;
 
-    let contentMdOut = generated.content_md;
-    if (clientRow?.domain) {
-      try {
-        const bestUrl = await resolveBestInternalLink({
-          domain: clientRow.domain,
-          postTitle: generated.title,
-          excerpt: generated.excerpt,
-          contentMdSnippet: generated.content_md,
-        });
-        contentMdOut = appendLearnMoreFooter(contentMdOut, bestUrl, locale as Locale);
-      } catch (e) {
-        console.warn("[generate] Internal link step failed:", e);
-      }
-    }
-    contentMdOut = appendAuthorBlock(contentMdOut, locale as Locale, authorForBlock);
+    const contentMdOut = appendAuthorBlock(generated.content_md, locale as Locale, authorForBlock);
 
     // Save to DB
     const { error: upsertError } = await admin

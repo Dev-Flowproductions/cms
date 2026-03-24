@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { appendAuthorBlock, appendLearnMoreFooter, resolveBestInternalLink } from "@/lib/agent/internal-link";
+import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
+import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import type { Locale } from "@/lib/types/db";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
@@ -258,6 +259,9 @@ async function generatePostForClient(
   } : null;
 
   const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
+  const rawUrls = await getCandidateSiteUrls(client.domain);
+  const internalLinkCandidates =
+    rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
   const clientCtx: ClientContext = {
     domain: client.domain,
     brandName: client.company_name ?? client.brand_name ?? null,
@@ -270,6 +274,7 @@ async function generatePostForClient(
     gaTopKeywords: null,
     searchConsoleQueries: null,
     recentPostTitles: recentPostTitles.length > 0 ? recentPostTitles : null,
+    internalLinkCandidates: internalLinkCandidates.length > 0 ? internalLinkCandidates : null,
   };
 
   const brandName = (brandBook as { brandName?: string } | null)?.brandName ?? client.brand_name ?? client.domain;
@@ -341,6 +346,12 @@ async function generatePostForClient(
     throw new Error(`Primary content generation failed for ${client.domain}`);
   }
 
+  primaryContent.content_md = sanitizeInternalMarkdownLinks(
+    primaryContent.content_md,
+    internalLinkCandidates.map((c) => c.url)
+  );
+  primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
+
   // Extract metadata from primary content
   titleForCoverPrompt = primaryContent.title;
   if (primaryContent.cover_image_description) coverImageDescription = primaryContent.cover_image_description;
@@ -393,20 +404,7 @@ async function generatePostForClient(
     ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
     : null;
 
-  // AI agent: discover site URLs, pick best page for this post, append localized "Learn more" at end
-  let bestInternalUrl: string | null = null;
-  try {
-    bestInternalUrl = await resolveBestInternalLink({
-      domain: client.domain,
-      postTitle: primaryContent.title,
-      excerpt: primaryContent.excerpt,
-      contentMdSnippet: primaryContent.content_md,
-    });
-  } catch (linkErr) {
-    console.warn(`[scheduler] Internal link resolution failed for ${client.domain}:`, linkErr);
-  }
-  const ptWithLearnMore = appendLearnMoreFooter(primaryContent.content_md, bestInternalUrl, "pt");
-  const ptContentMd = appendAuthorBlock(ptWithLearnMore, "pt", authorForBlock);
+  const ptContentMd = appendAuthorBlock(primaryContent.content_md, "pt", authorForBlock);
 
   // Save PT localization
   const ptJsonld = {
@@ -454,7 +452,7 @@ async function generatePostForClient(
   if (primaryRunId) {
     await admin.from("agent_runs").update({
       status: "done",
-      output: { ...primaryContent, content_md: ptContentMd, internal_link_url: bestInternalUrl },
+      output: { ...primaryContent, content_md: ptContentMd },
     }).eq("id", primaryRunId);
   }
 
@@ -480,6 +478,7 @@ RULES:
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
 - Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
+- In content_md: for every markdown link [anchor](url), keep the url EXACTLY unchanged (character-for-character); translate only the anchor text inside the brackets to natural ${langName}. Do not add, remove, or reorder links.
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
 - Do NOT add, remove, or change any facts, statistics, or claims — only translate.
 - Use natural, fluent ${langName} — not word-for-word translation.
@@ -540,8 +539,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // Carry over SEO scores from primary content
     translated.seo_score = primaryContent.seo_score;
 
-    const translatedWithLearnMore = appendLearnMoreFooter(translated.content_md, bestInternalUrl, locale as Locale);
-    const translatedMd = appendAuthorBlock(translatedWithLearnMore, locale as Locale, authorForBlock);
+    translated.content_md = sanitizeInternalMarkdownLinks(
+      translated.content_md,
+      internalLinkCandidates.map((c) => c.url)
+    );
+    translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
+    const translatedMd = appendAuthorBlock(translated.content_md, locale as Locale, authorForBlock);
 
     const localeJsonld = {
       "@context": "https://schema.org",
@@ -585,7 +588,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       { onConflict: "post_id,locale" }
     );
 
-    if (transRunId) await admin.from("agent_runs").update({ status: "done", output: { ...translated, content_md: translatedMd, internal_link_url: bestInternalUrl } }).eq("id", transRunId);
+    if (transRunId) await admin.from("agent_runs").update({ status: "done", output: { ...translated, content_md: translatedMd } }).eq("id", transRunId);
   }
 
 

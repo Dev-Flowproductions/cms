@@ -67,12 +67,8 @@ export default async function BlogPostPage({
       : typeof rawProfiles === "object"
         ? (rawProfiles as ProfileShape)
         : null;
-  // Always show an author when the post has one; use profile data or fallback "Author"
   const authorName = author?.display_name?.trim() || (post.author_id ? "Author" : null);
-  const authorAvatar = author?.avatar_url ?? null;
-  const authorBio = author?.bio ?? null;
   const authorJobTitle = author?.job_title ?? null;
-  const showAuthorBlock = !!post.author_id;
 
   const imageUrl = post.cover_image_path && process.env.NEXT_PUBLIC_SUPABASE_URL
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${post.cover_image_path}`
@@ -86,7 +82,7 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <article className="max-w-3xl mx-auto px-6 py-12">
+      <article className="max-w-3xl mx-auto px-6 pt-20 pb-12">
         <header className="mb-8">
           <h1 className="text-3xl font-bold" style={{ color: "var(--text)" }}>
             {localization.title || post.slug}
@@ -101,7 +97,7 @@ export default async function BlogPostPage({
             {authorJobTitle && <span>· {authorJobTitle}</span>}
           </div>
           {localization.excerpt && (
-            <p className="mt-3 text-base leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            <p className="mt-3 text-base leading-relaxed max-w-xl" style={{ color: "var(--text-muted)" }}>
               {localization.excerpt}
             </p>
           )}
@@ -111,27 +107,6 @@ export default async function BlogPostPage({
           style={{ color: "var(--text)" }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
-        {showAuthorBlock && (
-          <section className="mt-10" aria-labelledby="author-heading">
-            <h2 id="author-heading" className="text-xl font-semibold mb-4" style={{ color: "var(--text)" }}>
-              {tBlog("aboutAuthor")}
-            </h2>
-            <div className="flex gap-4 items-start">
-              {authorAvatar ? (
-                <img src={authorAvatar} alt="" className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
-              ) : (
-                <div className="w-16 h-16 rounded-full flex-shrink-0 flex items-center justify-center text-xl font-semibold" style={{ background: "var(--border)", color: "var(--text-muted)" }} aria-hidden>
-                  {(authorName ?? "A").charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0">
-                {authorName && <p className="font-semibold text-base" style={{ color: "var(--text)" }}>{authorName}</p>}
-                {authorJobTitle && <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{authorJobTitle}</p>}
-                {authorBio && <p className="text-sm mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>{authorBio}</p>}
-              </div>
-            </div>
-          </section>
-        )}
         <footer className="mt-10 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           <IntlLink
             href="/blog"

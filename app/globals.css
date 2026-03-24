@@ -147,6 +147,56 @@ tr.group:hover td { background: var(--surface-raised); }
 }
 .input-field[disabled] { opacity: 0.5; cursor: not-allowed; }
 
+/* Author block (in post content) — centered, compact */
+#author-block,
+.author-block {
+  max-width: 200px;
+  margin: 0 auto;
+  text-align: center;
+}
+#author-block .author-avatar,
+.author-block .author-avatar {
+  margin: 0 0 0.5rem 0;
+}
+#author-block .author-avatar img,
+.author-block .author-avatar img {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+#author-block .author-initial,
+.author-block .author-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 600;
+}
+#author-block .author-name,
+.author-block .author-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+#author-block .author-job,
+.author-block .author-job {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+#author-block .author-bio,
+.author-block .author-bio {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
 /* Semantic tinted backgrounds (used for banners, badges, etc.) */
 :root,
 [data-theme="dark"],

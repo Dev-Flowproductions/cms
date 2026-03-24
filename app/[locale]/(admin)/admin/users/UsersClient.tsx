@@ -302,9 +302,8 @@ export function UsersClient({ initialUsers, initialError }: Props) {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {users.map((u) => {
-            const profileData = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles;
-            const displayName = profileData?.display_name;
-            const initial = (displayName ?? u.email ?? "?")[0].toUpperCase();
+            const accountName = u.company_name ?? u.brand_name ?? null;
+            const initial = (accountName ?? u.email ?? "?")[0].toUpperCase();
             const isDeleting = deletingId === u.user_id;
             const googleConnected = !!u.google_connected_at;
             const onboardingPending = !u.domain;
@@ -334,11 +333,11 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                       {initial}
                     </span>
                     <div className="min-w-0">
-                      {displayName && (
+                      {accountName ? (
                         <div className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
-                          {displayName}
+                          {accountName}
                         </div>
-                      )}
+                      ) : null}
                       <div className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
                         {u.email}
                       </div>

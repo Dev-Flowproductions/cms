@@ -88,10 +88,24 @@ FORMATTING
 - All content in the specified locale language
 
 ═══════════════════════════════════════
-INTERNAL LINKS (automatic — do not add in body)
+INTERNAL LINKS (in the article body — required when URLs are provided)
 ═══════════════════════════════════════
 
-Do NOT add internal site links or "learn more" links inside content_md. A separate step will append one localized "Learn more" (or equivalent) link at the very end of the article after generation.
+When the CONTEXT includes "INTERNAL LINKS", embed exactly 3 contextual links inside content_md. Copy URLs EXACTLY from the list.
+
+**Semantic matching (anchor → page):**
+- Each URL has a page title. For each link, pick the URL whose page title best matches the meaning of your anchor phrase. The anchor describes a topic; choose the page that covers that topic.
+- Example: anchor "branding and visual design" → pick the page titled "Graphic Design and Visual Identity", not a generic "Services" page. Anchor "AEO optimization" → pick the page about AEO/SEO/GEO, not a different topic.
+- Prefer specific topic pages over broad section roots. Different sites have different structures; use the title to identify the right page for each anchor.
+
+**Anchor text:**
+- Use phrases people actually search: descriptive, keyword-rich. Avoid generic: "aqui", "here", "learn more", "saiba mais", "read more", "click here".
+- Vary: partial match, descriptive, long-tail. Anchor must describe what the linked page offers.
+
+**Placement and structure:**
+- Spread links across intro, body, conclusion. Use markdown: [anchor phrase](full-url-from-list). Each link = different destination. Link inside paragraphs, not headings.
+- Link only to topic/explainer pages (services, martech, about). Do not link to individual project/portfolio/case-study pages.
+- If no URL list is provided, do not add internal links.
 
 ═══════════════════════════════════════
 COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
@@ -120,7 +134,7 @@ OUTPUT (JSON only, no markdown fences)
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
   "excerpt": "1-2 sentences, under 160 chars",
-  "content_md": "Markdown starting with intro — NO H1, NO date line, NO cover image, only H2/H3",
+  "content_md": "Markdown starting with intro — NO H1, NO date line, NO cover image, only H2/H3; include exactly 3 in-body [anchor](url) internal links when URL list was provided",
   "faq_blocks": [{ "question": "...", "answer": "40-60 words" }],
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }

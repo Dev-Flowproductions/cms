@@ -4,6 +4,7 @@
  */
 
 import { SYSTEM_INSTRUCTIONS_GENERAL } from "./instructions-general";
+import type { EnrichedUrl } from "./site-urls";
 
 /** Combined system instructions: general + client-specific (when provided). */
 export function getSystemInstructions(clientSpecificInstructions: string | null): string {
@@ -32,6 +33,8 @@ export type ClientContext = {
   searchConsoleQueries?: string[] | null;
   /** Recent post titles for this client (scheduler only) — model must choose a different topic */
   recentPostTitles?: string[] | null;
+  /** Full https URLs + page titles for in-body internal links (from sitemap + fetch) */
+  internalLinkCandidates?: EnrichedUrl[] | null;
 };
 
 export type PostContext = {
@@ -184,6 +187,19 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
     client.recentPostTitles.slice(0, 10).forEach((title) => lines.push(`  - ${title}`));
   }
 
+  const linkCandidates = client.internalLinkCandidates?.filter((c) => c?.url) ?? [];
+  if (linkCandidates.length > 0) {
+    const fmt = (c: EnrichedUrl) => (c.title ? `${c.url} | "${c.title}"` : c.url);
+    lines.push("");
+    lines.push("═══════════════════════════════");
+    lines.push("INTERNAL LINKS — 3 contextual links");
+    lines.push("═══════════════════════════════");
+    lines.push("Match each anchor to the page whose title best describes that topic. Use semantic matching.");
+    linkCandidates.slice(0, 50).forEach((c, i) => lines.push(`  ${i + 1}. ${fmt(c)}`));
+    lines.push("");
+    lines.push("For each link: pick the URL whose page title is the best semantic match for your anchor phrase. Avoid generic section roots. Use anchor text people would search.");
+  }
+
   lines.push("");
   lines.push("═══════════════════════════════");
   lines.push("CHECKLIST");
@@ -195,7 +211,11 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
-  lines.push("CRITICAL: Do NOT add internal links or a trailing learn more line in content_md — those are added automatically after generation.");
+  if (linkCandidates.length > 0) {
+    lines.push("CRITICAL: 3 internal links. Semantic match: anchor phrase → page whose title best fits. Real search phrases, not generic.");
+  } else {
+    lines.push("CRITICAL: No internal site URL list was provided — do not add internal [text](url) links to the site.");
+  }
   lines.push("CRITICAL: cover_image_description = BALANCED editorial composition (2–4 elements, like Flow blog). Use the EXACT colours, font style, and brand voice from BRAND VISUAL — COVER IMAGE above. Cover MUST show a SHORT headline (2–4 words) IN ENGLISH (use cover_image_headline). No logos or brand names.");
 
   return lines.join("\n");

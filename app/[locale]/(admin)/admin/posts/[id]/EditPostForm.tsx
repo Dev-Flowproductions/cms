@@ -697,6 +697,7 @@ export function EditPostForm({
             <InputField label="SEO title" hint="50-60 chars">
               <input name="seo_title" key={`seo_title-${activeLocale}`}
                 value={draft.seo_title ?? ""}
+                maxLength={60}
                 onChange={e => setField("seo_title", e.target.value)}
                 placeholder="Keyword-rich title for search engines"
                 style={inputStyle}
@@ -710,6 +711,7 @@ export function EditPostForm({
             <InputField label="Meta description" hint="140-160 chars">
               <textarea name="seo_description" key={`seo_desc-${activeLocale}`}
                 value={draft.seo_description ?? ""}
+                maxLength={160}
                 onChange={e => setField("seo_description", e.target.value)}
                 placeholder="Compelling description with keyword and CTA"
                 rows={2}

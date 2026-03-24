@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { z } from "zod";
+import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import type { Locale } from "@/lib/types/db";
 
 const createPostSchema = z.object({
@@ -186,6 +187,13 @@ export async function upsertLocalization(postId: string, formData: FormData) {
   if (!parsed.success) return { error: "Invalid localization data" };
 
   const supabase = await createClient();
+  const seoTitle =
+    parsed.data.seo_title !== undefined ? clampSeoTitle(parsed.data.seo_title) : undefined;
+  const seoDesc =
+    parsed.data.seo_description !== undefined
+      ? clampMetaDescription(parsed.data.seo_description)
+      : undefined;
+
   const { error } = await supabase.from("post_localizations").upsert(
     {
       post_id: postId,
@@ -193,8 +201,8 @@ export async function upsertLocalization(postId: string, formData: FormData) {
       title: parsed.data.title,
       excerpt: parsed.data.excerpt,
       content_md: parsed.data.content_md,
-      ...(parsed.data.seo_title !== undefined && { seo_title: parsed.data.seo_title }),
-      ...(parsed.data.seo_description !== undefined && { seo_description: parsed.data.seo_description }),
+      ...(seoTitle !== undefined && { seo_title: seoTitle }),
+      ...(seoDesc !== undefined && { seo_description: seoDesc }),
       ...(parsed.data.focus_keyword !== undefined && { focus_keyword: parsed.data.focus_keyword }),
     },
     { onConflict: "post_id,locale" }

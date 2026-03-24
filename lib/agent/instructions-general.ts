@@ -56,7 +56,7 @@ SEO (90+ requirements)
 - 5-8 semantic variants naturally distributed (not stuffed)
 - The "title" field IS the H1 — content_md only has H2/H3
 - 1200+ words (1800+ for hero content)
-- SEO title: 50-60 chars | Meta: 145-158 chars
+- SEO title: 50-60 chars (HARD MAX 60 — never more) | Meta: 145-158 chars (HARD MAX 160 — never more)
 - Sentence case headings (European style)
 
 ═══════════════════════════════════════

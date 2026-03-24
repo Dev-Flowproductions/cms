@@ -3,6 +3,7 @@
  */
 
 import type { GoogleGenerativeAI } from "@google/generative-ai";
+import { clampMetaDescription, clampSeoTitle } from "./clamp-seo-fields";
 import type { ScoredContent } from "./score-post";
 import type { ReviewerOutput } from "./seo-reviewer";
 
@@ -25,7 +26,8 @@ Rules:
 - If improvement says "add to title" or "improve SEO title", include title or seo_title in output.
 - If improvement says "add FAQ" or "improve FAQs", include faq_blocks.
 - CRITICAL: Never modify internal links. Every [anchor](url) must be preserved EXACTLY.
-- When adding statistics: use real well-known sources (HubSpot, Gartner, McKinsey, Statista) and plausible figures. Do NOT invent numbers. If unsure, use "Industry reports indicate..." with a specific year.`;
+- When adding statistics: use real well-known sources (HubSpot, Gartner, McKinsey, Statista) and plausible figures. Do NOT invent numbers. If unsure, use "Industry reports indicate..." with a specific year.
+- seo_title: MAX 60 characters (hard). seo_description: MAX 160 characters (hard). Never exceed.`;
 
 export async function revisePost(
   genAI: GoogleGenerativeAI,
@@ -70,8 +72,9 @@ Example: { "content_md": "...", "seo_title": "..." } or { "content_md": "..." }`
 
     const revised: RevisedContent = { content_md: parsed.content_md };
     if (typeof parsed.title === "string") revised.title = parsed.title;
-    if (typeof parsed.seo_title === "string") revised.seo_title = parsed.seo_title;
-    if (typeof parsed.seo_description === "string") revised.seo_description = parsed.seo_description;
+    if (typeof parsed.seo_title === "string") revised.seo_title = clampSeoTitle(parsed.seo_title);
+    if (typeof parsed.seo_description === "string")
+      revised.seo_description = clampMetaDescription(parsed.seo_description);
     if (Array.isArray(parsed.faq_blocks)) {
       revised.faq_blocks = parsed.faq_blocks.filter(
         (f): f is { question: string; answer: string } =>

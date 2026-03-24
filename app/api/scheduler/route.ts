@@ -6,6 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
+import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
@@ -447,6 +448,8 @@ async function generatePostForClient(
     : null;
 
   const ptContentMd = appendAuthorBlock(primaryContent.content_md, "pt", authorForBlock);
+  const ptSeoTitle = clampSeoTitle(primaryContent.seo_title);
+  const ptSeoDesc = clampMetaDescription(primaryContent.seo_description);
 
   // Save PT localization
   const ptJsonld = {
@@ -455,7 +458,7 @@ async function generatePostForClient(
       {
         "@type": "BlogPosting",
         "headline": primaryContent.title,
-        "description": primaryContent.seo_description,
+        "description": ptSeoDesc,
         "keywords": primaryContent.focus_keyword,
         "datePublished": new Date().toISOString(),
         "inLanguage": "pt",
@@ -481,8 +484,8 @@ async function generatePostForClient(
       title: primaryContent.title,
       excerpt: primaryContent.excerpt,
       content_md: ptContentMd,
-      seo_title: primaryContent.seo_title,
-      seo_description: primaryContent.seo_description,
+      seo_title: ptSeoTitle,
+      seo_description: ptSeoDesc,
       focus_keyword: primaryContent.focus_keyword,
       faq_blocks: primaryContent.faq_blocks ?? null,
       jsonld: ptJsonld,
@@ -588,6 +591,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
     // Author block is already in translated content_md (we passed ptContentMd which includes it)
     const translatedMd = translated.content_md;
+    const locSeoTitle = clampSeoTitle(translated.seo_title);
+    const locSeoDesc = clampMetaDescription(translated.seo_description);
 
     const localeJsonld = {
       "@context": "https://schema.org",
@@ -595,7 +600,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         {
           "@type": "BlogPosting",
           "headline": translated.title,
-          "description": translated.seo_description,
+          "description": locSeoDesc,
           "keywords": translated.focus_keyword,
           "datePublished": new Date().toISOString(),
           "inLanguage": locale,
@@ -621,8 +626,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         title: translated.title,
         excerpt: translated.excerpt,
         content_md: translatedMd,
-        seo_title: translated.seo_title,
-        seo_description: translated.seo_description,
+        seo_title: locSeoTitle,
+        seo_description: locSeoDesc,
         focus_keyword: translated.focus_keyword,
         faq_blocks: translated.faq_blocks ?? null,
         jsonld: localeJsonld,

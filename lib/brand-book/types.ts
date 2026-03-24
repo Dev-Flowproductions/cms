@@ -10,6 +10,7 @@ export interface ManualBrandInfo {
   primaryColor: string;
   secondaryColor: string;
   tertiaryColor?: string | null;
+  alternativeColor?: string | null;
   fontStyle: string;
   brandVoice: string;
 }

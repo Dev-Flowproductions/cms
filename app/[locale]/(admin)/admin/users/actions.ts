@@ -23,6 +23,7 @@ const createUserSchema = z.object({
   primary_color: z.string().optional(),
   secondary_color: z.string().optional(),
   tertiary_color: z.string().optional(),
+  alternative_color: z.string().optional(),
   font_style: z.string().optional(),
   brand_voice: z.string().optional(),
   webhook_url: z.union([z.string().url(), z.literal("")]).optional(),
@@ -52,6 +53,7 @@ export async function createUser(formData: FormData) {
     primary_color: formData.get("primary_color")?.toString() || undefined,
     secondary_color: formData.get("secondary_color")?.toString() || undefined,
     tertiary_color: formData.get("tertiary_color")?.toString() || undefined,
+    alternative_color: formData.get("alternative_color")?.toString() || undefined,
     font_style: formData.get("font_style")?.toString().trim() || undefined,
     brand_voice: formData.get("brand_voice")?.toString() || undefined,
     webhook_url: formData.get("webhook_url")?.toString().trim() || undefined,
@@ -78,6 +80,7 @@ export async function createUser(formData: FormData) {
     primary_color,
     secondary_color,
     tertiary_color,
+    alternative_color,
     font_style,
     brand_voice,
     webhook_url,
@@ -130,6 +133,7 @@ export async function createUser(formData: FormData) {
     primary_color: primary_color || null,
     secondary_color: secondary_color || null,
     tertiary_color: tertiary_color || null,
+    alternative_color: alternative_color || null,
     font_style: font_style || null,
     brand_voice: brand_voice || null,
     brand_name: company_name || null,
@@ -176,6 +180,7 @@ export type ClientRow = {
   primary_color?: string | null;
   secondary_color?: string | null;
   tertiary_color?: string | null;
+  alternative_color?: string | null;
   font_style?: string | null;
   brand_voice?: string | null;
   custom_instructions?: string | null;
@@ -209,7 +214,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -275,7 +280,7 @@ export async function getClientSettingsByAdmin(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
   const [clientRes, profileRes] = await Promise.all([
-    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
+    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, webhook_event_format, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
     admin.from("profiles").select("id, display_name, avatar_url, bio, job_title").eq("id", userId).maybeSingle(),
   ]);
   if (clientRes.error) throw clientRes.error;
@@ -374,7 +379,7 @@ export async function updateUserAutoPublish(userId: string, auto_publish: boolea
 
 export async function updateUserWebhookByAdmin(
   userId: string,
-  data: { webhook_url: string | null; webhook_secret: string | null; auto_publish?: boolean }
+  data: { webhook_url: string | null; webhook_secret: string | null; webhook_event_format?: "spec" | "legacy" | null; auto_publish?: boolean }
 ) {
   await requireAdmin();
   const admin = createAdminClient();
@@ -397,7 +402,7 @@ async function regenerateClientInstructions(
 ): Promise<{ error?: string }> {
   const { data: client, error: fetchError } = await admin
     .from("clients")
-    .select("domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, font_style, brand_voice, logo_url")
+    .select("domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, logo_url")
     .eq("user_id", userId)
     .maybeSingle();
   if (fetchError) return { error: fetchError.message };
@@ -468,6 +473,7 @@ export async function updateClientBrandByAdmin(
     primary_color?: string | null;
     secondary_color?: string | null;
     tertiary_color?: string | null;
+    alternative_color?: string | null;
     font_style?: string | null;
     brand_voice?: string | null;
   }

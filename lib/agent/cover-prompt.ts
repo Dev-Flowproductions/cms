@@ -1,12 +1,40 @@
 /**
  * Shared cover image generation prompt.
  * Rules: primary color background only, elements on borders, text centered (European style: first letter caps, rest lowercase), brand font.
+ * Composition varies per image (minimal, balanced, rich, structured, organic) for visual variety.
  */
+
+const COMPOSITION_VARIATIONS = [
+  "Balanced editorial: clear thematic imagery tied to the article — metaphors, symbols, or abstract shapes with depth and layering. Professional polish, not empty.",
+  "Rich illustration: 4–6 cohesive visual elements suggesting the topic; readable hierarchy; avoid generic stock clichés.",
+  "Structured hero: strong visual band or shape behind the headline area, secondary motifs in corners that echo the subject.",
+  "Asymmetric layout: bold graphic forms on one side, complementary detail opposite; topic-specific, not decorative noise.",
+  "Metaphor-led: one main visual concept (scene or object cluster) that clearly evokes the post theme; crisp edges, high clarity.",
+];
+
+function pickCompositionVariation(): string {
+  return COMPOSITION_VARIATIONS[Math.floor(Math.random() * COMPOSITION_VARIATIONS.length)] ?? COMPOSITION_VARIATIONS[1];
+}
+
+/** Pick one of the available colors for background to add variety across covers. */
+function pickBackgroundColor(style: NonNullable<CoverBrandStyle>): string {
+  const options: string[] = [style.primaryColor];
+  if (style.secondaryColor) options.push(style.secondaryColor);
+  if (style.alternativeColor) options.push(style.alternativeColor);
+  return options[Math.floor(Math.random() * options.length)] ?? style.primaryColor;
+}
+
+/** Colors for accent elements (excluding the chosen background). */
+function getAccentColors(style: NonNullable<CoverBrandStyle>, backgroundColor: string): string[] {
+  const all = [style.primaryColor, style.secondaryColor, style.tertiaryColor, style.alternativeColor].filter(Boolean) as string[];
+  return all.filter((c) => c.toLowerCase() !== backgroundColor.toLowerCase());
+}
 
 export type CoverBrandStyle = {
   primaryColor: string;
   secondaryColor?: string | null;
   tertiaryColor?: string | null;
+  alternativeColor?: string | null;
   fontStyle: string;
   brandVoice: string;
 } | null;
@@ -31,16 +59,21 @@ export function buildCoverPrompt(
   const brandParts: string[] = [];
 
   if (brandStyle) {
+    const backgroundColor = pickBackgroundColor(brandStyle);
+    const accentColors = getAccentColors(brandStyle, backgroundColor);
+    // Client font_style is the baseline; brand book visualIdentity adds typography / art direction (often richer).
+    const typoFromBook = visualIdentity?.aestheticStyle?.trim();
+    const typoLine = typoFromBook
+      ? `Typography: match "${brandStyle.fontStyle}" as baseline AND follow brand book direction: ${typoFromBook}`
+      : `Typography / font feel: ${brandStyle.fontStyle}`;
+    const imageDir = visualIdentity?.imageStyle?.trim();
+    const imageLine = imageDir ? ` Illustration / image style from brand book: ${imageDir}.` : "";
     brandParts.push(
-      `BACKGROUND: use ONLY the primary colour ${brandStyle.primaryColor} as the background — no gradients, no other colours for the background. ` +
-      `All graphic elements must MATCH the post topic — thematic shapes and motifs that relate to the subject. Place elements along the BORDERS or edges — keep the center clear. ` +
-      `Typography / font: ${brandStyle.fontStyle} style. Brand mood: ${brandStyle.brandVoice}.`
+      `COLOUR SYSTEM: base background ${backgroundColor} (solid or very subtle edge vignette only — no loud rainbow gradients). ` +
+      `Build a substantive, topic-driven graphic: use accent colours ${accentColors.slice(0, 3).join(", ") || "from the same palette"} for illustrations, shapes, and depth. ` +
+      `${typoLine}. Brand mood: ${brandStyle.brandVoice}.${imageLine} ` +
+      `Do not use any other platform or agency palette — only these client colours and neutrals (white/black at low opacity) for contrast.`
     );
-    // Secondary/tertiary can be used for border elements only
-    const accentColors = [brandStyle.secondaryColor, brandStyle.tertiaryColor].filter(Boolean);
-    if (accentColors.length > 0) {
-      brandParts.push(`Accent colours for border elements only: ${accentColors.join(", ")}.`);
-    }
   } else if (visualIdentity) {
     if (visualIdentity.colorPalette) {
       brandParts.push(
@@ -53,12 +86,13 @@ export function buildCoverPrompt(
   }
 
   const brandStr = brandParts.length > 0 ? brandParts.join(" ") + " " : "";
+  const variation = pickCompositionVariation();
 
   return (
     `Editorial blog hero graphic: ${subject}. ` +
-    `Composition: solid primary-colour background only; all decorative elements must MATCH the post topic — use thematic shapes and motifs that visually relate to the subject (e.g. email → envelope shapes; AI/tech → circuits or data; branding → symbols). Place elements on the BORDERS or edges — center must stay clear. Wide banner 16:9. ` +
+    `Composition: ${variation} Wide banner 16:9. ` +
     brandStr +
-    `Flat or subtle depth, clean edges, high clarity. ` +
+    `Polished vector or editorial illustration feel; controlled depth (shadows, layers) allowed. Clean edges, high clarity. ` +
     `Include this text ONCE only, centered: "${headlineForImage}". European style: first letter caps, rest lowercase. ` +
     `Text must be the TOP LAYER, centered; no shapes overlapping the text. Use the brand font/style. Bold editorial typography. No logos or brand names.`
   );

@@ -14,6 +14,7 @@ export type ClientRowForInstructions = {
   primary_color: string | null;
   secondary_color: string | null;
   tertiary_color: string | null;
+  alternative_color?: string | null;
   font_style: string | null;
   brand_voice: string | null;
   logo_url: string | null;
@@ -36,6 +37,7 @@ export function generateClientSpecificInstructions(client: ClientRowForInstructi
     client.primary_color ||
     client.secondary_color ||
     client.tertiary_color ||
+    client.alternative_color ||
     client.font_style ||
     client.brand_voice;
 
@@ -48,8 +50,8 @@ export function generateClientSpecificInstructions(client: ClientRowForInstructi
     if (client.brand_voice?.trim()) lines.push(`Brand voice: ${client.brand_voice.trim()} (match this tone)`);
     if (client.font_style?.trim()) lines.push(`Font style: ${client.font_style.trim()}`);
     if (client.primary_color || client.secondary_color || client.tertiary_color) {
-      const parts = ["Primary " + (client.primary_color ?? "—"), "Secondary " + (client.secondary_color ?? "—"), "Tertiary " + (client.tertiary_color ?? "—")];
-      lines.push(`Colors: ${parts.join(", ")}`);
+      const parts = ["Primary " + (client.primary_color ?? "—"), "Secondary " + (client.secondary_color ?? "—"), "Tertiary " + (client.tertiary_color ?? "—"), "Alternative " + (client.alternative_color ?? "—")];
+      lines.push(`Colors: ${parts.join(", ")} (alternative = optional for cover background variety)`);
     }
     if (client.logo_url?.trim()) lines.push(`Logo: ${client.logo_url.trim()}`);
     lines.push("");
@@ -72,8 +74,8 @@ export function generateClientSpecificInstructions(client: ClientRowForInstructi
       lines.push("BRAND VISUAL — COVER IMAGE (use these EXACTLY for cover_image_description)");
       lines.push("─────────────────────────────────────");
       if (hasManual) {
-        const parts = ["Primary " + (client.primary_color ?? "—"), "Secondary " + (client.secondary_color ?? "—"), "Tertiary " + (client.tertiary_color ?? "—")];
-        lines.push(`Cover colours: ${parts.join(", ")}`);
+        const parts = ["Primary " + (client.primary_color ?? "—"), "Secondary " + (client.secondary_color ?? "—"), "Tertiary " + (client.tertiary_color ?? "—"), "Alternative " + (client.alternative_color ?? "—")];
+        lines.push(`Cover colours: ${parts.join(", ")} (AI picks primary, secondary, or alternative for background per image)`);
         lines.push(`Cover typography / font style: ${client.font_style ?? "modern"}`);
         lines.push(`Cover brand voice / mood: ${client.brand_voice ?? "professional"}`);
       } else if (bb.visualIdentity) {

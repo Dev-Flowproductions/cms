@@ -10,20 +10,21 @@ export type ReviewerOutput = {
   improvements: string[];
 };
 
-const REVIEWER_SYSTEM = `You are an expert SEO, AEO, and GEO editor. Your job is to analyze blog posts and output SPECIFIC, actionable improvements so the post can reach 90+ on each dimension.
+const REVIEWER_SYSTEM = `You are an expert SEO, AEO, and GEO editor. Output SPECIFIC, actionable improvements so the post reaches 90+ on ALL three dimensions.
 
-**SEO (0-100):** Focus keyword in title, intro, 2+ H2s, seo_title, meta. 5-8 semantic variants. Sentence case headings.
-**AEO (0-100):** Core argument (one data-backed claim), definition block "**Term** is...", 5 FAQs as real user queries, EEAT signals, **bold** key claims.
-**GEO (0-100):** 3+ attributed stats ("According to [Source], ..."), 5+ named entities, 2+ date-anchored facts. No vague "studies show".
+**SEO 90+ needs:** Keyword in title, intro, 2+ H2s, seo_title, meta. 5-8 variants.
+**AEO 90+ needs:** Data-backed core argument in intro. Definition "**Term** is...". 2+ H2s as questions with direct 40-60w answers. 5 FAQs. **Bold** claims. Named sources.
+**GEO 90+ needs:** 3+ stats as "According to [Source] (Year), X%". 5+ named entities. 2+ date-anchored facts. ZERO vague attributions.
 
-Each improvement must be CONCRETE and EDITABLE:
-- BAD: "Improve SEO"
-- GOOD: "Add focus keyword 'email automation' to the second H2 heading"
-- BAD: "Add more stats"
-- GOOD: "Replace 'studies show' with: According to HubSpot (2025), 45% of marketers..."
+Each improvement must be EXACTLY editable — the reviser will apply it verbatim:
+- BAD: "Improve GEO"
+- GOOD: "In paragraph 2, replace 'studies show that' with: According to Gartner (2025), "
+- BAD: "Add definition"
+- GOOD: "In intro, add after first sentence: **Intent scoring** is a method that ranks leads by buyer behaviour signals."
+- GOOD: "Add focus keyword 'email automation' to the H2 'Best practices' → 'Best email automation practices'"
 
 Output ONLY valid JSON: { "improvements": ["...", "...", ...] }
-Maximum 8 improvements. Prioritize the highest-impact fixes for the lowest-scoring dimension.`;
+6-10 improvements. Prioritize the LOWEST-scoring dimension first. Be specific: exact phrase to add, exact location, exact format.`;
 
 export async function reviewPostFor90(
   genAI: GoogleGenerativeAI,
@@ -47,7 +48,7 @@ ${content.content_md}
 
 FAQs: ${content.faq_blocks.length} questions
 
-List SPECIFIC improvements (what to add, change, or fix) so this post reaches 90+. Each item must be actionable — the editor will apply them. Prioritize gaps in the lowest-scoring dimension.
+List SPECIFIC improvements so this post reaches 90+ on ALL three. The dimension scoring LOWEST needs the most fixes — prioritize those first. Each item must be copy-paste actionable: exact text to add, exact location, exact replacement.
 
 Output ONLY this JSON:
 { "improvements": ["...", "...", ...] }`;

@@ -5,9 +5,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
+import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import type { Locale } from "@/lib/types/db";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, webhook_event_format, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -185,6 +187,7 @@ type SchedulerClient = {
   google_scope: string | null;
   auto_publish?: boolean | null;
   webhook_url?: string | null;
+  webhook_event_format?: "spec" | "legacy" | null;
   post_locale?: string | null;
   brand_name?: string | null;
   brand_tone?: string | null;
@@ -193,9 +196,10 @@ type SchedulerClient = {
   logo_url?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
+  tertiary_color?: string | null;
+  alternative_color?: string | null;
   font_style?: string | null;
   brand_voice?: string | null;
-  tertiary_color?: string | null;
   custom_instructions?: string | null;
 };
 
@@ -249,18 +253,33 @@ async function generatePostForClient(
   if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
 
   try {
-  // Build shared context with manual brand info
-  const manualBrand = client.company_name ? {
-    companyName: client.company_name,
-    logoUrl: client.logo_url ?? null,
-    primaryColor: client.primary_color ?? "#7c5cfc",
-    secondaryColor: client.secondary_color ?? "#22d3a0",
-    tertiaryColor: client.tertiary_color ?? null,
-    fontStyle: client.font_style ?? "modern",
-    brandVoice: client.brand_voice ?? "professional",
-  } : null;
-
   const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
+  const resolvedBrandColors = resolveClientBrandColors({
+    domain: client.domain,
+    primary_color: client.primary_color,
+    secondary_color: client.secondary_color,
+    tertiary_color: client.tertiary_color,
+    alternative_color: client.alternative_color,
+    colorPaletteText: brandBook?.visualIdentity?.colorPalette ?? null,
+  });
+  const brandDisplayName =
+    client.company_name?.trim() ||
+    client.brand_name?.trim() ||
+    brandBook?.brandName?.trim() ||
+    null;
+  const manualBrand = brandDisplayName
+    ? {
+        companyName: brandDisplayName,
+        logoUrl: client.logo_url ?? null,
+        primaryColor: resolvedBrandColors.primaryColor,
+        secondaryColor: resolvedBrandColors.secondaryColor,
+        tertiaryColor: resolvedBrandColors.tertiaryColor,
+        alternativeColor: resolvedBrandColors.alternativeColor,
+        fontStyle: client.font_style ?? "modern",
+        brandVoice: client.brand_voice ?? "professional",
+      }
+    : null;
+
   const rawUrls = await getCandidateSiteUrls(client.domain);
   const internalLinkCandidates =
     rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
@@ -355,14 +374,19 @@ async function generatePostForClient(
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
 
   // Post-generation: score, review, and revise until 90+ (max 2 iterations)
-  const { content: improvedContent, score: finalScore } = await improvePostTo90(genAI, MODEL, {
-    title: primaryContent.title,
-    content_md: primaryContent.content_md,
-    seo_title: primaryContent.seo_title,
-    seo_description: primaryContent.seo_description,
-    focus_keyword: primaryContent.focus_keyword,
-    faq_blocks: primaryContent.faq_blocks,
-  });
+  const { content: improvedContent, score: finalScore } = await improvePostTo90(
+    genAI,
+    MODEL,
+    {
+      title: primaryContent.title,
+      content_md: primaryContent.content_md,
+      seo_title: primaryContent.seo_title,
+      seo_description: primaryContent.seo_description,
+      focus_keyword: primaryContent.focus_keyword,
+      faq_blocks: primaryContent.faq_blocks,
+    },
+    primaryContent.seo_score ?? undefined
+  );
   primaryContent.content_md = improvedContent.content_md;
   if (improvedContent.title) primaryContent.title = improvedContent.title;
   if (improvedContent.seo_title) primaryContent.seo_title = improvedContent.seo_title;
@@ -614,19 +638,19 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
   // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
-    // Graphic illustration (not photography). Style ref: flowproductions.pt blog.
     const coverSubject = coverImageDescription
       ? coverImageDescription
-      : `Graphic illustration concept for "${titleForCoverPrompt}": solid or dark background, abstract shapes, modern creative style.`;
+      : `Editorial illustration for "${titleForCoverPrompt}": rich, topic-specific visuals; distinctive composition for this article.`;
 
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity ?? null;
-    const brandStyle = manualBrand ? {
-      primaryColor: manualBrand.primaryColor,
-      secondaryColor: manualBrand.secondaryColor ?? null,
-      tertiaryColor: manualBrand.tertiaryColor ?? null,
-      fontStyle: manualBrand.fontStyle ?? "modern",
-      brandVoice: manualBrand.brandVoice ?? "professional",
-    } : null;
+    const brandStyle = {
+      primaryColor: resolvedBrandColors.primaryColor,
+      secondaryColor: resolvedBrandColors.secondaryColor,
+      tertiaryColor: resolvedBrandColors.tertiaryColor,
+      alternativeColor: resolvedBrandColors.alternativeColor,
+      fontStyle: client.font_style ?? "modern",
+      brandVoice: client.brand_voice ?? "professional",
+    };
     const headlineForCover =
       primaryContent.cover_image_headline ??
       primaryContent.title.trim().split(/\s+/).slice(0, 4).join(" ");
@@ -739,14 +763,17 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
           }
         : null;
 
-      const webhookHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (clientConfig?.webhook_secret) webhookHeaders["x-webhook-secret"] = clientConfig.webhook_secret;
-
+      const event = resolveWebhookEvent(client.webhook_event_format ?? "spec", false);
+      const revalidation = buildRevalidationPayload(event, client.id, {
+        id: post.id,
+        slug: freshPost?.slug ?? slug,
+        status: "published",
+        updatedAt: new Date().toISOString(),
+      });
       const webhookPayload = {
-        event: "cms.post.published",
+        ...revalidation,
         post: {
-          id: post.id,
-          slug: freshPost?.slug ?? slug,
+          ...revalidation.post,
           cover_image_url: coverImageUrl,
           author: webhookAuthor,
           title: primary.title,
@@ -767,8 +794,11 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
             }])
           ),
         },
-        timestamp: new Date().toISOString(),
       };
+      const webhookHeaders: Record<string, string> = clientConfig?.webhook_secret
+        ? buildWebhookHeaders(webhookPayload, clientConfig.webhook_secret, event)
+        : { "Content-Type": "application/json" };
+      if (clientConfig?.webhook_secret) webhookHeaders["x-webhook-secret"] = clientConfig.webhook_secret;
 
       const webhookRes = await fetch(client.webhook_url, {
         method: "POST",

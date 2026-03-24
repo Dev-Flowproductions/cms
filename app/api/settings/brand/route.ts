@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   const primaryColor = formData.get("primaryColor")?.toString() ?? "#7c5cfc";
   const secondaryColor = formData.get("secondaryColor")?.toString() ?? "#22d3a0";
   const tertiaryColor = formData.get("tertiaryColor")?.toString() ?? null;
+  const alternativeColor = formData.get("alternativeColor")?.toString()?.trim() || null;
   const fontStyle = formData.get("fontStyle")?.toString().trim() || "modern";
   const brandVoice = formData.get("brandVoice")?.toString() ?? "professional";
   const logoFile = formData.get("logo") as File | null;
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
     primary_color: primaryColor,
     secondary_color: secondaryColor,
     tertiary_color: tertiaryColor,
+    alternative_color: alternativeColor,
     font_style: fontStyle,
     brand_voice: brandVoice,
     brand_name: companyName || null,

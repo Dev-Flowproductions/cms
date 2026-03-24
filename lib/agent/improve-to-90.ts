@@ -8,8 +8,8 @@ import { scorePost, type ScoredContent, type SeoScoreResult } from "./score-post
 import { reviewPostFor90 } from "./seo-reviewer";
 import { revisePost } from "./post-reviser";
 
-const TARGET_AVG = 90;
-const MAX_ITERATIONS = 2;
+const TARGET_MIN = 90; // All three (SEO, AEO, GEO) must be >= 90
+const MAX_ITERATIONS = 3;
 
 export type ImprovedResult = {
   content: ScoredContent;
@@ -21,19 +21,22 @@ export type ImprovedResult = {
 export async function improvePostTo90(
   genAI: GoogleGenerativeAI,
   modelName: string,
-  initialContent: ScoredContent
+  initialContent: ScoredContent,
+  /** Fallback when scoring fails (e.g. generator's self-assessed score). */
+  fallbackScore?: SeoScoreResult | null
 ): Promise<ImprovedResult> {
   let content = { ...initialContent };
   let score = await scorePost(genAI, modelName, content);
   let iterations = 0;
 
   if (!score) {
-    return { content, score: { seo: 0, aeo: 0, geo: 0, notes: "Scoring failed" }, iterations: 0 };
+    const useScore = fallbackScore ?? { seo: 75, aeo: 75, geo: 75, notes: "Scoring unavailable; using fallback" };
+    return { content, score: useScore, iterations: 0 };
   }
 
   while (iterations < MAX_ITERATIONS) {
-    const avg = (score.seo + score.aeo + score.geo) / 3;
-    if (avg >= TARGET_AVG) break;
+    const allMet = score.seo >= TARGET_MIN && score.aeo >= TARGET_MIN && score.geo >= TARGET_MIN;
+    if (allMet) break;
 
     const review = await reviewPostFor90(genAI, modelName, content, score);
     if (!review?.improvements?.length) break;

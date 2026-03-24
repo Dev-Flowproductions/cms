@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenAI } from "@google/genai";
 import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -28,29 +29,43 @@ export async function POST(request: Request) {
   let contentType = "image/jpeg";
   let source = "gemini";
 
-  // Load client brand (post -> author_id = user_id -> client row)
-  let brandStyle: { primaryColor: string; secondaryColor: string | null; tertiaryColor: string | null; fontStyle: string; brandVoice: string } | null = null;
+  let brandStyle: {
+    primaryColor: string;
+    secondaryColor: string | null;
+    tertiaryColor: string | null;
+    alternativeColor: string | null;
+    fontStyle: string;
+    brandVoice: string;
+  } | null = null;
   let visualIdentity: { colorPalette?: string; aestheticStyle?: string; imageStyle?: string } | null = null;
 
   const { data: postRow } = await admin.from("posts").select("author_id").eq("id", post_id).maybeSingle();
   if (postRow?.author_id) {
     const { data: clientRow } = await admin
       .from("clients")
-      .select("primary_color, secondary_color, tertiary_color, font_style, brand_voice, brand_book")
+      .select("domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book")
       .eq("user_id", postRow.author_id)
       .maybeSingle();
     if (clientRow) {
-      const hasManualColors = clientRow.primary_color != null || clientRow.secondary_color != null || clientRow.tertiary_color != null;
-      if (hasManualColors) {
-        brandStyle = {
-          primaryColor: clientRow.primary_color ?? "#7c5cfc",
-          secondaryColor: clientRow.secondary_color ?? null,
-          tertiaryColor: clientRow.tertiary_color ?? null,
-          fontStyle: clientRow.font_style ?? "modern",
-          brandVoice: clientRow.brand_voice ?? "professional",
-        };
-      }
-      const rawBook = clientRow.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null | undefined;
+      const rawBook = clientRow.brand_book as {
+        visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string };
+      } | null | undefined;
+      const resolved = resolveClientBrandColors({
+        domain: clientRow.domain ?? "",
+        primary_color: clientRow.primary_color,
+        secondary_color: clientRow.secondary_color,
+        tertiary_color: clientRow.tertiary_color,
+        alternative_color: clientRow.alternative_color,
+        colorPaletteText: rawBook?.visualIdentity?.colorPalette ?? null,
+      });
+      brandStyle = {
+        primaryColor: resolved.primaryColor,
+        secondaryColor: resolved.secondaryColor,
+        tertiaryColor: resolved.tertiaryColor,
+        alternativeColor: resolved.alternativeColor,
+        fontStyle: clientRow.font_style ?? "modern",
+        brandVoice: clientRow.brand_voice ?? "professional",
+      };
       if (rawBook?.visualIdentity) {
         visualIdentity = {
           colorPalette: rawBook.visualIdentity.colorPalette,
@@ -61,8 +76,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // Imagen via Gemini API: graphic illustration (not photography)
-  const coverSubject = `Graphic illustration for blog topic "${query}": solid or dark background, abstract shapes, modern creative style.`;
+  const coverSubject = `Editorial illustration for blog topic "${query}": rich, topic-specific visuals; distinctive composition.`;
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
   try {

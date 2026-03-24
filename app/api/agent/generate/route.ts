@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
@@ -55,19 +56,37 @@ export async function POST(request: Request) {
   // Fetch client context (domain, brand book, manual brand info, custom_instructions)
   const { data: clientRow } = await admin
     .from("clients")
-    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions")
+    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
-  const manualBrand = clientRow?.company_name
+  const rawBookForColors = clientRow?.brand_book as
+    | import("@/lib/brand-book/types").BrandBook
+    | null
+    | undefined;
+  const resolvedBrandColors = resolveClientBrandColors({
+    domain: clientRow?.domain ?? "",
+    primary_color: clientRow?.primary_color,
+    secondary_color: clientRow?.secondary_color,
+    tertiary_color: clientRow?.tertiary_color,
+    alternative_color: clientRow?.alternative_color,
+    colorPaletteText: rawBookForColors?.visualIdentity?.colorPalette ?? null,
+  });
+  const brandDisplayName =
+    clientRow?.company_name?.trim() ||
+    clientRow?.brand_name?.trim() ||
+    rawBookForColors?.brandName?.trim() ||
+    null;
+  const manualBrand = brandDisplayName
     ? {
-        companyName: clientRow.company_name,
-        logoUrl: clientRow.logo_url ?? null,
-        primaryColor: clientRow.primary_color ?? "#7c5cfc",
-        secondaryColor: clientRow.secondary_color ?? "#22d3a0",
-        tertiaryColor: clientRow.tertiary_color ?? null,
-        fontStyle: clientRow.font_style ?? "modern",
-        brandVoice: clientRow.brand_voice ?? "professional",
+        companyName: brandDisplayName,
+        logoUrl: clientRow?.logo_url ?? null,
+        primaryColor: resolvedBrandColors.primaryColor,
+        secondaryColor: resolvedBrandColors.secondaryColor,
+        tertiaryColor: resolvedBrandColors.tertiaryColor,
+        alternativeColor: resolvedBrandColors.alternativeColor,
+        fontStyle: clientRow?.font_style ?? "modern",
+        brandVoice: clientRow?.brand_voice ?? "professional",
       }
     : null;
 
@@ -162,15 +181,20 @@ export async function POST(request: Request) {
       generated.content_md = convertInternalLinksToRelative(generated.content_md, clientRow.domain);
     }
 
-    // Post-generation: score, review, and revise until 90+ (max 2 iterations)
-    const { content: improvedContent, score: seoScoreToSave } = await improvePostTo90(genAI, MODEL, {
-      title: generated.title,
-      content_md: generated.content_md,
-      seo_title: generated.seo_title,
-      seo_description: generated.seo_description,
-      focus_keyword: generated.focus_keyword,
-      faq_blocks: generated.faq_blocks,
-    });
+    // Post-generation: score, review, and revise until 90+ (max 3 iterations)
+    const { content: improvedContent, score: seoScoreToSave } = await improvePostTo90(
+      genAI,
+      MODEL,
+      {
+        title: generated.title,
+        content_md: generated.content_md,
+        seo_title: generated.seo_title,
+        seo_description: generated.seo_description,
+        focus_keyword: generated.focus_keyword,
+        faq_blocks: generated.faq_blocks,
+      },
+      generated.seo_score ?? undefined
+    );
     generated.content_md = improvedContent.content_md;
     if (improvedContent.title) generated.title = improvedContent.title;
     if (improvedContent.seo_title) generated.seo_title = improvedContent.seo_title;
@@ -269,20 +293,21 @@ export async function POST(request: Request) {
     try {
       const coverSubject = generated.cover_image_description
         ? generated.cover_image_description
-        : `Graphic illustration for blog topic "${generated.focus_keyword}": solid or dark background, abstract shapes, modern creative style.`;
+        : `Editorial illustration for "${generated.focus_keyword}": rich, topic-specific visuals; distinctive composition.`;
       const headlineForCover =
         generated.cover_image_headline ??
         generated.title.trim().split(/\s+/).slice(0, 4).join(" ");
       const rawBook = clientCtx.brandBook;
       const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } }; } catch { return null; } })() : rawBook;
       const visualIdentity = bb?.visualIdentity ?? null;
-      const brandStyle = clientCtx.manualBrand ? {
-        primaryColor: clientCtx.manualBrand.primaryColor,
-        secondaryColor: clientCtx.manualBrand.secondaryColor ?? null,
-        tertiaryColor: clientCtx.manualBrand.tertiaryColor ?? null,
-        fontStyle: clientCtx.manualBrand.fontStyle ?? "modern",
-        brandVoice: clientCtx.manualBrand.brandVoice ?? "professional",
-      } : null;
+      const brandStyle = {
+        primaryColor: resolvedBrandColors.primaryColor,
+        secondaryColor: resolvedBrandColors.secondaryColor,
+        tertiaryColor: resolvedBrandColors.tertiaryColor,
+        alternativeColor: resolvedBrandColors.alternativeColor,
+        fontStyle: clientRow?.font_style ?? "modern",
+        brandVoice: clientRow?.brand_voice ?? "professional",
+      };
       const coverPrompt = buildCoverPrompt(
         coverSubject,
         headlineForCover,

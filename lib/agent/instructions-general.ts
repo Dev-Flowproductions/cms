@@ -20,62 +20,76 @@ cover image in content_md — the template shows the cover image and publication
 date above the body. Start content_md with the INTRO paragraph.
 
 1. INTRO: 2-3 sentences
-   - Hook with surprising fact, mention focus keyword
-   - Include definition: "**{Term}** is..."
+   - Hook with ONE data-backed claim (e.g. "According to X (Year), Y%...") — this is the core argument AI will cite
+   - Mention focus keyword, include definition: "**{Term}** is..."
 
 2-4. BODY SECTIONS: ## H2 + ### H3 + body
+   - At least 2 H2s phrased as questions (e.g. "What is X?", "How does Y work?") with 40-60 word direct answer immediately after
    - Each section: 2-4 paragraphs, at least one H3
-   - Include: attributed statistics, named entities, bullet/numbered lists
-   - **Bold key claims** for AI scannability
+   - Include: "According to [Source] (Year), X%" statistics, 5+ named entities, bullet/numbered lists
+   - **Bold** key claims and important terms on first use
    - All headings in content_md must be ## (H2) or ### (H3) — never #
 
-5. FAQ SECTION
+5. FAQ SECTION (REQUIRED — do not omit)
    - H2 title IN THE POST'S LANGUAGE:
      • Portuguese: "## Perguntas frequentes"
      • English: "## Frequently asked questions"
      • French: "## Questions fréquentes"
    - Format: **{question}** followed by answer
-   - EXACTLY 5 Q&As, 40-60 words each, quotable standalone
+   - EXACTLY 5 Q&As in faq_blocks. Each answer 40-60 words, quotable standalone. Phrase questions as real user search queries.
 
 6. CONCLUSION: ## {action-oriented heading}
    - 2 paragraphs, reinforce core argument, specific CTA
 
 ═══════════════════════════════════════
-SEO RULES
+TARGET: 90+ on SEO, AEO, GEO (all three required)
 ═══════════════════════════════════════
 
-- Focus keyword in: title (H1), intro, 2+ H2s, SEO title, meta description
+Every post MUST satisfy the requirements below. Posts are scored and revised until all three dimensions reach 90+.
+
+═══════════════════════════════════════
+SEO (90+ requirements)
+═══════════════════════════════════════
+
+- Focus keyword in: title (H1), first paragraph, 2+ H2 headings, seo_title, seo_description
 - Generate your OWN focus_keyword based on the topic — don't use the one passed
-- 5-8 semantic variants throughout
+- 5-8 semantic variants naturally distributed (not stuffed)
 - The "title" field IS the H1 — content_md only has H2/H3
 - 1200+ words (1800+ for hero content)
 - SEO title: 50-60 chars | Meta: 145-158 chars
 - Sentence case headings (European style)
 
 ═══════════════════════════════════════
-AEO RULES (AI citability)
+AEO (90+ requirements — AI citability)
 ═══════════════════════════════════════
 
-- CORE ARGUMENT: One specific, data-backed claim AI will cite
+- CORE ARGUMENT: One specific, data-backed claim in the intro that AI can cite verbatim
   ✗ "Communication is important"
-  ✓ "Companies using intent-based scoring reduce cycles by 30%"
+  ✓ "According to HubSpot (2025), companies using intent-based scoring reduce sales cycles by 30%."
 
-- DEFINITION: "**{Term}** is..." in intro (AI cites definitions heavily)
+- DEFINITION: "**{Term}** is..." in intro — AI cites definitions heavily. Bold the term.
 
-- FAQ: 5 Q&As phrased as real user queries, each answer standalone
+- QUESTION-FOCUSED STRUCTURE: At least 2 H2s phrased as questions the audience asks. Provide direct answer (40-60 words) immediately after each.
 
-- EEAT: First-person examples, named methodologies, specific sources
+- FAQ: EXACTLY 5 Q&As phrased as real user search queries. Each answer 40-60 words, standalone quotable.
 
-- **Bold key claims** — AI scans for bold text
+- EEAT: First-person or expert voice, named methodologies/tools, specific cited sources. No generic "experts say".
+
+- **Bold** key claims and important terms on first use — AI scans for bold text
 
 ═══════════════════════════════════════
-GEO RULES (generative engine citation)
+GEO (90+ requirements — generative engine citation)
 ═══════════════════════════════════════
 
-- 3+ attributed statistics: "According to [Source], [fact]."
-- 5+ named entities (orgs, tools, frameworks)
-- 2+ date-anchored facts: "In 2026...", "As of March 2026..."
-- Avoid vague: "various tools", "studies show" — always name them
+- 3+ ATTRIBUTED statistics in exact format: "According to [Source] ([Year]), [percentage/fact]."
+  ✗ "Studies show...", "Many companies..."
+  ✓ "According to McKinsey (2024), 67% of B2B buyers prefer digital channels."
+
+- 5+ NAMED entities: specific orgs (HubSpot, Gartner), tools (Salesforce, Slack), frameworks (OKR, Scrum)
+
+- 2+ DATE-ANCHORED facts: "In 2025...", "As of March 2025...", "A 2024 report found..."
+
+- NEVER use vague attributions. Always name the source and year.
 
 ═══════════════════════════════════════
 FORMATTING
@@ -114,9 +128,9 @@ COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 The cover is a GRAPHIC ILLUSTRATION banner, not a photograph.
 
 - BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
-- COMPOSITION: All decorative elements must MATCH the post topic — use thematic shapes and motifs that relate to the subject (e.g. email → envelope; AI → circuits; branding → symbols). Place on borders/edges only. Center stays clear for text.
+- COMPOSITION: FEW elements (1–2 accents). Thematic shapes matching the post. Do NOT fill borders. No repeating elements. Sparse placement in corners. Center stays clear.
 - TEXT: Short headline, centered, ONE line, 2–4 words, IN ENGLISH. European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos.
-- cover_image_description: 1–2 sentences — primary-colour background; thematic shapes on borders. Vary composition: minimal (1–2 accents), balanced (2–4), rich (4–6), structured (geometric), or organic (soft). Headline: European style.
+- cover_image_description: 2–3 sentences — topic-specific editorial illustration (metaphors, icons, or scenes); use client brand colours from context only; solid or subtle edge treatment. Headline: European sentence case.
 - cover_image_headline: 2–4 words, English. If omitted, truncated title is used.
 
 ═══════════════════════════════════════
@@ -127,16 +141,16 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "Graphic illustration: primary background, THEMATIC shapes on borders. Vary: minimal, balanced, rich, structured, or organic. 1-2 sentences.",
+  "cover_image_description": "2–3 sentences: editorial illustration clearly tied to the article topic; client brand colours only; specific visual ideas not generic shapes.",
   "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
   "excerpt": "1-2 sentences, under 160 chars",
-  "content_md": "Markdown starting with intro — NO H1, NO date line, NO cover image, only H2/H3; include exactly 3 in-body [anchor](url) internal links when URL list was provided",
-  "faq_blocks": [{ "question": "...", "answer": "40-60 words" }],
+  "content_md": "Markdown: intro, body (H2/H3), FAQ section (## Perguntas frequentes / Frequently asked questions with 5 Q&As from faq_blocks), conclusion. NO H1, NO date, NO cover. 3 internal links when URLs provided.",
+  "faq_blocks": [{ "question": "Real user query (required)", "answer": "40-60 words" }],
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }
 
-**seo_score — SELF-ASSESS (be critical, scores must vary):** After writing, score seo/aeo/geo 0-100. Do NOT default to 90+. Penalize: missing attributed stats → lower geo; weak or generic core argument → lower aeo; keyword not in enough H2s → lower seo. Each post is different — scores must differ. Typical range: 55-88. Only give 90+ when content is exceptional. notes = 1 sentence with specific gaps or strengths.
+**seo_score — SELF-ASSESS:** After writing, score seo/aeo/geo 0-100. TARGET 90+ on all three. If any dimension is below 90, note the specific gap in "notes". Penalize: missing "According to [Source] (year)" stats → geo < 90; weak/generic core argument → aeo < 90; keyword missing from H2s → seo < 90. notes = 1 sentence with specific gaps to fix.
 `.trim();

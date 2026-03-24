@@ -24,7 +24,8 @@ Rules:
 - content_md is REQUIRED in output — the full revised body.
 - If improvement says "add to title" or "improve SEO title", include title or seo_title in output.
 - If improvement says "add FAQ" or "improve FAQs", include faq_blocks.
-- CRITICAL: Never modify internal links. Every [anchor](url) in the content must be preserved EXACTLY — same anchor text, same URL. Do not change links to "/" or homepage. Copy links character-for-character.`;
+- CRITICAL: Never modify internal links. Every [anchor](url) must be preserved EXACTLY.
+- When adding statistics: use real well-known sources (HubSpot, Gartner, McKinsey, Statista) and plausible figures. Do NOT invent numbers. If unsure, use "Industry reports indicate..." with a specific year.`;
 
 export async function revisePost(
   genAI: GoogleGenerativeAI,

@@ -20,6 +20,7 @@ type Row = {
   slug: string;
   status: string;
   primary_locale: string;
+  author_id: string;
   updated_at: string;
   webhook_status?: string | null;
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
@@ -43,11 +44,17 @@ function extractScore(locs: Localization[] | null, primaryLocale: string): SeoSc
 export function PostsListClient({
   initialPosts,
   statusFilter,
+  clientByAuthor,
+  userId,
 }: {
   initialPosts: Row[];
   statusFilter?: string;
+  clientByAuthor?: Record<string, { company_name: string | null; brand_name: string | null }>;
+  userId?: string;
 }) {
   const t = useTranslations("admin");
+  const base = userId ? `/admin/posts?user=${userId}` : "/admin/posts";
+  const statusSep = base.includes("?") ? "&" : "?";
 
   return (
     <div>
@@ -55,10 +62,11 @@ export function PostsListClient({
       <div className="mb-4 flex gap-2 flex-wrap">
         {[{ key: undefined, label: t("postsPage.filterAll") }, ...["draft", "review", "published"].map((s) => ({ key: s, label: s }))].map(({ key, label }) => {
           const active = statusFilter === key;
+          const href = key ? `${base}${statusSep}status=${key}` : base;
           return (
             <Link
               key={label}
-              href={key ? `/admin/posts?status=${key}` : "/admin/posts"}
+              href={href}
               className="px-3 py-1.5 text-xs font-semibold rounded-xl capitalize transition-all"
               style={{
                 background: active ? "var(--accent)" : "var(--surface-raised)",
@@ -99,9 +107,9 @@ export function PostsListClient({
             ) : (
               initialPosts.map((post, idx) => {
                 const statusStyle = STATUS_COLORS[post.status] ?? { bg: "var(--surface-raised)", color: "var(--text-muted)" };
-                const author = Array.isArray(post.profiles)
-                  ? post.profiles[0]?.display_name
-                  : post.profiles?.display_name;
+                const accountName = clientByAuthor?.[post.author_id]
+                  ? (clientByAuthor[post.author_id].company_name ?? clientByAuthor[post.author_id].brand_name ?? "—")
+                  : (Array.isArray(post.profiles) ? post.profiles[0]?.display_name : post.profiles?.display_name) ?? "—";
                 const score = extractScore(post.post_localizations, post.primary_locale);
 
                 return (
@@ -143,7 +151,7 @@ export function PostsListClient({
                       {post.primary_locale}
                     </td>
                     <td className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-                      {author ?? "—"}
+                      {accountName}
                     </td>
                     <td className="px-4 py-3">
                       {score

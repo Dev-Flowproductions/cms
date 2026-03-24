@@ -33,6 +33,7 @@ type Settings = {
   primary_color?: string | null;
   secondary_color?: string | null;
   tertiary_color?: string | null;
+  alternative_color?: string | null;
   font_style?: string | null;
   brand_voice?: string | null;
   last_generation_error?: string | null;
@@ -84,6 +85,7 @@ export function AccountSettingsCard({
   const [primaryColor, setPrimaryColor] = useState(settings?.primary_color ?? "#7c5cfc");
   const [secondaryColor, setSecondaryColor] = useState(settings?.secondary_color ?? "#22d3a0");
   const [tertiaryColor, setTertiaryColor] = useState(settings?.tertiary_color ?? "#f59e0b");
+  const [alternativeColor, setAlternativeColor] = useState(settings?.alternative_color ?? "");
   const [fontStyle, setFontStyle] = useState(settings?.font_style ?? "");
   const [brandVoice, setBrandVoice] = useState(settings?.brand_voice ?? "professional");
   const [brandSaving, setBrandSaving] = useState(false);
@@ -159,6 +161,7 @@ export function AccountSettingsCard({
     formData.append("primaryColor", primaryColor);
     formData.append("secondaryColor", secondaryColor);
     formData.append("tertiaryColor", tertiaryColor);
+    formData.append("alternativeColor", alternativeColor || "");
     formData.append("fontStyle", fontStyle.trim() || "modern");
     formData.append("brandVoice", brandVoice);
     if (logoFile) formData.append("logo", logoFile);
@@ -637,6 +640,19 @@ export function AccountSettingsCard({
                   <div>
                     <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{tBrand("tertiaryColor")}</p>
                     <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{tertiaryColor}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                  <input
+                    type="color"
+                    value={alternativeColor || "#1e293b"}
+                    onChange={(e) => setAlternativeColor(e.target.value)}
+                    className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                    style={{ background: "transparent" }}
+                  />
+                  <div>
+                    <p className="text-xs font-medium" style={{ color: "var(--text)" }}>Alternative (optional, for cover variety)</p>
+                    <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{alternativeColor || "—"}</p>
                   </div>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildRevalidationPayload, buildWebhookHeaders } from "@/lib/cms-api/webhooks";
+import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 
 export async function POST(
   _req: NextRequest,
@@ -53,7 +53,7 @@ export async function POST(
   // Fetch the author's client webhook config (include client id for siteId)
   const { data: client, error: clientError } = await admin
     .from("clients")
-    .select("id, webhook_url, webhook_secret, auto_publish, domain")
+    .select("id, webhook_url, webhook_secret, webhook_event_format, auto_publish, domain")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
@@ -122,10 +122,9 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
-  const event =
-    (post as { webhook_status?: string }).webhook_status === "success"
-      ? "post.updated"
-      : "post.published";
+  const isUpdate = (post as { webhook_status?: string }).webhook_status === "success";
+  const format = (client as { webhook_event_format?: "spec" | "legacy" | null }).webhook_event_format ?? "spec";
+  const event = resolveWebhookEvent(format, isUpdate);
 
   const revalidation = buildRevalidationPayload(event, client.id, {
     id: post.id,

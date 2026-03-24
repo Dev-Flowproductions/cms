@@ -1,6 +1,23 @@
 import crypto from "crypto";
 
-export type WebhookEvent = "post.published" | "post.updated" | "post.unpublished" | "post.deleted";
+export type WebhookEvent =
+  | "post.published"
+  | "post.updated"
+  | "post.unpublished"
+  | "post.deleted"
+  | "cms.post.published"
+  | "cms.post.updated";
+
+/** Resolve event string from client format. Legacy = cms.post.* (original scheduler); spec = post.* */
+export function resolveWebhookEvent(
+  format: "spec" | "legacy" | null | undefined,
+  isUpdate: boolean
+): WebhookEvent {
+  if (format === "legacy") {
+    return isUpdate ? "cms.post.updated" : "cms.post.published";
+  }
+  return isUpdate ? "post.updated" : "post.published";
+}
 
 export interface RevalidationPostPayload {
   id: string;

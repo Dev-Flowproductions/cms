@@ -58,10 +58,12 @@ export function EditUserConfig({
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
   const [secondaryColor, setSecondaryColor] = useState("#22d3a0");
   const [tertiaryColor, setTertiaryColor] = useState("#f59e0b");
+  const [alternativeColor, setAlternativeColor] = useState("");
   const [fontStyle, setFontStyle] = useState("");
   const [brandVoice, setBrandVoice] = useState("professional");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [webhookEventFormat, setWebhookEventFormat] = useState<"spec" | "legacy">("spec");
   const [autoPublish, setAutoPublish] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -83,10 +85,12 @@ export function EditUserConfig({
         setPrimaryColor(data.client.primary_color ?? "#7c5cfc");
         setSecondaryColor(data.client.secondary_color ?? "#22d3a0");
         setTertiaryColor(data.client.tertiary_color ?? "#f59e0b");
+        setAlternativeColor(data.client.alternative_color ?? "");
         setFontStyle(data.client.font_style ?? "");
         setBrandVoice(data.client.brand_voice ?? "professional");
         setWebhookUrl(data.client.webhook_url ?? "");
         setWebhookSecret(data.client.webhook_secret ?? "");
+        setWebhookEventFormat((data.client.webhook_event_format === "legacy" ? "legacy" : "spec"));
         setAutoPublish(data.client.auto_publish ?? false);
       }
       if (data.profile) {
@@ -126,6 +130,7 @@ export function EditUserConfig({
         primary_color: primaryColor || null,
         secondary_color: secondaryColor || null,
         tertiary_color: tertiaryColor || null,
+        alternative_color: alternativeColor.trim() || null,
         font_style: fontStyle.trim() || null,
         brand_voice: brandVoice,
       }),
@@ -138,6 +143,7 @@ export function EditUserConfig({
       updateUserWebhookByAdmin(user.user_id, {
         webhook_url: webhookUrl.trim() || null,
         webhook_secret: webhookSecret.trim() || null,
+        webhook_event_format: webhookEventFormat,
         auto_publish: autoPublish,
       }),
     ]);
@@ -231,6 +237,10 @@ export function EditUserConfig({
           <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tertiary color</label>
           <input type="text" value={tertiaryColor} onChange={(e) => setTertiaryColor(e.target.value)} placeholder="#f59e0b" style={inputStyle} />
         </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Alternative color (optional, for cover variety)</label>
+          <input type="text" value={alternativeColor} onChange={(e) => setAlternativeColor(e.target.value)} placeholder="#1e293b" style={inputStyle} />
+        </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Font style</label>
           <input type="text" value={fontStyle} onChange={(e) => setFontStyle(e.target.value)} placeholder="modern" style={inputStyle} />
@@ -283,6 +293,14 @@ export function EditUserConfig({
         <input type="url" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
         <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Webhook secret</label>
         <input type="text" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} style={inputStyle} />
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Event format</label>
+          <select value={webhookEventFormat} onChange={(e) => setWebhookEventFormat(e.target.value as "spec" | "legacy")} style={inputStyle}>
+            <option value="spec">post.published (standard)</option>
+            <option value="legacy">cms.post.published (legacy)</option>
+          </select>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-faint)" }}>Use legacy if your site expects cms.post.published</p>
+        </div>
         <div className="flex items-center gap-2">
           <input type="checkbox" id="edit_auto_publish" checked={autoPublish} onChange={(e) => setAutoPublish(e.target.checked)} className="rounded" />
           <label htmlFor="edit_auto_publish" className="text-xs" style={{ color: "var(--text)" }}>Auto-publish to webhook</label>

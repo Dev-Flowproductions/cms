@@ -227,8 +227,17 @@ export function EditPostForm({
     setShowPublishConfirm(false);
     try {
       const res = await fetch(`/api/publish/${post.id}`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) { setPublishError(json.error ?? "Publish failed"); return; }
+      const text = await res.text();
+      let json: { error?: string };
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        json = { error: res.ok ? undefined : `Server error (${res.status})` };
+      }
+      if (!res.ok) {
+        setPublishError(json?.error ?? `Publish failed (${res.status})`);
+        return;
+      }
       setPublishSuccess(true);
       setTimeout(() => setPublishSuccess(false), 5000);
       router.refresh();
@@ -489,10 +498,12 @@ export function EditPostForm({
                   style={{
                     background: publishing
                       ? "var(--surface-raised)"
-                      : "linear-gradient(135deg, #22d3a0, #34d399)",
-                    color: publishing ? "var(--text-muted)" : "var(--bg)",
+                      : post.webhook_status === "failed"
+                        ? "var(--danger)"
+                        : "linear-gradient(135deg, #22d3a0, #34d399)",
+                    color: publishing ? "var(--text-muted)" : "white",
                     border: publishing ? "1px solid var(--border)" : "none",
-                    boxShadow: publishing ? "none" : "0 0 16px rgba(34,211,160,0.25)",
+                    boxShadow: publishing ? "none" : post.webhook_status === "failed" ? "0 0 12px rgba(239,68,68,0.3)" : "0 0 16px rgba(34,211,160,0.25)",
                   }}
                 >
                   {publishing ? (
@@ -507,10 +518,10 @@ export function EditPostForm({
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                  {publishConfig.autoPublish ? "Publish to website" : "Publish to website"}
-                </>
-              )}
-            </button>
+                      {post.webhook_status === "failed" ? "Retry publish to website" : "Publish to website"}
+                    </>
+                  )}
+                </button>
               
               </>
             )}
@@ -563,9 +574,9 @@ export function EditPostForm({
               </button>
             </div>
             {publishError && (
-              <span className="text-xs font-medium" style={{ color: "var(--danger)" }}>
+              <div className="rounded-lg px-3 py-2 text-sm font-medium" style={{ background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}>
                 {publishError}
-              </span>
+              </div>
             )}
             {publishSuccess && (
               <span className="text-xs font-medium" style={{ color: "var(--success)" }}>

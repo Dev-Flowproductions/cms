@@ -204,9 +204,9 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   lines.push("═══════════════════════════════");
   lines.push("CHECKLIST");
   lines.push("═══════════════════════════════");
-  lines.push("SEO: keyword in title/intro/H2s/seo_title/meta, 5-8 variants, sentence case");
-  lines.push("AEO: core argument, definition block, 5 FAQs, bold claims, EEAT signals");
-  lines.push("GEO: 3+ attributed stats, 5+ named entities, date-anchored facts");
+  lines.push("TARGET 90+ on all three. SEO: keyword in title/intro/2+ H2s/seo_title/meta, 5-8 variants.");
+  lines.push("AEO: core argument, definition block, 5 FAQs (required), **bold** claims, EEAT.");
+  lines.push("GEO: 3+ 'According to [Source] (Year), X%' stats, 5+ named entities, 2+ date-anchored facts.");
   if (client.recentPostTitles?.length) {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
@@ -216,8 +216,8 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   } else {
     lines.push("CRITICAL: No internal site URL list was provided — do not add internal [text](url) links to the site.");
   }
-  lines.push("CRITICAL: cover_image_description = primary colour background; thematic elements that MATCH the post topic (e.g. email→envelope, AI→circuits); elements on borders. Headline centered, European style, brand font. Use BRAND VISUAL above.");
-  lines.push("seo_score: Be CRITICAL. Do NOT default to 90+. Penalize gaps. Scores must vary per post (typical 55-88). notes = specific gaps.");
+  lines.push("CRITICAL: cover_image_description = 2–3 sentences: substantive editorial illustration for THIS article’s topic — specific metaphors, symbols, or scenes (not generic abstract blobs). Use ONLY colours from BRAND VISUAL above (client palette). Headline on-image: European sentence case, brand font feel. Avoid cliché stock imagery.");
+  lines.push("seo_score: TARGET 90+ on SEO, AEO, GEO. If below 90, notes = specific gap to fix.");
 
   return lines.join("\n");
 }

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import type { Locale } from "@/lib/types/db";
@@ -352,6 +354,22 @@ async function generatePostForClient(
   );
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
 
+  // Post-generation: score, review, and revise until 90+ (max 2 iterations)
+  const { content: improvedContent, score: finalScore } = await improvePostTo90(genAI, MODEL, {
+    title: primaryContent.title,
+    content_md: primaryContent.content_md,
+    seo_title: primaryContent.seo_title,
+    seo_description: primaryContent.seo_description,
+    focus_keyword: primaryContent.focus_keyword,
+    faq_blocks: primaryContent.faq_blocks,
+  });
+  primaryContent.content_md = improvedContent.content_md;
+  if (improvedContent.title) primaryContent.title = improvedContent.title;
+  if (improvedContent.seo_title) primaryContent.seo_title = improvedContent.seo_title;
+  if (improvedContent.seo_description) primaryContent.seo_description = improvedContent.seo_description;
+  if (improvedContent.faq_blocks) primaryContent.faq_blocks = improvedContent.faq_blocks;
+  primaryContent.seo_score = finalScore;
+
   // Extract metadata from primary content
   titleForCoverPrompt = primaryContent.title;
   if (primaryContent.cover_image_description) coverImageDescription = primaryContent.cover_image_description;
@@ -476,7 +494,7 @@ async function generatePostForClient(
 RULES:
 - Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
-- Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
+- Translate the title, excerpt, SEO title, SEO description, all FAQ questions/answers, and the author block at the end (heading "Sobre o autor" / "About the author" and the bio text).
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
 - In content_md: for every markdown link [anchor](url), keep the url EXACTLY unchanged (character-for-character); translate only the anchor text inside the brackets to natural ${langName}. Do not add, remove, or reorder links.
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
@@ -491,8 +509,8 @@ SEO Title: ${primaryContent.seo_title}
 SEO Description: ${primaryContent.seo_description}
 Focus Keyword: ${primaryContent.focus_keyword}
 
-Content (Markdown):
-${primaryContent.content_md}
+Content (Markdown) — include the "Sobre o autor" / "About the author" section at the end; translate the heading and bio to ${langName}:
+${ptContentMd}
 
 FAQ Blocks:
 ${(primaryContent.faq_blocks ?? []).map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
@@ -544,7 +562,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       internalLinkCandidates.map((c) => c.url)
     );
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
-    const translatedMd = appendAuthorBlock(translated.content_md, locale as Locale, authorForBlock);
+    // Author block is already in translated content_md (we passed ptContentMd which includes it)
+    const translatedMd = translated.content_md;
 
     const localeJsonld = {
       "@context": "https://schema.org",
@@ -600,28 +619,27 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       ? coverImageDescription
       : `Graphic illustration concept for "${titleForCoverPrompt}": solid or dark background, abstract shapes, modern creative style.`;
 
-    const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity;
-    const brandStyleParts: string[] = [];
-    if (manualBrand) {
-      const colorParts = [`primary ${manualBrand.primaryColor}`, `secondary ${manualBrand.secondaryColor}`];
-      if (manualBrand.tertiaryColor) colorParts.push(`tertiary ${manualBrand.tertiaryColor}`);
-      brandStyleParts.push(`Use EXACTLY these brand colours: ${colorParts.join(", ")} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
-    } else if (visualIdentity) {
-      if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
-      if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);
-      if (visualIdentity.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
-    }
-    const brandStyle = brandStyleParts.length > 0 ? brandStyleParts.join(" ") + " " : "";
-
+    const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity ?? null;
+    const brandStyle = manualBrand ? {
+      primaryColor: manualBrand.primaryColor,
+      secondaryColor: manualBrand.secondaryColor ?? null,
+      tertiaryColor: manualBrand.tertiaryColor ?? null,
+      fontStyle: manualBrand.fontStyle ?? "modern",
+      brandVoice: manualBrand.brandVoice ?? "professional",
+    } : null;
     const headlineForCover =
       primaryContent.cover_image_headline ??
       primaryContent.title.trim().split(/\s+/).slice(0, 4).join(" ");
-    const coverPrompt =
-      `Editorial blog hero graphic (like Flow Productions blog): ${coverSubject}. ` +
-      `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
-      brandStyle +
-      `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include this text on the image ONCE only: "${headlineForCover}". Do not repeat or duplicate the headline — show it one time, on one line. The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible and never cut. The headline must be in English. Bold editorial typography. No logos or brand names; the headline above is the only text.`;
+    const coverPrompt = buildCoverPrompt(
+      coverSubject,
+      headlineForCover,
+      brandStyle,
+      visualIdentity ? {
+        colorPalette: visualIdentity.colorPalette,
+        aestheticStyle: visualIdentity.aestheticStyle,
+        imageStyle: visualIdentity.imageStyle,
+      } : null
+    );
     const imgResponse = await imagenAI.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: coverPrompt,

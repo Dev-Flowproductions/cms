@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenAI } from "@google/genai";
+import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
   let source = "gemini";
 
   // Load client brand (post -> author_id = user_id -> client row)
-  let brandStyle = "";
+  let brandStyle: { primaryColor: string; secondaryColor: string | null; tertiaryColor: string | null; fontStyle: string; brandVoice: string } | null = null;
+  let visualIdentity: { colorPalette?: string; aestheticStyle?: string; imageStyle?: string } | null = null;
+
   const { data: postRow } = await admin.from("posts").select("author_id").eq("id", post_id).maybeSingle();
   if (postRow?.author_id) {
     const { data: clientRow } = await admin
@@ -38,33 +41,32 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (clientRow) {
       const hasManualColors = clientRow.primary_color != null || clientRow.secondary_color != null || clientRow.tertiary_color != null;
-      const manualBrand = hasManualColors
-        ? { primaryColor: clientRow.primary_color ?? "#7c5cfc", secondaryColor: clientRow.secondary_color ?? "#22d3a0", tertiaryColor: clientRow.tertiary_color ?? null, fontStyle: clientRow.font_style ?? "modern", brandVoice: clientRow.brand_voice ?? "professional" }
-        : null;
-      const rawBook = clientRow.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null | undefined;
-      const visualIdentity = rawBook?.visualIdentity;
-      const brandStyleParts: string[] = [];
-      if (manualBrand) {
-        const colorParts = [`primary ${manualBrand.primaryColor}`, `secondary ${manualBrand.secondaryColor}`];
-        if (manualBrand.tertiaryColor) colorParts.push(`tertiary ${manualBrand.tertiaryColor}`);
-        brandStyleParts.push(`Use EXACTLY these brand colours: ${colorParts.join(", ")} (for background and accents). Typography/font style: ${manualBrand.fontStyle}. Brand voice/mood: ${manualBrand.brandVoice}.`);
-      } else if (visualIdentity) {
-        if (visualIdentity.colorPalette) brandStyleParts.push(`Use EXACTLY this colour palette: ${visualIdentity.colorPalette}.`);
-        if (visualIdentity.aestheticStyle) brandStyleParts.push(`Aesthetic/typography: ${visualIdentity.aestheticStyle}.`);
-        if (visualIdentity.imageStyle) brandStyleParts.push(visualIdentity.imageStyle);
+      if (hasManualColors) {
+        brandStyle = {
+          primaryColor: clientRow.primary_color ?? "#7c5cfc",
+          secondaryColor: clientRow.secondary_color ?? null,
+          tertiaryColor: clientRow.tertiary_color ?? null,
+          fontStyle: clientRow.font_style ?? "modern",
+          brandVoice: clientRow.brand_voice ?? "professional",
+        };
       }
-      if (brandStyleParts.length > 0) brandStyle = brandStyleParts.join(" ") + " ";
+      const rawBook = clientRow.brand_book as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null | undefined;
+      if (rawBook?.visualIdentity) {
+        visualIdentity = {
+          colorPalette: rawBook.visualIdentity.colorPalette,
+          aestheticStyle: rawBook.visualIdentity.aestheticStyle,
+          imageStyle: rawBook.visualIdentity.imageStyle,
+        };
+      }
     }
   }
 
-  // ── Imagen via Gemini API: graphic illustration (not photography) ───────────
+  // Imagen via Gemini API: graphic illustration (not photography)
+  const coverSubject = `Graphic illustration for blog topic "${query}": solid or dark background, abstract shapes, modern creative style.`;
+  const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
+
   try {
-    const imagePrompt =
-      `Editorial blog hero graphic (like Flow Productions blog) about: "${query}". ` +
-      `BALANCED composition: solid or gradient background, 2–4 intentional elements — e.g. overlapping circles or soft shapes plus one symbolic/focal element (silhouette, hands, abstract motif). Clear focal point; not too empty, not too busy. Wide banner 16:9. ` +
-      brandStyle +
-      `Cohesive palette, flat or subtle depth, clean edges. High clarity so it scales well. ` +
-      `Include a short headline in English on the image ONCE only (2–4 words, one line). Do not repeat or duplicate the headline — show it one time only. The headline must be the TOP LAYER — no circles, shapes, or icons overlapping or covering the text; place all graphic elements behind the text or outside the headline area so the text is fully legible and never cut. Bold editorial typography. No logos or brand names; the headline is the only text.`;
+    const imagePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity);
 
     const response = await genai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",

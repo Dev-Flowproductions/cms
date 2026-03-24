@@ -18,8 +18,9 @@ export type AuthorForBlock = {
   avatarUrl: string | null;
 };
 
-/** Markdown links [text](https://...) in content — only http(s) targets are validated. */
+/** Markdown links [text](url) in content — http(s) and relative paths. */
 const MARKDOWN_HTTP_LINK_RE = /\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/gi;
+const MARKDOWN_ANY_LINK_RE = /\[([^\]]*)\]\(([^)\s]+)\)/g;
 
 function sameOrigin(urlHost: string, domain: string): boolean {
   const n = (h: string) => h.replace(/^www\./, "").toLowerCase();
@@ -73,6 +74,38 @@ export function sanitizeInternalMarkdownLinks(contentMd: string, allowedUrls: st
     const nu = normalizeComparableUrl(trimmed);
     if (nu && normalized.has(nu)) return full;
     return anchor;
+  });
+}
+
+/**
+ * Restores internal links in revised content when the reviser corrupted them to "/" or homepage.
+ * Uses original content as the source of truth for anchor→URL mapping.
+ */
+export function restoreInternalLinks(revisedContent: string, originalContent: string): string {
+  const originalLinks: Array<{ anchor: string; url: string }> = [];
+  let m: RegExpExecArray | null;
+  const re = new RegExp(MARKDOWN_ANY_LINK_RE.source, "g");
+  while ((m = re.exec(originalContent)) !== null) {
+    const url = m[2]?.trim() ?? "";
+    const anchor = m[1] ?? "";
+    if (url && url !== "/" && !/^https?:\/\/[^/]+\/?$/i.test(url)) {
+      originalLinks.push({ anchor, url });
+    }
+  }
+  if (originalLinks.length === 0) return revisedContent;
+
+  const byAnchor = new Map<string, string>();
+  for (const { anchor, url } of originalLinks) {
+    if (!byAnchor.has(anchor)) byAnchor.set(anchor, url);
+  }
+
+  return revisedContent.replace(MARKDOWN_ANY_LINK_RE, (full, anchor: string, url: string) => {
+    const u = (url ?? "").trim();
+    const isHome = u === "/" || /^https?:\/\/[^/]+\/?$/i.test(u);
+    if (!isHome) return full;
+    const correct = byAnchor.get(anchor);
+    if (!correct) return full;
+    return `[${anchor}](${correct})`;
   });
 }
 

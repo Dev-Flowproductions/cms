@@ -139,5 +139,5 @@ OUTPUT (JSON only, no markdown fences)
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }
 
-Each score in seo_score must be an integer from 0 to 100 (inclusive). seo, aeo, geo are out of 100.
+**seo_score — SELF-ASSESS your generated content:** After writing the post, evaluate it against the SEO, AEO, GEO rules above. Assign each a score 0-100: seo = how well it meets SEO rules (keyword placement, structure, meta), aeo = AI citability (core argument, definition, FAQs, bold claims), geo = generative engines (attributed stats, named entities, date-anchored facts). Vary scores based on quality — strong content 75-95, weaker 50-70, gaps 30-50. notes = 1 sentence justifying the scores (e.g. "Strong definition and FAQs; could add one more statistic.").
 `.trim();

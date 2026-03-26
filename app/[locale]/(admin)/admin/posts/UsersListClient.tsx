@@ -48,7 +48,7 @@ export function UsersListClient({ users }: { users: UserWithPostCount[] }) {
             users.map((u, idx) => (
               <tr
                 key={u.user_id}
-                className="transition-colors hover:bg-white/[0.04]"
+                className="adm-row-hover"
                 style={{
                   background: idx % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent",
                   borderTop: "1px solid var(--adm-border-subtle)",
@@ -66,7 +66,7 @@ export function UsersListClient({ users }: { users: UserWithPostCount[] }) {
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/posts?user=${u.user_id}`}
-                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-all hover:opacity-90"
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
                     style={{
                       background: "var(--adm-primary-container)",
                       color: "#fff",

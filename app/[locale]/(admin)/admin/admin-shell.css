@@ -12,11 +12,15 @@
   --adm-primary: #ccbdff;
   --adm-primary-container: #6839ea;
   --adm-on-primary: #350097;
-  --adm-outline-variant: rgba(73, 68, 85, 0.35);
+  --adm-outline-variant: rgba(200, 205, 235, 0.38);
   --adm-error: #ffb4ab;
-  --adm-border-subtle: rgba(73, 68, 85, 0.2);
+  /* Lighter stroke on dark surfaces so fields and dividers read clearly */
+  --adm-border-subtle: rgba(200, 205, 235, 0.22);
   --adm-topbar-bg: rgba(11, 19, 38, 0.82);
-  --adm-surface-hover: rgba(34, 42, 61, 0.5);
+  /* Row / nav item hover — visible lift on dark surfaces */
+  --adm-surface-hover: rgba(218, 226, 255, 0.12);
+  --adm-interactive-hover: rgba(218, 226, 255, 0.1);
+  --adm-interactive-hover-strong: rgba(218, 226, 255, 0.17);
   --adm-cta-grad-from: #6839ea;
   --adm-cta-grad-to: #ccbdff;
   --adm-cta-fg: #350097;
@@ -25,7 +29,7 @@
   --adm-gradient-cta: linear-gradient(135deg, #6839ea, #8b6bef);
   --adm-cta-glow-shadow: 0 0 14px rgba(104, 57, 234, 0.35);
   --adm-primary-soft-bg: rgba(104, 57, 234, 0.12);
-  --adm-accent-border: rgba(104, 57, 234, 0.25);
+  --adm-accent-border: rgba(104, 57, 234, 0.4);
 }
 
 /* Light — aligns with mock: surface #f7f9fb, sidebar #f2f4f6, primary #3525cd / container #4f46e5 */
@@ -40,11 +44,13 @@
   --adm-primary: #3525cd;
   --adm-primary-container: #4f46e5;
   --adm-on-primary: #ffffff;
-  --adm-outline-variant: rgba(119, 117, 135, 0.35);
+  --adm-outline-variant: rgba(70, 68, 95, 0.45);
   --adm-error: #ba1a1a;
-  --adm-border-subtle: rgba(119, 117, 135, 0.14);
+  --adm-border-subtle: rgba(70, 68, 95, 0.32);
   --adm-topbar-bg: rgba(247, 249, 251, 0.9);
-  --adm-surface-hover: #e0e3e5;
+  --adm-surface-hover: #d0d5db;
+  --adm-interactive-hover: rgba(79, 70, 229, 0.1);
+  --adm-interactive-hover-strong: rgba(79, 70, 229, 0.16);
   --adm-cta-grad-from: #4f46e5;
   --adm-cta-grad-to: #818cf8;
   --adm-cta-fg: #ffffff;
@@ -53,7 +59,7 @@
   --adm-gradient-cta: linear-gradient(135deg, #4f46e5, #818cf8);
   --adm-cta-glow-shadow: 0 0 16px rgba(79, 70, 229, 0.22);
   --adm-primary-soft-bg: rgba(79, 70, 229, 0.1);
-  --adm-accent-border: rgba(79, 70, 229, 0.22);
+  --adm-accent-border: rgba(79, 70, 229, 0.38);
 }
 
 .admin-shell-glass,
@@ -116,4 +122,36 @@
 .admin-shell-root ::-webkit-scrollbar-track,
 .editorial-shell-root ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Text fields — clearer edge on hover (border set here so hover can override inline color/bg) */
+.admin-shell-root .adm-input-edge,
+.editorial-shell-root .adm-input-edge {
+  border: 1px solid var(--adm-border-subtle);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-shell-root .adm-input-edge:hover,
+.editorial-shell-root .adm-input-edge:hover {
+  border-color: var(--adm-outline-variant);
+}
+
+.admin-shell-root .adm-input-edge:focus,
+.admin-shell-root .adm-input-edge:focus-visible,
+.editorial-shell-root .adm-input-edge:focus,
+.editorial-shell-root .adm-input-edge:focus-visible {
+  border-color: var(--adm-primary-container);
+}
+
+/* One hover treatment for post rows, user rows, and recent-post links (dashboard + admin) */
+.admin-shell-root .adm-row-hover,
+.editorial-shell-root .adm-row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.admin-shell-root .adm-row-hover:hover,
+.editorial-shell-root .adm-row-hover:hover {
+  background-color: var(--adm-interactive-hover);
 }

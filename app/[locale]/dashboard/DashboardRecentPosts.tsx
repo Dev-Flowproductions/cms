@@ -41,7 +41,7 @@ export async function DashboardRecentPosts({
         </div>
         <Link
           href="/dashboard/posts"
-          className="inline-flex items-center gap-2 self-start text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-80 sm:self-auto"
+          className="inline-flex items-center gap-2 self-start text-xs font-bold uppercase tracking-wider transition-colors hover:underline hover:decoration-2 hover:underline-offset-4 sm:self-auto"
           style={{ color: "var(--adm-primary)" }}
         >
           {t("viewAllPosts")}
@@ -68,7 +68,7 @@ export async function DashboardRecentPosts({
             </Link>
             <Link
               href="/dashboard/posts"
-              className="rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
+              className="rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors hover:brightness-110"
               style={{ background: "var(--adm-surface-high)", color: "var(--adm-primary)" }}
             >
               {t("myPosts")}
@@ -89,7 +89,7 @@ export async function DashboardRecentPosts({
               <li key={post.id}>
                 <Link
                   href={`/dashboard/posts/${post.id}`}
-                  className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
+                  className="adm-row-hover flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-mono text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>

@@ -282,7 +282,7 @@ export function EditPostForm({
     <div className="space-y-6">
       <Link
         href={postsListHref}
-        className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80 lg:hidden"
+        className="inline-flex items-center gap-2 text-sm font-semibold transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4 lg:hidden"
         style={{ color: "var(--adm-on-variant)" }}
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -497,7 +497,7 @@ export function EditPostForm({
           )}
           <div className="flex items-center gap-3 flex-wrap">
             <button type="submit"
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-95"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
               style={{
                 background: "var(--adm-primary-container)",
                 color: "#fff",
@@ -797,7 +797,7 @@ export function EditPostForm({
           )}
 
           <button type="submit"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-95"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
             style={{
               background: "var(--adm-primary-container)",
               color: "#fff",

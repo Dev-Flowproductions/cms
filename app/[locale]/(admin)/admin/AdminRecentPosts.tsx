@@ -36,7 +36,7 @@ export async function AdminRecentPosts({ posts, limit = 10 }: { posts: AdminRece
         </div>
         <Link
           href="/admin/posts"
-          className="inline-flex items-center gap-2 self-start text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-80 sm:self-auto"
+          className="inline-flex items-center gap-2 self-start text-xs font-bold uppercase tracking-wider transition-colors hover:underline hover:decoration-2 hover:underline-offset-4 sm:self-auto"
           style={{ color: "var(--adm-primary)" }}
         >
           {t("recentPostsViewAll")}
@@ -69,7 +69,7 @@ export async function AdminRecentPosts({ posts, limit = 10 }: { posts: AdminRece
               <li key={post.id}>
                 <Link
                   href={`/admin/posts/${post.id}`}
-                  className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:flex-row lg:items-center lg:justify-between"
+                  className="adm-row-hover flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-mono text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>

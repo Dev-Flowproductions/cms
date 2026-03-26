@@ -86,9 +86,13 @@ export function DashboardNav() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors"
+            className={
+              "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors " +
+              (isActive
+                ? "bg-[var(--adm-surface-high)] hover:bg-[var(--adm-interactive-hover-strong)]"
+                : "hover:bg-[var(--adm-interactive-hover)]")
+            }
             style={{
-              background: isActive ? "var(--adm-surface-high)" : "transparent",
               color: isActive ? "var(--adm-primary)" : "var(--adm-on-variant)",
             }}
           >

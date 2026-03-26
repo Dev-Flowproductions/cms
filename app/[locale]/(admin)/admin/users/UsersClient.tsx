@@ -180,7 +180,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                 return (
                   <tr
                     key={u.id}
-                    className="transition-colors hover:bg-white/[0.04]"
+                    className="adm-row-hover"
                     style={{
                       background: idx % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent",
                       borderTop: "1px solid var(--adm-border-subtle)",
@@ -189,7 +189,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                     <td className="px-4 py-3 align-top min-w-0">
                       <Link
                         href={`/admin/users/${u.user_id}`}
-                        className="group block min-w-0 rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-white/[0.06]"
+                        className="group block min-w-0 rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
                       >
                         <span className="font-semibold block truncate group-hover:underline" style={{ color: "var(--adm-on-surface)" }} title={displayName}>
                           {displayName}
@@ -213,7 +213,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                       <div className="flex flex-col items-stretch justify-end gap-2">
                         <Link
                           href={`/admin/users/${u.user_id}`}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
                           style={{
                             background: "var(--adm-primary-container)",
                             color: "#fff",

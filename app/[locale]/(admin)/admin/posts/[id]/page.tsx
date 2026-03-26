@@ -67,7 +67,7 @@ export default async function EditPostPage({
       <div className="mb-8">
         <Link
           href={postsListHref}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4"
           style={{ color: "var(--adm-on-variant)" }}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>

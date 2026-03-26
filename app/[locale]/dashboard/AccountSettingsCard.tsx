@@ -47,9 +47,11 @@ type Settings = {
 
 const inputStyle = {
   background: "var(--adm-surface-highest)",
-  border: "1px solid var(--adm-border-subtle)",
   color: "var(--adm-on-surface)",
 } as const;
+
+const inputClass =
+  "adm-input-edge w-full text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)] focus:ring-offset-0 focus:ring-offset-transparent";
 
 type Profile = {
   id: string;
@@ -253,7 +255,7 @@ export function AccountSettingsCard({
                 value={displayName}
                 onChange={(e) => { setDisplayName(e.target.value); setProfileError(null); }}
                 placeholder="Your name"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl`}
                 style={inputStyle}
               />
             </div>
@@ -264,7 +266,7 @@ export function AccountSettingsCard({
                 value={avatarUrl}
                 onChange={(e) => { setAvatarUrl(e.target.value); setProfileError(null); }}
                 placeholder="https://..."
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl`}
                 style={inputStyle}
               />
             </div>
@@ -275,7 +277,7 @@ export function AccountSettingsCard({
                 value={jobTitle}
                 onChange={(e) => { setJobTitle(e.target.value); setProfileError(null); }}
                 placeholder="e.g. Content Lead"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl`}
                 style={inputStyle}
               />
             </div>
@@ -286,7 +288,7 @@ export function AccountSettingsCard({
                 onChange={(e) => { setBio(e.target.value); setProfileError(null); }}
                 placeholder="One line shown under your name on posts"
                 rows={2}
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl`}
                 style={inputStyle}
               />
             </div>
@@ -344,7 +346,7 @@ export function AccountSettingsCard({
               value={domain}
               onChange={(e) => { setDomain(e.target.value); setDomainError(null); }}
               placeholder="yourdomain.com"
-              className="flex-1 min-w-[200px] px-4 py-2.5 rounded-lg text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+              className={`${inputClass} flex-1 min-w-[200px] px-4 py-2.5 rounded-lg`}
               style={inputStyle}
             />
             <button
@@ -459,10 +461,14 @@ export function AccountSettingsCard({
                     key={opt.value}
                     type="button"
                     onClick={() => setFrequency(opt.value)}
-                    className="px-4 py-3 rounded-xl text-left transition-all"
+                    className={
+                      "px-4 py-3 rounded-xl text-left transition-all border " +
+                      (active
+                        ? "border-[var(--adm-accent-border)]"
+                        : "border-[var(--adm-border-subtle)] hover:border-[var(--adm-outline-variant)] hover:bg-[var(--adm-interactive-hover)]")
+                    }
                     style={{
                       background: active ? "var(--adm-primary-soft-bg)" : "var(--adm-surface-high)",
-                      border: active ? "1px solid var(--adm-accent-border)" : "1px solid var(--adm-border-subtle)",
                       boxShadow: active ? "var(--adm-locale-glow)" : "none",
                     }}
                   >
@@ -587,7 +593,7 @@ export function AccountSettingsCard({
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Your Company Name"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl w-full`}
                 style={inputStyle}
               />
             </div>
@@ -597,7 +603,7 @@ export function AccountSettingsCard({
                 {tBrand("logoLabel")}
               </label>
               <div
-                className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:border-[var(--adm-primary-container)]"
+                className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:border-[var(--adm-primary-container)] hover:bg-[var(--adm-interactive-hover)]"
                 style={{ background: "var(--adm-surface-high)", border: "1px dashed var(--adm-border-subtle)" }}
                 onClick={() => brandLogoInputRef.current?.click()}
               >
@@ -698,7 +704,7 @@ export function AccountSettingsCard({
                 value={fontStyle}
                 onChange={(e) => setFontStyle(e.target.value)}
                 placeholder={tBrand("fontStylePlaceholder")}
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                className={`${inputClass} px-4 py-3 rounded-xl w-full`}
                 style={inputStyle}
               />
             </div>
@@ -713,11 +719,15 @@ export function AccountSettingsCard({
                     key={v.id}
                     type="button"
                     onClick={() => setBrandVoice(v.id)}
-                    className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left"
+                    className={
+                      "px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left border " +
+                      (brandVoice === v.id
+                        ? "border-[var(--adm-primary-container)]"
+                        : "border-[var(--adm-border-subtle)] hover:border-[var(--adm-outline-variant)] hover:bg-[var(--adm-interactive-hover)]")
+                    }
                     style={{
                       background: brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
                       color: brandVoice === v.id ? "white" : "var(--adm-on-surface)",
-                      border: `1px solid ${brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-border-subtle)"}`,
                     }}
                   >
                     {v.label}

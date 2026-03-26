@@ -227,7 +227,7 @@ export function DashboardPostsTable({
                 return (
                   <tr
                     key={post.id}
-                    className="group transition-colors hover:[background:var(--adm-surface-hover)]"
+                    className="adm-row-hover"
                     style={{
                       borderBottom: isLast ? "none" : "1px solid var(--adm-border-subtle)",
                     }}
@@ -308,7 +308,7 @@ export function DashboardPostsTable({
                       <div className="flex items-center gap-3 justify-end">
                         <Link
                           href={isAdmin ? `/admin/posts/${post.id}` : `/dashboard/posts/${post.id}`}
-                          className="text-xs font-semibold transition-colors hover:opacity-90"
+                          className="text-xs font-semibold transition-colors hover:underline hover:decoration-2 hover:underline-offset-2"
                           style={{ color: "var(--adm-primary)" }}
                         >
                           {t("common.edit")}

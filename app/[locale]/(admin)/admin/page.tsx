@@ -104,13 +104,21 @@ export default async function AdminPage() {
         className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t pt-8 text-xs font-semibold uppercase tracking-wider"
         style={{ borderColor: "var(--adm-border-subtle)" }}
       >
-        <Link href="/admin/posts" className="transition-opacity hover:opacity-80" style={{ color: "var(--adm-primary)" }}>
+        <Link
+          href="/admin/posts"
+          className="transition-colors hover:underline hover:decoration-2 hover:underline-offset-4"
+          style={{ color: "var(--adm-primary)" }}
+        >
           {t("recentPostsViewAll")}
         </Link>
         <span style={{ color: "var(--adm-outline-variant)" }} aria-hidden>
           ·
         </span>
-        <Link href="/admin/users" className="transition-opacity hover:opacity-80" style={{ color: "var(--adm-on-variant)" }}>
+        <Link
+          href="/admin/users"
+          className="transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4"
+          style={{ color: "var(--adm-on-variant)" }}
+        >
           {t("users")}
         </Link>
       </div>

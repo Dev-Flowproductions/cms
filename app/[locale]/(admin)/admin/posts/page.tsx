@@ -42,7 +42,7 @@ export default async function AdminPostsPage({
       <div className="mb-8 flex flex-wrap items-center gap-4">
         <Link
           href="/admin/posts"
-          className="flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
+          className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4"
           style={{ color: "var(--adm-on-variant)" }}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">

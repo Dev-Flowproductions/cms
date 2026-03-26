@@ -214,7 +214,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at")
+    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_storage_path, brand_guidelines_text")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -280,7 +280,7 @@ export async function getClientSettingsByAdmin(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
   const [clientRes, profileRes] = await Promise.all([
-    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, webhook_event_format, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice").eq("user_id", userId).maybeSingle(),
+    admin.from("clients").select("id, user_id, domain, frequency, post_locale, webhook_url, webhook_secret, webhook_event_format, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_storage_path, brand_guidelines_text").eq("user_id", userId).maybeSingle(),
     admin.from("profiles").select("id, display_name, avatar_url, bio, job_title").eq("id", userId).maybeSingle(),
   ]);
   if (clientRes.error) throw clientRes.error;

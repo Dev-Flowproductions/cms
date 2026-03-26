@@ -39,21 +39,21 @@ export async function userApprovePost(postId: string) {
   if (!post) return { error: "Post not found" };
   if (post.author_id !== user.id) return { error: "Forbidden" };
 
-  const { error } = await supabase
-    .from("posts")
-    .update({ status: "published", published_at: new Date().toISOString() })
-    .eq("id", postId);
-
-  if (error) return { error: error.message };
-
-  // Fire webhook
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  let res: Response;
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    await fetch(`${appUrl}/api/publish/${postId}`, {
+    res = await fetch(`${appUrl}/api/publish/${postId}`, {
       method: "POST",
       headers: { "x-scheduler-internal": "1" },
     });
-  } catch { /* non-fatal */ }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Publish request failed" };
+  }
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    return { error: body?.error ?? `Publish failed (${res.status})` };
+  }
 
   return { success: true };
 }

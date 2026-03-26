@@ -92,6 +92,19 @@
     "brand": {
       "title": "Marque",
       "description": "Modifiez le nom de l'entreprise, le logo, les couleurs et la voix. Les changements sont utilisés pour générer le contenu."
+    },
+    "brandAssets": {
+      "title": "Références de couverture et directives",
+      "description": "Téléchargez jusqu'à trois images qui représentent visuellement votre marque. Les couvertures générées par l'IA s'en inspireront. Ajoutez des directives de marque (PDF ou texte) pour que les bannières respectent vos règles.",
+      "referenceSlot": "Image de référence {n}",
+      "empty": "Aucune image",
+      "upload": "Télécharger",
+      "remove": "Retirer",
+      "guidelinesTitle": "Directives de marque",
+      "guidelinesHint": "PDF, TXT ou Markdown. Le texte est extrait et appliqué lors de la génération des couvertures.",
+      "noGuidelines": "Aucune directive pour le moment.",
+      "uploadGuidelines": "Télécharger les directives",
+      "removeGuidelines": "Supprimer les directives"
     }
   },
   "onboarding": {
@@ -204,7 +217,14 @@
     },
     "postsPage": {
       "filterAll": "Tous",
-      "noPosts": "Aucun article pour l'instant. Créez-en un pour commencer."
+      "noPosts": "Aucun article pour l'instant. Créez-en un pour commencer.",
+      "actions": "Actions",
+      "deletePost": "Supprimer",
+      "deletingPost": "Suppression…",
+      "confirmDeleteTitle": "Voulez-vous vraiment continuer ?",
+      "confirmDeletePost": "Cela supprimera définitivement « {slug} » et toutes les versions linguistiques du CMS.",
+      "confirmNo": "Non, annuler",
+      "confirmYes": "Oui, supprimer"
     },
     "editPostPage": {
       "postSettings": "Paramètres de l'article",

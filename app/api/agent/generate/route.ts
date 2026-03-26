@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
+import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
@@ -56,7 +59,7 @@ export async function POST(request: Request) {
   // Fetch client context (domain, brand book, manual brand info, custom_instructions)
   const { data: clientRow } = await admin
     .from("clients")
-    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions")
+    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
@@ -137,9 +140,21 @@ export async function POST(request: Request) {
   const runId = run?.id;
 
   try {
+    const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
+      genAI,
+      clientRow?.custom_instructions ?? null,
+      {
+        contentType: post.content_type,
+        locale,
+        focusKeywordOrTopic: keyword,
+        hasInternalLinks: internalLinkCandidates.length > 0,
+        taskKind: "post_generation",
+      },
+    );
+
     const model = genAI.getGenerativeModel({
       model: MODEL,
-      systemInstruction: getSystemInstructions(clientRow?.custom_instructions ?? null),
+      systemInstruction,
     });
 
     const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!clientRow?.custom_instructions });
@@ -181,7 +196,19 @@ export async function POST(request: Request) {
       generated.content_md = convertInternalLinksToRelative(generated.content_md, clientRow.domain);
     }
 
-    // Post-generation: score, review, and revise until 90+ (max 3 iterations)
+    const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
+      genAI,
+      clientRow?.custom_instructions ?? null,
+      {
+        contentType: post.content_type,
+        locale,
+        focusKeywordOrTopic: keyword,
+        hasInternalLinks: internalLinkCandidates.length > 0,
+        taskKind: "quality_loop",
+      },
+    );
+
+    // Post-generation: score, review, and revise until 90+ (see lib/agent/improve-to-90 MAX_ITERATIONS)
     const { content: improvedContent, score: seoScoreToSave } = await improvePostTo90(
       genAI,
       MODEL,
@@ -193,7 +220,8 @@ export async function POST(request: Request) {
         focus_keyword: generated.focus_keyword,
         faq_blocks: generated.faq_blocks,
       },
-      generated.seo_score ?? undefined
+      generated.seo_score ?? undefined,
+      { systemInstruction: qualitySystemInstruction }
     );
     generated.content_md = improvedContent.content_md;
     if (improvedContent.title) generated.title = improvedContent.title;
@@ -291,12 +319,14 @@ export async function POST(request: Request) {
     // ── Auto-generate cover image: graphic illustration (not photography), using brand book colours/font/voice
     let coverPublicUrl: string | null = null;
     try {
-      const coverSubject = generated.cover_image_description
+      const coverSubjectRaw = generated.cover_image_description
         ? generated.cover_image_description
         : `Editorial illustration for "${generated.focus_keyword}": rich, topic-specific visuals; distinctive composition.`;
+      const coverSubject = truncateCoverImageSubject(coverSubjectRaw);
       const headlineForCover =
         generated.cover_image_headline ??
         generated.title.trim().split(/\s+/).slice(0, 4).join(" ");
+      const coverHeadlineIsEnglishOnly = Boolean(generated.cover_image_headline?.trim());
       const rawBook = clientCtx.brandBook;
       const bb = typeof rawBook === "string" ? (() => { try { return JSON.parse(rawBook) as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } }; } catch { return null; } })() : rawBook;
       const visualIdentity = bb?.visualIdentity ?? null;
@@ -308,7 +338,17 @@ export async function POST(request: Request) {
         fontStyle: clientRow?.font_style ?? "modern",
         brandVoice: clientRow?.brand_voice ?? "professional",
       };
-      const coverPrompt = buildCoverPrompt(
+      const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+        genAI,
+        {
+          focusKeywordOrTopic: generated.focus_keyword || keyword,
+          contentType: post.content_type,
+          locale,
+          hasInternalLinks: internalLinkCandidates.length > 0,
+        },
+        clientRow?.custom_instructions ?? null,
+      )) ?? "";
+      const baseCoverPrompt = buildCoverPrompt(
         coverSubject,
         headlineForCover,
         brandStyle,
@@ -316,33 +356,35 @@ export async function POST(request: Request) {
           colorPalette: visualIdentity.colorPalette,
           aestheticStyle: visualIdentity.aestheticStyle,
           imageStyle: visualIdentity.imageStyle,
-        } : null
+        } : null,
+        { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly }
       );
 
-      const imgResponse = await imagenAI.models.generateContent({
-        model: "gemini-3.1-flash-image-preview",
-        contents: coverPrompt,
-        config: {
-          responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
-        },
+      const refParts = await loadCoverReferenceImageParts(admin, [
+        clientRow?.cover_reference_image_1,
+        clientRow?.cover_reference_image_2,
+        clientRow?.cover_reference_image_3,
+      ]);
+      const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
+        embedPrefix: coverEmbedPrefix,
+        basePrompt: baseCoverPrompt,
+        logLabel: "[generate] auto-cover",
+        referenceImages: refParts.length ? refParts : undefined,
+        guidelinesText: clientRow?.brand_guidelines_text ?? null,
       });
 
-      const parts = imgResponse.candidates?.[0]?.content?.parts ?? [];
-      for (const part of parts) {
-        if (part.inlineData?.data) {
-          const buffer = Buffer.from(part.inlineData.data, "base64");
-          const coverPath = `${post_id}/cover-${Date.now()}.jpg`;
-          const { error: uploadErr } = await admin.storage
-            .from("covers")
-            .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
+      if (buffer) {
+        const coverPath = `${post_id}/cover-${Date.now()}.jpg`;
+        const { error: uploadErr } = await admin.storage
+          .from("covers")
+          .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
 
-          if (!uploadErr) {
-            await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post_id);
-            const { data: urlData } = admin.storage.from("covers").getPublicUrl(coverPath);
-            coverPublicUrl = urlData.publicUrl;
-          }
-          break;
+        if (!uploadErr) {
+          await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post_id);
+          const { data: urlData } = admin.storage.from("covers").getPublicUrl(coverPath);
+          coverPublicUrl = urlData.publicUrl;
+        } else {
+          console.warn("[generate] Auto-cover upload failed (non-fatal):", uploadErr.message);
         }
       }
     } catch (coverErr) {

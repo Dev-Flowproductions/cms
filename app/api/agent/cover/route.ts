@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
+import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
+import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const genAIEmbed = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -29,6 +34,9 @@ export async function POST(request: Request) {
   let contentType = "image/jpeg";
   let source = "gemini";
 
+  let customInstructions: string | null = null;
+  let brandGuidelinesText: string | null = null;
+  let coverRefPaths: Array<string | null | undefined> = [];
   let brandStyle: {
     primaryColor: string;
     secondaryColor: string | null;
@@ -43,10 +51,19 @@ export async function POST(request: Request) {
   if (postRow?.author_id) {
     const { data: clientRow } = await admin
       .from("clients")
-      .select("domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book")
+      .select(
+        "domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
+      )
       .eq("user_id", postRow.author_id)
       .maybeSingle();
     if (clientRow) {
+      customInstructions = clientRow.custom_instructions ?? null;
+      brandGuidelinesText = clientRow.brand_guidelines_text ?? null;
+      coverRefPaths = [
+        clientRow.cover_reference_image_1,
+        clientRow.cover_reference_image_2,
+        clientRow.cover_reference_image_3,
+      ];
       const rawBook = clientRow.brand_book as {
         visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string };
       } | null | undefined;
@@ -76,33 +93,32 @@ export async function POST(request: Request) {
     }
   }
 
-  const coverSubject = `Editorial illustration for blog topic "${query}": rich, topic-specific visuals; distinctive composition.`;
+  const coverSubject = truncateCoverImageSubject(
+    `Editorial illustration for blog topic "${query}": rich, topic-specific visuals; distinctive composition.`,
+  );
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
   try {
-    const imagePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity);
-
-    const response = await genai.models.generateContent({
-      model: "gemini-3.1-flash-image-preview",
-      contents: imagePrompt,
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
-      },
+    const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+      genAIEmbed,
+      { focusKeywordOrTopic: query },
+      customInstructions,
+    )) ?? "";
+    const basePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity, {
+      headlineMayBeNonEnglish: true,
     });
-
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
-    let foundImage = false;
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        imageBuffer = Buffer.from(part.inlineData.data, "base64");
-        contentType = "image/jpeg";
-        source = "gemini";
-        foundImage = true;
-        break;
-      }
-    }
-    if (!foundImage) throw new Error("No image returned from Gemini");
+    const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
+    const buf = await generateCoverImageBufferWithEmbedFallback(genai, {
+      embedPrefix: coverEmbedPrefix,
+      basePrompt,
+      logLabel: "[cover]",
+      referenceImages: refParts.length ? refParts : undefined,
+      guidelinesText: brandGuidelinesText,
+    });
+    if (!buf) throw new Error("No image returned from Gemini");
+    imageBuffer = buf;
+    contentType = "image/jpeg";
+    source = "gemini";
 
   } catch (imgErr) {
     // ── Picsum fallback ────────────────────────────────────────────────────

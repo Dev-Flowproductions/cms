@@ -92,6 +92,19 @@
     "brand": {
       "title": "Brand",
       "description": "Update your company name, logo, colours and voice. Changes are used when generating content."
+    },
+    "brandAssets": {
+      "title": "Cover references & guidelines",
+      "description": "Upload up to three images that represent your brand visually. AI cover images will use them as style references. Add brand guidelines (PDF or text) so banners follow your rules.",
+      "referenceSlot": "Reference image {n}",
+      "empty": "No image",
+      "upload": "Upload",
+      "remove": "Remove",
+      "guidelinesTitle": "Brand guidelines",
+      "guidelinesHint": "PDF, TXT or Markdown. Text is extracted and applied when generating cover images.",
+      "noGuidelines": "No guidelines uploaded yet.",
+      "uploadGuidelines": "Upload guidelines",
+      "removeGuidelines": "Remove guidelines"
     }
   },
   "onboarding": {
@@ -205,7 +218,14 @@
     },
     "postsPage": {
       "filterAll": "All",
-      "noPosts": "No posts yet. Create one to get started."
+      "noPosts": "No posts yet. Create one to get started.",
+      "actions": "Actions",
+      "deletePost": "Delete",
+      "deletingPost": "Deleting…",
+      "confirmDeleteTitle": "Are you sure?",
+      "confirmDeletePost": "This will permanently delete \"{slug}\" and all locale versions from the CMS.",
+      "confirmNo": "No, keep it",
+      "confirmYes": "Yes, delete"
     },
     "editPostPage": {
       "postSettings": "Post settings",

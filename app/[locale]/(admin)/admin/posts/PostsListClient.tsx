@@ -1,8 +1,10 @@
 "use client";
 
-import { Link } from "@/lib/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import { ScoreBadge } from "@/components/ScoreDisplay";
+import { deletePost } from "@/app/[locale]/(admin)/admin/posts/actions";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 
@@ -53,11 +55,51 @@ export function PostsListClient({
   userId?: string;
 }) {
   const t = useTranslations("admin");
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; slug: string } | null>(null);
   const base = userId ? `/admin/posts?user=${userId}` : "/admin/posts";
   const statusSep = base.includes("?") ? "&" : "?";
 
+  useEffect(() => {
+    if (!confirmDelete) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setConfirmDelete(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete]);
+
+  async function performDelete(postId: string) {
+    setDeletingId(postId);
+    setError(null);
+    setConfirmDelete(null);
+    const result = await deletePost(postId);
+    if (result.error) {
+      setError(result.error);
+      setDeletingId(null);
+      return;
+    }
+    startTransition(() => router.refresh());
+    setDeletingId(null);
+  }
+
   return (
     <div>
+      {error && (
+        <div
+          className="mb-4 px-4 py-3 rounded-xl text-sm"
+          style={{
+            background: "rgba(255,92,106,0.08)",
+            border: "1px solid rgba(255,92,106,0.25)",
+            color: "var(--danger)",
+          }}
+        >
+          {error}
+        </div>
+      )}
       {/* Filter tabs */}
       <div className="mb-4 flex gap-2 flex-wrap">
         {[{ key: undefined, label: t("postsPage.filterAll") }, ...["draft", "review", "published"].map((s) => ({ key: s, label: s }))].map(({ key, label }) => {
@@ -85,7 +127,7 @@ export function PostsListClient({
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-              {[t("slug"), t("status"), "Webhook", t("primaryLocale"), t("author"), "Score", t("table.updated"), ""].map((h, i) => (
+              {[t("slug"), t("status"), "Webhook", t("primaryLocale"), t("author"), "Score", t("table.updated"), t("postsPage.actions")].map((h, i) => (
                 <th key={i}
                   className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "var(--text-muted)" }}
@@ -163,18 +205,42 @@ export function PostsListClient({
                       {new Date(post.updated_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/admin/posts/${post.id}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap hover:opacity-80"
-                        style={{
-                          background: "var(--accent)",
-                          color: "white",
-                        }}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        {t("editPost")}
-                      </Link>
+                      <div className="inline-flex items-center gap-2 flex-wrap justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete({ id: post.id, slug: post.slug })}
+                          disabled={deletingId === post.id || isPending || confirmDelete !== null}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap disabled:opacity-50"
+                          style={{
+                            background: "rgba(255,92,106,0.12)",
+                            color: "var(--danger)",
+                            border: "1px solid rgba(255,92,106,0.35)",
+                          }}
+                        >
+                          {deletingId === post.id ? (
+                            t("postsPage.deletingPost")
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              {t("postsPage.deletePost")}
+                            </>
+                          )}
+                        </button>
+                        <Link href={`/admin/posts/${post.id}`}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap hover:opacity-80"
+                          style={{
+                            background: "var(--accent)",
+                            color: "white",
+                          }}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          {t("editPost")}
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -183,6 +249,60 @@ export function PostsListClient({
           </tbody>
         </table>
       </div>
+
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.55)" }}
+          role="presentation"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl p-6 shadow-xl"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-post-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-post-title" className="text-lg font-semibold mb-2" style={{ color: "var(--text)" }}>
+              {t("postsPage.confirmDeleteTitle")}
+            </h2>
+            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+              {t("postsPage.confirmDeletePost", { slug: confirmDelete.slug })}
+            </p>
+            <div className="flex flex-wrap gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: "var(--surface-raised)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {t("postsPage.confirmNo")}
+              </button>
+              <button
+                type="button"
+                onClick={() => performDelete(confirmDelete.id)}
+                disabled={deletingId !== null}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                style={{
+                  background: "var(--danger)",
+                  color: "white",
+                }}
+              >
+                {t("postsPage.confirmYes")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

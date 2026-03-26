@@ -4,13 +4,13 @@
  */
 
 import type { GoogleGenerativeAI } from "@google/generative-ai";
-import type { ScoredContent, SeoScoreResult } from "./score-post";
+import { seoScoreAverage, type ScoredContent, type SeoScoreResult } from "./score-post";
 
 export type ReviewerOutput = {
   improvements: string[];
 };
 
-const REVIEWER_SYSTEM = `You are an expert SEO, AEO, and GEO editor. Output SPECIFIC, actionable improvements so the post reaches 90+ on ALL three dimensions.
+const REVIEWER_SYSTEM = `You are an expert SEO, AEO, and GEO editor. Output SPECIFIC, actionable improvements so the rounded average of SEO, AEO, and GEO scores reaches 90+ (that average is required to publish). Lift the lowest-scoring dimension(s) first — they drag the average down most.
 
 **SEO 90+ needs:** Keyword in title, intro, 2+ H2s, seo_title, meta. 5-8 variants.
 **AEO 90+ needs:** Data-backed core argument in intro. Definition "**Term** is...". 2+ H2s as questions with direct 40-60w answers. 5 FAQs. **Bold** claims. Named sources.
@@ -26,16 +26,19 @@ Each improvement must be EXACTLY editable — the reviser will apply it verbatim
 Output ONLY valid JSON: { "improvements": ["...", "...", ...] }
 6-10 improvements. Prioritize the LOWEST-scoring dimension first. Be specific: exact phrase to add, exact location, exact format.`;
 
+export type ReviewPostOptions = {
+  systemInstruction?: string;
+};
+
 export async function reviewPostFor90(
   genAI: GoogleGenerativeAI,
   modelName: string,
   content: ScoredContent,
-  currentScore: SeoScoreResult
+  currentScore: SeoScoreResult,
+  options?: ReviewPostOptions
 ): Promise<ReviewerOutput | null> {
-  const avg = Math.round((currentScore.seo + currentScore.aeo + currentScore.geo) / 3);
-  const prompt = `${REVIEWER_SYSTEM}
-
-This blog post scored SEO ${currentScore.seo}, AEO ${currentScore.aeo}, GEO ${currentScore.geo} (avg ${avg}). Goal: 90+ on all three.
+  const avg = seoScoreAverage(currentScore);
+  const userMessage = `This blog post scored SEO ${currentScore.seo}, AEO ${currentScore.aeo}, GEO ${currentScore.geo} (rounded avg ${avg}). Goal: bring that average to 90+ by fixing gaps — prioritize the weakest dimension(s).
 
 TITLE: ${content.title}
 SEO TITLE: ${content.seo_title}
@@ -48,13 +51,29 @@ ${content.content_md}
 
 FAQs: ${content.faq_blocks.length} questions
 
-List SPECIFIC improvements so this post reaches 90+ on ALL three. The dimension scoring LOWEST needs the most fixes — prioritize those first. Each item must be copy-paste actionable: exact text to add, exact location, exact replacement.
+List SPECIFIC improvements so the rounded average of the three scores reaches 90+. The dimension scoring LOWEST needs the most fixes — prioritize those first. Each item must be copy-paste actionable: exact text to add, exact location, exact replacement.
 
 Output ONLY this JSON:
 { "improvements": ["...", "...", ...] }`;
 
+  const prompt = options?.systemInstruction
+    ? userMessage
+    : `${REVIEWER_SYSTEM}
+
+${userMessage}`;
+
   try {
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel(
+      options?.systemInstruction
+        ? {
+            model: modelName,
+            systemInstruction: `${options.systemInstruction}
+
+---
+${REVIEWER_SYSTEM}`,
+          }
+        : { model: modelName }
+    );
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
     const clean = text

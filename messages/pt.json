@@ -92,6 +92,19 @@
     "brand": {
       "title": "Marca",
       "description": "Atualize o nome da empresa, logótipo, cores e voz. As alterações são usadas na geração de conteúdo."
+    },
+    "brandAssets": {
+      "title": "Referências de capa e diretrizes",
+      "description": "Carregue até três imagens que representem visualmente a sua marca. As capas geradas por IA usarão estas imagens como referência de estilo. Adicione diretrizes de marca (PDF ou texto) para as faixas seguirem as suas regras.",
+      "referenceSlot": "Imagem de referência {n}",
+      "empty": "Sem imagem",
+      "upload": "Carregar",
+      "remove": "Remover",
+      "guidelinesTitle": "Diretrizes de marca",
+      "guidelinesHint": "PDF, TXT ou Markdown. O texto é extraído e aplicado ao gerar imagens de capa.",
+      "noGuidelines": "Ainda não foram carregadas diretrizes.",
+      "uploadGuidelines": "Carregar diretrizes",
+      "removeGuidelines": "Remover diretrizes"
     }
   },
   "onboarding": {
@@ -204,7 +217,14 @@
     },
     "postsPage": {
       "filterAll": "Todos",
-      "noPosts": "Ainda sem artigos. Crie um para começar."
+      "noPosts": "Ainda sem artigos. Crie um para começar.",
+      "actions": "Ações",
+      "deletePost": "Eliminar",
+      "deletingPost": "A eliminar…",
+      "confirmDeleteTitle": "Tem a certeza?",
+      "confirmDeletePost": "Isto elimina permanentemente \"{slug}\" e todas as versões de idioma do CMS.",
+      "confirmNo": "Não, manter",
+      "confirmYes": "Sim, eliminar"
     },
     "editPostPage": {
       "postSettings": "Definições do artigo",

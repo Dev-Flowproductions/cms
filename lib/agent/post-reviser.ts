@@ -29,16 +29,19 @@ Rules:
 - When adding statistics: use real well-known sources (HubSpot, Gartner, McKinsey, Statista) and plausible figures. Do NOT invent numbers. If unsure, use "Industry reports indicate..." with a specific year.
 - seo_title: MAX 60 characters (hard). seo_description: MAX 160 characters (hard). Never exceed.`;
 
+export type RevisePostOptions = {
+  systemInstruction?: string;
+};
+
 export async function revisePost(
   genAI: GoogleGenerativeAI,
   modelName: string,
   content: ScoredContent,
-  review: ReviewerOutput
+  review: ReviewerOutput,
+  options?: RevisePostOptions
 ): Promise<RevisedContent | null> {
   const improvementsText = review.improvements.map((i, idx) => `${idx + 1}. ${i}`).join("\n");
-  const prompt = `${REVISER_SYSTEM}
-
-Apply these improvements to the blog post. Make targeted edits only.
+  const userMessage = `Apply these improvements to the blog post. Make targeted edits only.
 
 IMPROVEMENTS TO APPLY:
 ${improvementsText}
@@ -58,8 +61,24 @@ ${content.faq_blocks.map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer
 Output ONLY valid JSON. Include content_md (required, full revised body). Include title, seo_title, seo_description, faq_blocks ONLY if you changed them.
 Example: { "content_md": "...", "seo_title": "..." } or { "content_md": "..." }`;
 
+  const prompt = options?.systemInstruction
+    ? userMessage
+    : `${REVISER_SYSTEM}
+
+${userMessage}`;
+
   try {
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel(
+      options?.systemInstruction
+        ? {
+            model: modelName,
+            systemInstruction: `${options.systemInstruction}
+
+---
+${REVISER_SYSTEM}`,
+          }
+        : { model: modelName }
+    );
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
     const clean = text

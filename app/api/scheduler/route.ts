@@ -3,11 +3,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { getSystemInstructions, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
-import { buildCoverPrompt } from "@/lib/agent/cover-prompt";
+import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
+import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
+import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
@@ -30,7 +34,7 @@ const FREQUENCY_INTERVAL_MS: Record<string, number> = {
  *
  * Triggered by GET /api/scheduler/trigger (called on app traffic, rate-limited) or by manual POST with CRON_SECRET.
  * When run, it checks last_post_generated_at + frequency per client and only processes clients who are due.
- * With auto_publish + webhook, due clients get generated and published to their site. No cron required.
+ * With auto_publish + webhook, due clients get generated; posts publish only when SEO avg (SEO+AEO+GEO) ≥ 90, else status stays review. No cron required.
  *
  * For each client whose frequency interval has elapsed since last_post_generated_at,
  * this route:
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, webhook_event_format, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, webhook_event_format, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -217,6 +221,10 @@ type SchedulerClient = {
   font_style?: string | null;
   brand_voice?: string | null;
   custom_instructions?: string | null;
+  cover_reference_image_1?: string | null;
+  cover_reference_image_2?: string | null;
+  cover_reference_image_3?: string | null;
+  brand_guidelines_text?: string | null;
 };
 
 async function generatePostForClient(
@@ -348,9 +356,21 @@ async function generatePostForClient(
     "logo": { "@type": "ImageObject", "url": `https://${client.domain}/logo.png` },
   };
 
+  const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
+    genAI,
+    client.custom_instructions ?? null,
+    {
+      contentType: "hero",
+      locale: primaryLocale,
+      focusKeywordOrTopic: topicHint,
+      hasInternalLinks: internalLinkCandidates.length > 0,
+      taskKind: "post_generation",
+    },
+  );
+
   const geminiModel = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: getSystemInstructions(client.custom_instructions ?? null),
+    systemInstruction,
     generationConfig: {
       temperature: 0.4,
       maxOutputTokens: 8192,
@@ -415,7 +435,19 @@ async function generatePostForClient(
   );
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
 
-  // Post-generation: score, review, and revise until 90+ (max 2 iterations)
+  const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
+    genAI,
+    client.custom_instructions ?? null,
+    {
+      contentType: "hero",
+      locale: primaryLocale,
+      focusKeywordOrTopic: topicHint,
+      hasInternalLinks: internalLinkCandidates.length > 0,
+      taskKind: "quality_loop",
+    },
+  );
+
+  // Post-generation: score, review, and revise until 90+ (see improve-to-90 MAX_ITERATIONS)
   const { content: improvedContent, score: finalScore } = await improvePostTo90(
     genAI,
     MODEL,
@@ -427,7 +459,8 @@ async function generatePostForClient(
       focus_keyword: primaryContent.focus_keyword,
       faq_blocks: primaryContent.faq_blocks,
     },
-    primaryContent.seo_score ?? undefined
+    primaryContent.seo_score ?? undefined,
+    { systemInstruction: qualitySystemInstruction }
   );
   primaryContent.content_md = improvedContent.content_md;
   if (improvedContent.title) primaryContent.title = improvedContent.title;
@@ -543,6 +576,27 @@ async function generatePostForClient(
   }
 
   // ── STEP 2: Translate to other locales (EN, FR) ─────────────────────────────
+  const translationSystemInstruction = await resolveSystemInstructionsWithEmbeddings(
+    genAI,
+    client.custom_instructions ?? null,
+    {
+      contentType: "hero",
+      locale: "English and French (translate from Portuguese)",
+      focusKeywordOrTopic: topicHint,
+      hasInternalLinks: internalLinkCandidates.length > 0,
+      taskKind: "translation",
+    },
+  );
+  const geminiTranslateModel = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: translationSystemInstruction,
+    generationConfig: {
+      temperature: 0.25,
+      maxOutputTokens: 8192,
+      topP: 0.95,
+    },
+  });
+
   const translationLocales = ALL_LOCALES.filter((l) => l !== primaryLocale);
 
   for (const locale of translationLocales) {
@@ -598,7 +652,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const result = await geminiModel.generateContent(translationPrompt);
+        const result = await geminiTranslateModel.generateContent(translationPrompt);
         const text = result.response.text().trim();
         const clean = text
           .replace(/^```json\s*/i, "")
@@ -684,9 +738,10 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
   // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
-    const coverSubject = coverImageDescription
+    const coverSubjectRaw = coverImageDescription
       ? coverImageDescription
       : `Editorial illustration for "${titleForCoverPrompt}": rich, topic-specific visuals; distinctive composition for this article.`;
+    const coverSubject = truncateCoverImageSubject(coverSubjectRaw);
 
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity ?? null;
     const brandStyle = {
@@ -700,7 +755,18 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     const headlineForCover =
       primaryContent.cover_image_headline ??
       primaryContent.title.trim().split(/\s+/).slice(0, 4).join(" ");
-    const coverPrompt = buildCoverPrompt(
+    const coverHeadlineIsEnglishOnly = Boolean(primaryContent.cover_image_headline?.trim());
+    const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+      genAI,
+      {
+        focusKeywordOrTopic: primaryContent.focus_keyword || titleForCoverPrompt,
+        contentType: "hero",
+        locale: primaryLocale,
+        hasInternalLinks: internalLinkCandidates.length > 0,
+      },
+      client.custom_instructions ?? null,
+    )) ?? "";
+    const baseCoverPrompt = buildCoverPrompt(
       coverSubject,
       headlineForCover,
       brandStyle,
@@ -708,30 +774,32 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         colorPalette: visualIdentity.colorPalette,
         aestheticStyle: visualIdentity.aestheticStyle,
         imageStyle: visualIdentity.imageStyle,
-      } : null
+      } : null,
+      { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly }
     );
-    const imgResponse = await imagenAI.models.generateContent({
-      model: "gemini-3.1-flash-image-preview",
-      contents: coverPrompt,
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
-      },
+    const refParts = await loadCoverReferenceImageParts(admin, [
+      client.cover_reference_image_1,
+      client.cover_reference_image_2,
+      client.cover_reference_image_3,
+    ]);
+    const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
+      embedPrefix: coverEmbedPrefix,
+      basePrompt: baseCoverPrompt,
+      logLabel: `[scheduler] cover ${client.domain}`,
+      referenceImages: refParts.length ? refParts : undefined,
+      guidelinesText: client.brand_guidelines_text ?? null,
     });
 
-    const parts = imgResponse.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        const buffer = Buffer.from(part.inlineData.data, "base64");
-        const coverPath = `${post.id}/cover-${Date.now()}.jpg`;
-        const { error: uploadErr } = await admin.storage
-          .from("covers")
-          .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
+    if (buffer) {
+      const coverPath = `${post.id}/cover-${Date.now()}.jpg`;
+      const { error: uploadErr } = await admin.storage
+        .from("covers")
+        .upload(coverPath, buffer, { contentType: "image/jpeg", upsert: true });
 
-        if (!uploadErr) {
-          await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
-        }
-        break;
+      if (!uploadErr) {
+        await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
+      } else {
+        console.warn(`[scheduler] Cover upload failed for ${client.domain} (non-fatal):`, uploadErr.message);
       }
     }
   } catch (coverErr) {
@@ -739,16 +807,31 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   }
 
 
-  // All posts are published directly (no review queue). Optionally call webhook if configured.
-  await admin.from("posts").update({
-    status: "published",
-    published_at: new Date().toISOString(),
-    webhook_status: client.webhook_url ? "pending" : null,
-    webhook_sent_at: client.webhook_url ? new Date().toISOString() : null,
-    webhook_error: null,
-  }).eq("id", post.id);
+  const canAutoPublish = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
 
-  if (client.webhook_url) {
+  if (canAutoPublish) {
+    await admin.from("posts").update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      webhook_status: client.webhook_url ? "pending" : null,
+      webhook_sent_at: client.webhook_url ? new Date().toISOString() : null,
+      webhook_error: null,
+    }).eq("id", post.id);
+  } else {
+    const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
+    console.warn(
+      `[scheduler] Post ${post.id} left in review: SEO avg ${avg ?? "n/a"} is below 90 or score missing (${client.domain})`,
+    );
+    await admin.from("posts").update({
+      status: "review",
+      published_at: null,
+      webhook_status: null,
+      webhook_sent_at: null,
+      webhook_error: null,
+    }).eq("id", post.id);
+  }
+
+  if (canAutoPublish && client.webhook_url) {
     try {
       const { data: freshPost } = await admin
         .from("posts")
@@ -875,7 +958,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     last_generation_error_at: null,
   }).eq("id", client.id);
 
-  console.log(`[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id}`);
+  console.log(
+    `[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id}${canAutoPublish ? " (published)" : " (review — avg < 90)"}`,
+  );
   return post.id;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

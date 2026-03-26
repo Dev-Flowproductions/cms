@@ -38,6 +38,11 @@ type Settings = {
   brand_voice?: string | null;
   last_generation_error?: string | null;
   last_generation_error_at?: string | null;
+  cover_reference_image_1?: string | null;
+  cover_reference_image_2?: string | null;
+  cover_reference_image_3?: string | null;
+  brand_guidelines_storage_path?: string | null;
+  brand_guidelines_text?: string | null;
 };
 
 const inputStyle = {
@@ -92,6 +97,10 @@ export function AccountSettingsCard({
   const [brandSaved, setBrandSaved] = useState(false);
   const [brandError, setBrandError] = useState<string | null>(null);
 
+  const [brandAssetsBusy, setBrandAssetsBusy] = useState(false);
+  const [brandAssetsError, setBrandAssetsError] = useState<string | null>(null);
+  const [brandAssetsSaved, setBrandAssetsSaved] = useState(false);
+
   const [domain, setDomain] = useState(settings?.domain ?? "");
   const [domainSaving, setDomainSaving] = useState(false);
   const [domainSaved, setDomainSaved] = useState(false);
@@ -113,6 +122,10 @@ export function AccountSettingsCard({
   ];
 
   if (!settings) return null;
+
+  const supabasePublic = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const brandAssetUrl = (path: string | null | undefined) =>
+    path && supabasePublic ? `${supabasePublic}/storage/v1/object/public/brand-assets/${path}` : null;
 
   const googleConnected = !!settings.google_connected_at;
   const hasWebhook = !!settings.webhook_url;
@@ -176,6 +189,24 @@ export function AccountSettingsCard({
     setLogoFile(null);
     router.refresh();
     setTimeout(() => setBrandSaved(false), 3000);
+  }
+
+  async function postBrandAsset(formData: FormData) {
+    setBrandAssetsBusy(true);
+    setBrandAssetsError(null);
+    setBrandAssetsSaved(false);
+    try {
+      const res = await fetch("/api/settings/brand-assets", { method: "POST", body: formData });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      setBrandAssetsSaved(true);
+      router.refresh();
+      setTimeout(() => setBrandAssetsSaved(false), 3000);
+    } catch (e) {
+      setBrandAssetsError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBrandAssetsBusy(false);
+    }
   }
 
   return (
@@ -715,6 +746,157 @@ export function AccountSettingsCard({
               )}
             </div>
           </form>
+        </div>
+
+        {/* Cover references + guidelines (AI banners) */}
+        <div
+          className="rounded-xl p-5 space-y-5"
+          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {t("brandAssets.title")}
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+            {t("brandAssets.description")}
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {([1, 2, 3] as const).map((slot) => {
+              const path =
+                slot === 1
+                  ? settings.cover_reference_image_1
+                  : slot === 2
+                    ? settings.cover_reference_image_2
+                    : settings.cover_reference_image_3;
+              const src = brandAssetUrl(path ?? null);
+              return (
+                <div key={slot} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                    {t("brandAssets.referenceSlot", { n: slot })}
+                  </p>
+                  <div
+                    className="aspect-video rounded-xl overflow-hidden flex items-center justify-center"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                  >
+                    {src ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.empty")}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={brandAssetsBusy}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append("action", "coverRef");
+                          fd.append("slot", String(slot));
+                          fd.append("file", file);
+                          await postBrandAsset(fd);
+                        }}
+                      />
+                      <span
+                        className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
+                        style={{ background: "var(--accent)", color: "white" }}
+                      >
+                        {t("brandAssets.upload")}
+                      </span>
+                    </label>
+                    {path && (
+                      <button
+                        type="button"
+                        disabled={brandAssetsBusy}
+                        onClick={async () => {
+                          const fd = new FormData();
+                          fd.append("action", "removeCoverRef");
+                          fd.append("slot", String(slot));
+                          await postBrandAsset(fd);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                      >
+                        {t("brandAssets.remove")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              {t("brandAssets.guidelinesTitle")}
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.guidelinesHint")}</p>
+            {settings.brand_guidelines_text?.trim() ? (
+              <pre
+                className="text-[11px] p-3 rounded-xl max-h-40 overflow-auto whitespace-pre-wrap"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+              >
+                {settings.brand_guidelines_text.slice(0, 2000)}
+                {settings.brand_guidelines_text.length > 2000 ? "…" : ""}
+              </pre>
+            ) : (
+              <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.noGuidelines")}</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,.txt,.md,text/plain,application/pdf"
+                  className="hidden"
+                  disabled={brandAssetsBusy}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    const fd = new FormData();
+                    fd.append("action", "guidelines");
+                    fd.append("file", file);
+                    await postBrandAsset(fd);
+                  }}
+                />
+                <span
+                  className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: "var(--accent)", color: "white" }}
+                >
+                  {t("brandAssets.uploadGuidelines")}
+                </span>
+              </label>
+              {settings.brand_guidelines_storage_path && (
+                <button
+                  type="button"
+                  disabled={brandAssetsBusy}
+                  onClick={async () => {
+                    const fd = new FormData();
+                    fd.append("action", "removeGuidelines");
+                    await postBrandAsset(fd);
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                >
+                  {t("brandAssets.removeGuidelines")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {brandAssetsError && <p className="text-sm" style={{ color: "var(--danger)" }}>{brandAssetsError}</p>}
+          {brandAssetsSaved && (
+            <p className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</p>
+          )}
         </div>
 
       </div>

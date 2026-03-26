@@ -186,13 +186,16 @@ export type ClientRow = {
   custom_instructions?: string | null;
 };
 
+const ADMIN_CLIENT_ROW_SELECT =
+  "id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
+
 export async function listUsers(): Promise<ClientRow[]> {
   await requireAdmin();
   const admin = createAdminClient();
 
   const { data, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)")
+    .select(ADMIN_CLIENT_ROW_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -208,6 +211,22 @@ export async function listUsers(): Promise<ClientRow[]> {
   );
 
   return rows.map((r) => ({ ...r, email: emailMap[r.user_id] ?? "" }));
+}
+
+/** Single client row for admin user detail page (by auth user_id). */
+export async function getClientRowByUserId(userId: string): Promise<ClientRow | null> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("clients")
+    .select(ADMIN_CLIENT_ROW_SELECT)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const row = data as ClientRow;
+  const { data: u } = await admin.auth.admin.getUserById(userId);
+  return { ...row, email: u?.user?.email ?? "" };
 }
 
 export async function getClientSettings(userId: string) {

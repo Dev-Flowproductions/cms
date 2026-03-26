@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
+import { normalizeAdminAssetAction, resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
+import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
+import { MAX_GUIDELINES_FILE_BYTES, MAX_GUIDELINES_FILE_MB } from "@/lib/brand/guidelines-limits";
 
 const BUCKET = "brand-assets";
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const MAX_GUIDE_BYTES = 8 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -17,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData();
-  const action = formData.get("action")?.toString();
+  const actionKey = normalizeAdminAssetAction(await getMultipartSmallTextField(formData, "action"));
 
   const admin = createAdminClient();
 
@@ -38,8 +40,8 @@ export async function POST(request: Request) {
     await admin.storage.from(BUCKET).remove([path.trim()]);
   }
 
-  if (action === "removeCoverRef") {
-    const slot = Number(formData.get("slot"));
+  if (actionKey === "removecoverref") {
+    const slot = Number(await getMultipartSmallTextField(formData, "slot", 8));
     if (slot !== 1 && slot !== 2 && slot !== 3) {
       return NextResponse.json({ error: "Invalid slot" }, { status: 400 });
     }
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   }
 
-  if (action === "removeGuidelines") {
+  if (actionKey === "removeguidelines") {
     await removeStoragePath(clientRow.brand_guidelines_storage_path);
     const { error } = await supabase
       .from("clients")
@@ -71,8 +73,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   }
 
-  if (action === "coverRef") {
-    const slot = Number(formData.get("slot"));
+  if (actionKey === "coverref") {
+    const slot = Number(await getMultipartSmallTextField(formData, "slot", 8));
     if (slot !== 1 && slot !== 2 && slot !== 3) {
       return NextResponse.json({ error: "Invalid slot" }, { status: 400 });
     }
@@ -119,38 +121,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, path });
   }
 
-  if (action === "guidelines") {
-    const file = formData.get("file") as File | null;
-    if (!file?.size) {
+  if (actionKey === "guidelines") {
+    const blob = getMultipartBlob(formData, "file", "upload");
+    if (!blob) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (file.size > MAX_GUIDE_BYTES) {
-      return NextResponse.json({ error: "File too large (max 8MB)" }, { status: 400 });
+    if (blob.size > MAX_GUIDELINES_FILE_BYTES) {
+      return NextResponse.json(
+        { error: `File too large (max ${MAX_GUIDELINES_FILE_MB}MB)` },
+        { status: 400 },
+      );
     }
 
-    const mime = file.type || "application/octet-stream";
-    const lower = file.name.toLowerCase();
-    const ok =
-      mime.includes("pdf") ||
-      mime.includes("text/plain") ||
-      mime.includes("markdown") ||
-      lower.endsWith(".md") ||
-      lower.endsWith(".txt") ||
-      lower.endsWith(".pdf");
-    if (!ok) {
-      return NextResponse.json({ error: "Use PDF, TXT, or Markdown" }, { status: 400 });
+    const buf = Buffer.from(await blob.arrayBuffer());
+    const uploadName = blob instanceof File ? blob.name : "";
+    const resolved = resolveGuidelinesBuffer(uploadName, blob.type, buf);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
 
     await removeStoragePath(clientRow.brand_guidelines_storage_path);
 
-    const buf = Buffer.from(await file.arrayBuffer());
-    const ext = lower.endsWith(".pdf") ? "pdf" : lower.endsWith(".md") ? "md" : "txt";
-    const path = `${user.id}/guidelines-${Date.now()}.${ext}`;
+    const path = `${user.id}/guidelines-${Date.now()}.${resolved.ext}`;
+    const extractName =
+      uploadName && /\.(pdf|md|markdown|txt|text)$/i.test(uploadName)
+        ? uploadName
+        : `guidelines.${resolved.ext}`;
 
     const { error: upErr } = await admin.storage.from(BUCKET).upload(path, buf, {
       cacheControl: "3600",
       upsert: true,
-      contentType: mime,
+      contentType: resolved.contentType,
     });
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
 
     let extracted = "";
     try {
-      extracted = await extractBrandGuidelinesText(buf, mime, file.name);
+      extracted = await extractBrandGuidelinesText(buf, resolved.contentType, extractName);
     } catch (e) {
       console.warn("[brand-assets] Guidelines extract failed:", e);
       extracted = "";

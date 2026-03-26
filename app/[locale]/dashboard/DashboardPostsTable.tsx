@@ -71,15 +71,15 @@ export function DashboardPostsTable({
       {/* Section header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+          <h2 className="text-base font-semibold" style={{ color: "var(--adm-on-surface)" }}>
             {isAdmin ? t("dashboard.allPosts") : t("dashboard.myPosts")}
           </h2>
           {posts.length > 0 && (
             <span
               className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{
-                background: "rgba(124,92,252,0.12)",
-                color: "var(--accent)",
+                background: "var(--adm-primary-soft-bg)",
+                color: "var(--adm-primary)",
               }}
             >
               {posts.length}
@@ -91,9 +91,9 @@ export function DashboardPostsTable({
             href="/dashboard/new"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
             style={{
-              background: "var(--accent)",
-              color: "white",
-              boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+              background: "var(--adm-primary-container)",
+              color: "#fff",
+              boxShadow: "var(--adm-cta-glow-shadow)",
             }}
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -108,9 +108,9 @@ export function DashboardPostsTable({
         <div
           className="mb-5 px-4 py-3 rounded-xl text-sm"
           style={{
-            background: "rgba(255,92,106,0.08)",
-            border: "1px solid rgba(255,92,106,0.25)",
-            color: "var(--danger)",
+            background: "color-mix(in srgb, var(--adm-error) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--adm-error) 35%, transparent)",
+            color: "var(--adm-error)",
           }}
         >
           {error}
@@ -121,22 +121,30 @@ export function DashboardPostsTable({
         <div
           className="flex flex-col items-center justify-center py-20 rounded-2xl text-center"
           style={{
-            border: "1.5px dashed var(--border)",
-            background: "var(--surface)",
+            border: "1.5px dashed var(--adm-outline-variant)",
+            background: "var(--adm-surface-high)",
           }}
         >
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "rgba(124,92,252,0.1)", border: "1px solid rgba(124,92,252,0.2)" }}
+            style={{
+              background: "var(--adm-primary-soft-bg)",
+              border: "1px solid var(--adm-accent-border)",
+            }}
           >
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M4 6.5h14M4 11h9M4 15.5h5.5" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" />
+              <path
+                d="M4 6.5h14M4 11h9M4 15.5h5.5"
+                stroke="var(--adm-primary-container)"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <p className="text-sm mb-1 font-medium" style={{ color: "var(--text)" }}>
+          <p className="text-sm mb-1 font-medium" style={{ color: "var(--adm-on-surface)" }}>
             {t("dashboard.noPostsYet")}
           </p>
-          <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs mb-5" style={{ color: "var(--adm-on-variant)" }}>
             {isAdmin ? t("dashboard.postsAutoCreated") : t("dashboard.postsEmptyManualHint")}
           </p>
           {!isAdmin && (
@@ -144,9 +152,9 @@ export function DashboardPostsTable({
               href="/dashboard/new"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={{
-                background: "var(--accent)",
-                color: "white",
-                boxShadow: "0 0 16px rgba(124,92,252,0.2)",
+                background: "var(--adm-primary-container)",
+                color: "#fff",
+                boxShadow: "var(--adm-cta-glow-shadow)",
               }}
             >
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -160,48 +168,48 @@ export function DashboardPostsTable({
         <div
           className="rounded-2xl overflow-hidden"
           style={{
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
+            border: "1px solid var(--adm-border-subtle)",
+            background: "var(--adm-surface-high)",
           }}
         >
           <table className="min-w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <tr style={{ borderBottom: "1px solid var(--adm-border-subtle)" }}>
                 {isAdmin && (
                   <th
                     className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
-                    style={{ color: "var(--text-muted)" }}
+                    style={{ color: "var(--adm-on-variant)" }}
                   >
                     {t("dashboard.author")}
                   </th>
                 )}
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--adm-on-variant)" }}
                 >
                   {t("dashboard.table.slug")}
                 </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--adm-on-variant)" }}
                 >
                   {t("admin.status")}
                 </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden md:table-cell"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--adm-on-variant)" }}
                 >
                   {t("admin.primaryLocale")}
                 </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--adm-on-variant)" }}
                 >
                   Score
                 </th>
                 <th
                   className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest hidden sm:table-cell"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ color: "var(--adm-on-variant)" }}
                 >
                   {t("dashboard.table.updated")}
                 </th>
@@ -219,9 +227,9 @@ export function DashboardPostsTable({
                 return (
                   <tr
                     key={post.id}
-                    className="group transition-colors"
+                    className="group transition-colors hover:[background:var(--adm-surface-hover)]"
                     style={{
-                      borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+                      borderBottom: isLast ? "none" : "1px solid var(--adm-border-subtle)",
                     }}
                   >
                     {isAdmin && (
@@ -231,29 +239,29 @@ export function DashboardPostsTable({
                             <span
                               className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold uppercase flex-shrink-0"
                               style={{
-                                background: "rgba(124,92,252,0.12)",
-                                color: "var(--accent)",
-                                border: "1px solid rgba(124,92,252,0.2)",
+                                background: "var(--adm-primary-soft-bg)",
+                                color: "var(--adm-primary)",
+                                border: "1px solid var(--adm-accent-border)",
                               }}
                             >
                               {authorName[0]}
                             </span>
-                            <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                            <span className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>
                               {authorName}
                             </span>
                           </span>
                         ) : (
-                          <span className="text-xs italic" style={{ color: "var(--text-faint)" }}>
+                          <span
+                            className="text-xs italic"
+                            style={{ color: "var(--adm-on-variant)", opacity: 0.75 }}
+                          >
                             {t("dashboard.table.unknownAuthor")}
                           </span>
                         )}
                       </td>
                     )}
                     <td className="px-6 py-4 max-w-[220px] truncate">
-                      <span
-                        className="text-xs font-mono"
-                        style={{ color: "var(--text)" }}
-                      >
+                      <span className="text-xs font-mono" style={{ color: "var(--adm-on-surface)" }}>
                         {post.slug}
                       </span>
                     </td>
@@ -271,7 +279,7 @@ export function DashboardPostsTable({
                     </td>
                     <td
                       className="px-6 py-4 text-xs uppercase hidden md:table-cell"
-                      style={{ color: "var(--text-muted)" }}
+                      style={{ color: "var(--adm-on-variant)" }}
                     >
                       {post.primary_locale}
                     </td>
@@ -281,12 +289,14 @@ export function DashboardPostsTable({
                       {score ? (
                         <ScoreDots score={score} />
                       ) : (
-                        <span className="text-xs" style={{ color: "var(--text-faint)" }}>—</span>
+                        <span className="text-xs" style={{ color: "var(--adm-on-variant)", opacity: 0.7 }}>
+                          —
+                        </span>
                       )}
                     </td>
                     <td
                       className="px-6 py-4 text-xs whitespace-nowrap hidden sm:table-cell"
-                      style={{ color: "var(--text-muted)" }}
+                      style={{ color: "var(--adm-on-variant)" }}
                     >
                       {new Date(post.updated_at).toLocaleDateString(undefined, {
                         day: "numeric",
@@ -297,18 +307,19 @@ export function DashboardPostsTable({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3 justify-end">
                         <Link
-                          href={`/admin/posts/${post.id}`}
-                          className="text-xs font-semibold transition-colors"
-                          style={{ color: "var(--accent)" }}
+                          href={isAdmin ? `/admin/posts/${post.id}` : `/dashboard/posts/${post.id}`}
+                          className="text-xs font-semibold transition-colors hover:opacity-90"
+                          style={{ color: "var(--adm-primary)" }}
                         >
                           {t("common.edit")}
                         </Link>
                         {!isAdmin && (
                           <button
+                            type="button"
                             onClick={() => handleDelete(post.id, post.slug)}
                             disabled={isDeleting || isPending}
-                            className="text-xs font-semibold transition-colors disabled:opacity-40 hover:text-danger"
-                            style={{ color: "var(--text-muted)" }}
+                            className="text-xs font-semibold transition-colors disabled:opacity-40 hover:[color:var(--adm-error)]"
+                            style={{ color: "var(--adm-on-variant)" }}
                           >
                             {isDeleting ? "…" : t("common.delete")}
                           </button>

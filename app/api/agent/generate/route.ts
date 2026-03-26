@@ -7,6 +7,7 @@ import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/ins
 import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
+import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
@@ -338,6 +339,15 @@ export async function POST(request: Request) {
         fontStyle: clientRow?.font_style ?? "modern",
         brandVoice: clientRow?.brand_voice ?? "professional",
       };
+      const refParts = await loadCoverReferenceImageParts(admin, [
+        clientRow?.cover_reference_image_1,
+        clientRow?.cover_reference_image_2,
+        clientRow?.cover_reference_image_3,
+      ]);
+      const referenceVisionBrief =
+        refParts.length > 0
+          ? await buildCoverReferenceVisionBriefWithTimeout(genAI, refParts, "[generate] ref-vision")
+          : null;
       const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
         genAI,
         {
@@ -347,6 +357,7 @@ export async function POST(request: Request) {
           hasInternalLinks: internalLinkCandidates.length > 0,
         },
         clientRow?.custom_instructions ?? null,
+        referenceVisionBrief,
       )) ?? "";
       const baseCoverPrompt = buildCoverPrompt(
         coverSubject,
@@ -360,16 +371,12 @@ export async function POST(request: Request) {
         { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly }
       );
 
-      const refParts = await loadCoverReferenceImageParts(admin, [
-        clientRow?.cover_reference_image_1,
-        clientRow?.cover_reference_image_2,
-        clientRow?.cover_reference_image_3,
-      ]);
       const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
         embedPrefix: coverEmbedPrefix,
         basePrompt: baseCoverPrompt,
         logLabel: "[generate] auto-cover",
         referenceImages: refParts.length ? refParts : undefined,
+        referenceVisionBrief,
         guidelinesText: clientRow?.brand_guidelines_text ?? null,
       });
 

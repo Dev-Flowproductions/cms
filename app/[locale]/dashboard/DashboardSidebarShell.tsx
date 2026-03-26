@@ -48,9 +48,9 @@ export function DashboardSidebarShell({ children }: { children: React.ReactNode 
 
       <aside
         className={[
-          "flex h-screen flex-col overflow-y-auto",
-          "hidden lg:sticky lg:top-0 lg:flex lg:w-64 lg:flex-shrink-0",
-          open ? "!fixed left-0 top-0 z-50 !flex w-72" : "",
+          "flex min-h-screen flex-col overflow-x-hidden overflow-y-hidden lg:min-h-0 lg:h-full",
+          "hidden lg:sticky lg:top-0 lg:flex lg:w-64 lg:max-h-screen lg:flex-shrink-0",
+          open ? "!fixed left-0 top-0 z-50 !flex h-screen min-h-screen w-72" : "",
         ].join(" ")}
         style={{
           background: "var(--adm-sidebar)",

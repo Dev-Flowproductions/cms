@@ -278,9 +278,6 @@ export function EditPostForm({
     marginBottom: "1rem",
   };
 
-  const primaryCtaShadow = "0 0 14px rgba(104, 57, 234, 0.35)";
-  const primaryGradient = "linear-gradient(135deg, #6839ea, #8b6bef)";
-
   return (
     <div className="space-y-6">
       <Link
@@ -308,7 +305,7 @@ export function EditPostForm({
             <div className="flex items-start gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(104, 57, 234, 0.12)" }}
+                style={{ background: "var(--adm-primary-soft-bg)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--adm-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -329,9 +326,9 @@ export function EditPostForm({
                 disabled={publishing}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                 style={{
-                  background: primaryGradient,
+                  background: "var(--adm-gradient-cta)",
                   color: "#fff",
-                  boxShadow: primaryCtaShadow,
+                  boxShadow: "var(--adm-cta-glow-shadow)",
                 }}
               >
                 {publishing ? "Publishing…" : "Yes, publish now"}
@@ -504,7 +501,7 @@ export function EditPostForm({
               style={{
                 background: "var(--adm-primary-container)",
                 color: "#fff",
-                boxShadow: primaryCtaShadow,
+                boxShadow: "var(--adm-cta-glow-shadow)",
               }}
             >
               {labels.save}
@@ -523,10 +520,10 @@ export function EditPostForm({
                       ? "var(--adm-surface-highest)"
                       : post.webhook_status === "failed"
                         ? "var(--adm-error)"
-                        : primaryGradient,
+                        : "var(--adm-gradient-cta)",
                     color: publishing ? "var(--adm-on-variant)" : "white",
                     border: publishing ? "1px solid var(--adm-border-subtle)" : "none",
-                    boxShadow: publishing ? "none" : post.webhook_status === "failed" ? "0 0 12px rgba(239,68,68,0.3)" : primaryCtaShadow,
+                    boxShadow: publishing ? "none" : post.webhook_status === "failed" ? "0 0 12px rgba(239,68,68,0.3)" : "var(--adm-cta-glow-shadow)",
                   }}
                 >
                   {publishing ? (
@@ -622,7 +619,7 @@ export function EditPostForm({
                   background: activeLocale === l ? "var(--adm-primary-container)" : "var(--adm-surface-highest)",
                   color: activeLocale === l ? "#fff" : "var(--adm-on-variant)",
                   border: activeLocale === l ? "none" : "1px solid var(--adm-outline-variant)",
-                  boxShadow: activeLocale === l ? primaryCtaShadow : "none",
+                  boxShadow: activeLocale === l ? "var(--adm-cta-glow-shadow)" : "none",
                 }}
               >
                 {l}
@@ -640,10 +637,10 @@ export function EditPostForm({
               disabled={generating || isPending}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
               style={{
-                background: generating ? "var(--adm-surface-highest)" : primaryGradient,
+                background: generating ? "var(--adm-surface-highest)" : "var(--adm-gradient-cta)",
                 color: "white",
                 border: generating ? "1px solid var(--adm-border-subtle)" : "none",
-                boxShadow: generating ? "none" : primaryCtaShadow,
+                boxShadow: generating ? "none" : "var(--adm-cta-glow-shadow)",
               }}
             >
               {generating ? (
@@ -804,7 +801,7 @@ export function EditPostForm({
             style={{
               background: "var(--adm-primary-container)",
               color: "#fff",
-              boxShadow: primaryCtaShadow,
+              boxShadow: "var(--adm-cta-glow-shadow)",
             }}
           >
             {labels.save}

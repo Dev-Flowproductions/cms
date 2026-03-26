@@ -82,7 +82,7 @@ function PostReviewCard({ post, onDone }: { post: Post; onDone: () => void }) {
       <div className="px-6 py-4 flex items-center gap-3 flex-wrap">
         {/* Read / Edit */}
         <Link
-          href={`/admin/posts/${post.id}`}
+          href={`/dashboard/posts/${post.id}`}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
           style={{
             background: "var(--surface-raised)",

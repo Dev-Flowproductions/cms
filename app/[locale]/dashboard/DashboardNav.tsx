@@ -74,7 +74,7 @@ export function DashboardNav() {
   return (
     <nav className="space-y-1" aria-label={t("navLabel")}>
       <p
-        className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest"
+        className="pb-2 text-[10px] font-bold uppercase tracking-widest"
         style={{ color: "var(--adm-on-variant)" }}
       >
         {t("navLabel")}
@@ -86,7 +86,7 @@ export function DashboardNav() {
           <Link
             key={item.href}
             href={item.href}
-            className="mx-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors"
+            className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors"
             style={{
               background: isActive ? "var(--adm-surface-high)" : "transparent",
               color: isActive ? "var(--adm-primary)" : "var(--adm-on-variant)",

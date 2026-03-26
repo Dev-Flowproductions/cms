@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireTeamMember } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { AdminLogoutButton } from "./AdminLogoutButton";
@@ -7,6 +8,19 @@ import { AppLogo } from "@/components/AppLogo";
 import { AdminNav } from "./AdminNav";
 import { AdminTopBar } from "./AdminTopBar";
 import "./admin-shell.css";
+
+function AdminTopBarFallback() {
+  return (
+    <header
+      className="fixed right-0 top-0 z-40 h-14 w-full border-b lg:left-64 lg:h-16 lg:w-[calc(100%-16rem)]"
+      style={{
+        background: "var(--adm-topbar-bg)",
+        borderColor: "var(--adm-border-subtle)",
+      }}
+      aria-hidden
+    />
+  );
+}
 
 export default async function AdminLayout({
   children,
@@ -45,19 +59,21 @@ export default async function AdminLayout({
           <AdminNav />
         </div>
 
-        <div className="mt-auto space-y-1 px-4 pb-6 pt-4" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
+        <div className="mt-auto space-y-3 px-4 pb-6 pt-4" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
           <AdminLogoutButton />
         </div>
       </AdminSidebarShell>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AdminTopBar />
-        <main className="relative min-h-screen flex-1 overflow-y-auto pt-14 lg:pt-16">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <Suspense fallback={<AdminTopBarFallback />}>
+          <AdminTopBar />
+        </Suspense>
+        <main className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-16">
           <div
-            className="pointer-events-none absolute right-0 top-0 -mr-20 -mt-20 h-1/2 w-1/2 rounded-full bg-[#6839ea]/[0.07] blur-[120px]"
+            className="admin-shell-accent-orb pointer-events-none absolute right-0 top-0 -mr-20 -mt-20 h-1/2 w-1/2 rounded-full blur-[120px]"
             aria-hidden
           />
-          <div className="relative z-[1] mx-auto max-w-6xl px-6 py-8 lg:px-12 lg:py-12">{children}</div>
+          <div className="relative z-[1] mx-auto min-w-0 max-w-6xl px-6 py-8 lg:px-12 lg:py-12">{children}</div>
         </main>
       </div>
     </div>

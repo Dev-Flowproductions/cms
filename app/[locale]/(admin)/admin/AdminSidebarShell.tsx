@@ -28,7 +28,7 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
           background: "var(--adm-surface-high)",
           border: "1px solid var(--adm-outline-variant)",
           color: "var(--adm-on-variant)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+          boxShadow: "var(--adm-menu-button-shadow)",
         }}
         aria-label="Open menu"
       >

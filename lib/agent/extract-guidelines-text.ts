@@ -4,9 +4,10 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { bufferContainsPdfHeader } from "@/lib/agent/guidelines-upload";
 
 const MAX_TEXT_CHARS = 12_000;
-const EXTRACT_MODEL = "gemini-2.0-flash";
+const EXTRACT_MODEL = "gemini-3.1-flash-lite-preview";
 
 export async function extractBrandGuidelinesText(
   buffer: Buffer,
@@ -14,17 +15,9 @@ export async function extractBrandGuidelinesText(
   fileName: string,
 ): Promise<string> {
   const lower = mimeType.toLowerCase();
-  if (
-    lower.includes("text/plain") ||
-    lower.includes("text/markdown") ||
-    fileName.toLowerCase().endsWith(".md") ||
-    fileName.toLowerCase().endsWith(".txt")
-  ) {
-    const t = buffer.toString("utf8").trim();
-    return t.slice(0, MAX_TEXT_CHARS);
-  }
+  const nameLower = fileName.toLowerCase();
 
-  if (lower.includes("pdf") || fileName.toLowerCase().endsWith(".pdf")) {
+  if (lower.includes("pdf") || nameLower.endsWith(".pdf") || bufferContainsPdfHeader(buffer)) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return "";
 
@@ -48,6 +41,16 @@ export async function extractBrandGuidelinesText(
     });
     const out = result.response.text().trim();
     return out.slice(0, MAX_TEXT_CHARS);
+  }
+
+  if (
+    lower.includes("text/plain") ||
+    lower.includes("text/markdown") ||
+    nameLower.endsWith(".md") ||
+    nameLower.endsWith(".txt")
+  ) {
+    const t = buffer.toString("utf8").trim();
+    return t.slice(0, MAX_TEXT_CHARS);
   }
 
   return "";

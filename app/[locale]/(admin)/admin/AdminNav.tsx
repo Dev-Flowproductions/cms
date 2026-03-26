@@ -21,15 +21,6 @@ function DashboardIcon({ isActive }: { isActive: boolean }) {
   );
 }
 
-function PostsIcon({ isActive }: { isActive: boolean }) {
-  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
-  return (
-    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 6h16M4 12h11M4 18h8" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function UsersIcon({ isActive }: { isActive: boolean }) {
   const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
   return (
@@ -51,37 +42,47 @@ function UsersIcon({ isActive }: { isActive: boolean }) {
   );
 }
 
+function PostsIcon({ isActive }: { isActive: boolean }) {
+  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
+  return (
+    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 6h16M4 12h11M4 18h8" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS: {
-  key: "dashboard" | "posts" | "users";
+  key: "dashboard" | "users" | "posts";
   href: string;
   Icon: (p: { isActive: boolean }) => ReactNode;
 }[] = [
   { key: "dashboard", href: "/admin", Icon: DashboardIcon },
-  { key: "posts", href: "/admin/posts", Icon: PostsIcon },
   { key: "users", href: "/admin/users", Icon: UsersIcon },
+  { key: "posts", href: "/admin/posts", Icon: PostsIcon },
 ];
+
+function navItemActive(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AdminNav() {
   const t = useTranslations("admin");
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1" aria-label={t("navigationLabel")}>
-      <p
-        className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest"
-        style={{ color: "var(--adm-on-variant)" }}
-      >
-        {t("navigationLabel")}
-      </p>
+    <nav className="space-y-1 px-1" aria-label={t("navigationLabel")}>
       {NAV_ITEMS.map((item) => {
-        const isActive =
-          item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        const isActive = navItemActive(pathname, item.href);
         const Icon = item.Icon;
         return (
           <Link
             key={item.key}
             href={item.href}
-            className="mx-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors"
+            className={[
+              "mx-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors",
+              isActive ? "shadow-sm" : "hover:bg-[var(--adm-surface-hover)]",
+            ].join(" ")}
             style={{
               background: isActive ? "var(--adm-surface-high)" : "transparent",
               color: isActive ? "var(--adm-primary)" : "var(--adm-on-variant)",

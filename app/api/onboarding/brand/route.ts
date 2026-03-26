@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const domain = formData.get("domain")?.toString().trim().toLowerCase().replace(/^https?:\/\//, "");
   const companyName = formData.get("companyName")?.toString().trim();
+  const brandGuidelinesText = formData.get("brandGuidelinesText")?.toString().trim() ?? "";
   const primaryColor = formData.get("primaryColor")?.toString() ?? "#7c5cfc";
   const secondaryColor = formData.get("secondaryColor")?.toString() ?? "#22d3a0";
   const tertiaryColor = formData.get("tertiaryColor")?.toString() ?? null;
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
       brand_voice: brandVoice,
       brand_name: companyName,
       brand_tone: brandVoice,
+      brand_guidelines_text: brandGuidelinesText || null,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", user.id);

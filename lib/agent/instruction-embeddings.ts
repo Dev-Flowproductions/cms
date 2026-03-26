@@ -29,6 +29,10 @@ export type InstructionSelectionContext = {
   hasInternalLinks: boolean;
   /** Defaults to post_generation. */
   taskKind?: InstructionTaskKind;
+  /**
+   * Gemini vision summary of the client's example banner images — steers embedding retrieval for `cover` tasks.
+   */
+  referenceVisionBrief?: string | null;
 };
 
 /** Gemini Embedding 2 only (override with GEMINI_EMBEDDING_MODEL if Google renames the model id). */
@@ -57,13 +61,19 @@ export function buildInstructionRetrievalQuery(ctx: InstructionSelectionContext)
   }
 
   if (taskKind === "cover") {
+    const visionHint = ctx.referenceVisionBrief?.trim()
+      ? `Client example-banner visual style (from images): ${ctx.referenceVisionBrief.trim().slice(0, 700)}`
+      : "";
     return [
       "Editorial blog hero image generation brief.",
       "Graphic illustration banner 16:9, not photography.",
       "Primary brand colour background, sparse composition, centered headline text in English, European sentence case.",
       "cover_image_description and cover_image_headline rules; brand font mood and illustration style.",
       `Topic: ${ctx.focusKeywordOrTopic || "blog article"}.`,
-    ].join(" ");
+      visionHint,
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   if (taskKind === "quality_loop") {
@@ -193,6 +203,7 @@ export async function buildCoverInstructionEmbeddingPrefix(
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
+  referenceVisionBrief?: string | null,
 ): Promise<string | null> {
   const ctx: InstructionSelectionContext = {
     contentType: partial.contentType ?? "hero",
@@ -200,6 +211,7 @@ export async function buildCoverInstructionEmbeddingPrefix(
     focusKeywordOrTopic: partial.focusKeywordOrTopic,
     hasInternalLinks: partial.hasInternalLinks ?? false,
     taskKind: "cover",
+    referenceVisionBrief: referenceVisionBrief ?? partial.referenceVisionBrief,
   };
 
   const segments: string[] = [];
@@ -245,9 +257,10 @@ export function buildCoverInstructionEmbeddingPrefixWithTimeout(
   genAI: GoogleGenerativeAI,
   partial: Parameters<typeof buildCoverInstructionEmbeddingPrefix>[1],
   clientInstructionsRaw?: string | null,
+  referenceVisionBrief?: string | null,
 ): Promise<string | null> {
   return Promise.race([
-    buildCoverInstructionEmbeddingPrefix(genAI, partial, clientInstructionsRaw),
+    buildCoverInstructionEmbeddingPrefix(genAI, partial, clientInstructionsRaw, referenceVisionBrief),
     new Promise<string | null>((resolve) =>
       setTimeout(() => resolve(null), COVER_INSTRUCTION_EMBED_TIMEOUT_MS),
     ),

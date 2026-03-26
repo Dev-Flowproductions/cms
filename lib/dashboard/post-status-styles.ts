@@ -1,6 +1,6 @@
-/** Shared badge colours for post pipeline status (dashboard + admin tables). */
+/** Shared badge colours for post pipeline status (dashboard + admin tables). Uses editorial shell tokens. */
 export const POST_STATUS_BADGE_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  idea: { bg: "rgba(120,120,160,0.12)", text: "var(--text-muted)", dot: "var(--text-muted)" },
+  idea: { bg: "var(--adm-primary-soft-bg)", text: "var(--adm-on-variant)", dot: "var(--adm-on-variant)" },
   research: { bg: "rgba(99,179,237,0.1)", text: "#63b3ed", dot: "#63b3ed" },
   draft: { bg: "rgba(245,166,35,0.1)", text: "#f5a623", dot: "#f5a623" },
   optimize: { bg: "rgba(255,128,72,0.1)", text: "#ff8048", dot: "#ff8048" },

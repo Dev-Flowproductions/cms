@@ -1,7 +1,8 @@
-/* Editorial shell — scoped to .admin-shell-root or .editorial-shell-root (MD3-inspired dark) */
+/* Editorial shell — MD3-inspired tokens; dark default, light from Curator / Material palette */
 
 .admin-shell-root,
 .editorial-shell-root {
+  /* Dark (default) */
   --adm-bg: #0b1326;
   --adm-sidebar: #131b2e;
   --adm-surface-high: #222a3d;
@@ -14,6 +15,45 @@
   --adm-outline-variant: rgba(73, 68, 85, 0.35);
   --adm-error: #ffb4ab;
   --adm-border-subtle: rgba(73, 68, 85, 0.2);
+  --adm-topbar-bg: rgba(11, 19, 38, 0.82);
+  --adm-surface-hover: rgba(34, 42, 61, 0.5);
+  --adm-cta-grad-from: #6839ea;
+  --adm-cta-grad-to: #ccbdff;
+  --adm-cta-fg: #350097;
+  --adm-locale-glow: 0 0 12px rgba(104, 57, 234, 0.35);
+  --adm-menu-button-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --adm-gradient-cta: linear-gradient(135deg, #6839ea, #8b6bef);
+  --adm-cta-glow-shadow: 0 0 14px rgba(104, 57, 234, 0.35);
+  --adm-primary-soft-bg: rgba(104, 57, 234, 0.12);
+  --adm-accent-border: rgba(104, 57, 234, 0.25);
+}
+
+/* Light — aligns with mock: surface #f7f9fb, sidebar #f2f4f6, primary #3525cd / container #4f46e5 */
+[data-theme="light"] .admin-shell-root,
+[data-theme="light"] .editorial-shell-root {
+  --adm-bg: #f7f9fb;
+  --adm-sidebar: #f2f4f6;
+  --adm-surface-high: #ffffff;
+  --adm-surface-highest: #eceef0;
+  --adm-on-surface: #191c1e;
+  --adm-on-variant: #464555;
+  --adm-primary: #3525cd;
+  --adm-primary-container: #4f46e5;
+  --adm-on-primary: #ffffff;
+  --adm-outline-variant: rgba(119, 117, 135, 0.35);
+  --adm-error: #ba1a1a;
+  --adm-border-subtle: rgba(119, 117, 135, 0.14);
+  --adm-topbar-bg: rgba(247, 249, 251, 0.9);
+  --adm-surface-hover: #e0e3e5;
+  --adm-cta-grad-from: #4f46e5;
+  --adm-cta-grad-to: #818cf8;
+  --adm-cta-fg: #ffffff;
+  --adm-locale-glow: 0 2px 12px rgba(79, 70, 229, 0.22);
+  --adm-menu-button-shadow: 0 2px 12px rgba(25, 28, 30, 0.08);
+  --adm-gradient-cta: linear-gradient(135deg, #4f46e5, #818cf8);
+  --adm-cta-glow-shadow: 0 0 16px rgba(79, 70, 229, 0.22);
+  --adm-primary-soft-bg: rgba(79, 70, 229, 0.1);
+  --adm-accent-border: rgba(79, 70, 229, 0.22);
 }
 
 .admin-shell-glass,
@@ -23,9 +63,31 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
+[data-theme="light"] .admin-shell-glass,
+[data-theme="light"] .editorial-shell-glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px rgba(25, 28, 30, 0.04);
+}
+
 .admin-shell-ai-glow,
 .editorial-shell-ai-glow {
   box-shadow: 0 0 40px 5px rgba(104, 57, 234, 0.12);
+}
+
+[data-theme="light"] .admin-shell-ai-glow,
+[data-theme="light"] .editorial-shell-ai-glow {
+  box-shadow: 0 0 36px 4px rgba(79, 70, 229, 0.1);
+}
+
+/* Decorative glow behind main column */
+.admin-shell-accent-orb {
+  background: rgba(104, 57, 234, 0.07);
+}
+
+[data-theme="light"] .admin-shell-accent-orb {
+  background: rgba(79, 70, 229, 0.06);
 }
 
 .admin-shell-root ::selection,
@@ -34,10 +96,21 @@
   color: #fff;
 }
 
+[data-theme="light"] .admin-shell-root ::selection,
+[data-theme="light"] .editorial-shell-root ::selection {
+  background: #e2dfff;
+  color: #0f0069;
+}
+
 .admin-shell-root ::-webkit-scrollbar-thumb,
 .editorial-shell-root ::-webkit-scrollbar-thumb {
   background: var(--adm-surface-high);
   border-radius: 10px;
+}
+
+[data-theme="light"] .admin-shell-root ::-webkit-scrollbar-thumb,
+[data-theme="light"] .editorial-shell-root ::-webkit-scrollbar-thumb {
+  background: #c7c4d8;
 }
 
 .admin-shell-root ::-webkit-scrollbar-track,

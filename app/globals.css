@@ -28,14 +28,15 @@
 
 /* ── Light theme ── */
 [data-theme="light"] {
-  --bg: #f5f5f7;
+  /* Harmonized with editorial light shell (Curator / MD3-style) */
+  --bg: #f7f9fb;
   --surface: #ffffff;
-  --surface-raised: #f0f0f5;
-  --border: #e0e0ea;
-  --border-subtle: #ebebf2;
-  --accent: #7c5cfc;
-  --accent-dim: #5a3ed9;
-  --accent-glow: rgba(124, 92, 252, 0.12);
+  --surface-raised: #eceef0;
+  --border: #e0e3e5;
+  --border-subtle: #eceef0;
+  --accent: #4f46e5;
+  --accent-dim: #3525cd;
+  --accent-glow: rgba(79, 70, 229, 0.14);
   --text: #111118;
   --text-muted: #5c5c80;
   --text-faint: #a0a0bc;

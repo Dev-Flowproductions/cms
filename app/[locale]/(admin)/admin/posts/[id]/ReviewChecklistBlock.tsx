@@ -261,10 +261,10 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
           disabled={approving || rejecting || !allPassed}
           className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
-            background: allPassed ? "linear-gradient(135deg, #6839ea, #8b6bef)" : "var(--adm-surface-highest)",
+            background: allPassed ? "var(--adm-gradient-cta)" : "var(--adm-surface-highest)",
             color: allPassed ? "#fff" : "var(--adm-on-variant)",
             border: allPassed ? "none" : "1px solid var(--adm-border-subtle)",
-            boxShadow: allPassed ? "0 0 14px rgba(104, 57, 234, 0.35)" : "none",
+            boxShadow: allPassed ? "var(--adm-cta-glow-shadow)" : "none",
           }}
           title={!allPassed ? "Tick all checklist items before approving" : undefined}
         >

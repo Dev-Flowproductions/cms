@@ -104,6 +104,8 @@ export type CoverGenerationArgs = {
   logLabel: string;
   /** Up to 3 company reference images — same model as banner output, for style/composition alignment. */
   referenceImages?: CoverReferenceImagePart[];
+  /** Gemini vision summary of reference images — reinforces style in the text prompt (with images). */
+  referenceVisionBrief?: string | null;
   /** Plain text from uploaded guidelines (txt/md/PDF extract). */
   guidelinesText?: string | null;
 };
@@ -117,11 +119,14 @@ export async function generateCoverImageBufferWithEmbedFallback(
 ): Promise<Buffer | null> {
   const withGuide = (t: string) => appendGuidelinesToPrompt(t, args.guidelinesText);
   const refs = args.referenceImages?.filter((r) => r.base64?.length) ?? [];
+  const visionBlock = args.referenceVisionBrief?.trim()
+    ? `REFERENCE EXAMPLES — VISUAL ANALYSIS (align the new banner with this look-and-feel):\n${args.referenceVisionBrief.trim()}\n\n`
+    : "";
   const refHint =
     refs.length > 0
       ? `REFERENCE IMAGES: The following ${refs.length} image(s) are examples of this company's visual style. Match their illustration language, colour mood, and layout density. Do not reproduce logos or trademarks. Generate one new 16:9 editorial banner for the article described in the text below.\n\n`
       : "";
-  const fullText = withGuide(args.embedPrefix + refHint + args.basePrompt);
+  const fullText = withGuide(args.embedPrefix + visionBlock + refHint + args.basePrompt);
 
   if (refs.length > 0) {
     let buf = await generateGeminiCoverImageBufferWithReferences(

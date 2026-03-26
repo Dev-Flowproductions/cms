@@ -7,6 +7,7 @@ import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/ins
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
+import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -99,20 +100,26 @@ export async function POST(request: Request) {
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
   try {
+    const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
+    const referenceVisionBrief =
+      refParts.length > 0
+        ? await buildCoverReferenceVisionBriefWithTimeout(genAIEmbed, refParts, "[cover] ref-vision")
+        : null;
     const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
       genAIEmbed,
       { focusKeywordOrTopic: query },
       customInstructions,
+      referenceVisionBrief,
     )) ?? "";
     const basePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity, {
       headlineMayBeNonEnglish: true,
     });
-    const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
     const buf = await generateCoverImageBufferWithEmbedFallback(genai, {
       embedPrefix: coverEmbedPrefix,
       basePrompt,
       logLabel: "[cover]",
       referenceImages: refParts.length ? refParts : undefined,
+      referenceVisionBrief,
       guidelinesText: brandGuidelinesText,
     });
     if (!buf) throw new Error("No image returned from Gemini");

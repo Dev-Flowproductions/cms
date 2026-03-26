@@ -20,7 +20,7 @@ export default async function DashboardSettingsPage() {
   }
 
   return (
-    <div className="max-w-6xl">
+    <div className="min-w-0 w-full max-w-6xl">
       <header className="mb-8">
         <div className="mb-4 flex items-center gap-2">
           <span

@@ -50,7 +50,7 @@ export function LocaleSwitcher({ variant = "default" }: { variant?: "default" | 
                 : isEditorial
                   ? "var(--adm-on-variant)"
                   : "var(--text-muted)",
-              boxShadow: isActive && isEditorial ? "0 0 12px rgba(104,57,234,0.35)" : isActive ? "0 0 10px rgba(124,92,252,0.3)" : "none",
+              boxShadow: isActive && isEditorial ? "var(--adm-locale-glow)" : isActive ? "0 0 10px rgba(124,92,252,0.3)" : "none",
               cursor: isActive ? "default" : "pointer",
             }}
           >

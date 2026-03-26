@@ -88,7 +88,7 @@ export async function DashboardRecentPosts({
             return (
               <li key={post.id}>
                 <Link
-                  href={`/admin/posts/${post.id}`}
+                  href={`/dashboard/posts/${post.id}`}
                   className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">

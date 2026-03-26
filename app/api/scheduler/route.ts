@@ -7,6 +7,7 @@ import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/ins
 import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
+import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
@@ -756,6 +757,19 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       primaryContent.cover_image_headline ??
       primaryContent.title.trim().split(/\s+/).slice(0, 4).join(" ");
     const coverHeadlineIsEnglishOnly = Boolean(primaryContent.cover_image_headline?.trim());
+    const refParts = await loadCoverReferenceImageParts(admin, [
+      client.cover_reference_image_1,
+      client.cover_reference_image_2,
+      client.cover_reference_image_3,
+    ]);
+    const referenceVisionBrief =
+      refParts.length > 0
+        ? await buildCoverReferenceVisionBriefWithTimeout(
+            genAI,
+            refParts,
+            `[scheduler] ref-vision ${client.domain}`,
+          )
+        : null;
     const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
       genAI,
       {
@@ -765,6 +779,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         hasInternalLinks: internalLinkCandidates.length > 0,
       },
       client.custom_instructions ?? null,
+      referenceVisionBrief,
     )) ?? "";
     const baseCoverPrompt = buildCoverPrompt(
       coverSubject,
@@ -777,16 +792,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       } : null,
       { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly }
     );
-    const refParts = await loadCoverReferenceImageParts(admin, [
-      client.cover_reference_image_1,
-      client.cover_reference_image_2,
-      client.cover_reference_image_3,
-    ]);
     const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
       embedPrefix: coverEmbedPrefix,
       basePrompt: baseCoverPrompt,
       logLabel: `[scheduler] cover ${client.domain}`,
       referenceImages: refParts.length ? refParts : undefined,
+      referenceVisionBrief,
       guidelinesText: client.brand_guidelines_text ?? null,
     });
 

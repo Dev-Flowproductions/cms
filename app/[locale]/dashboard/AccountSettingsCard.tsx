@@ -46,9 +46,9 @@ type Settings = {
 };
 
 const inputStyle = {
-  background: "var(--surface-raised)",
-  border: "1px solid var(--border)",
-  color: "var(--text)",
+  background: "var(--adm-surface-highest)",
+  border: "1px solid var(--adm-border-subtle)",
+  color: "var(--adm-on-surface)",
 } as const;
 
 type Profile = {
@@ -211,22 +211,22 @@ export function AccountSettingsCard({
 
   return (
     <div
-      className="mt-10 rounded-2xl overflow-hidden"
-      style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+      className="mt-10 min-w-0 max-w-full rounded-2xl overflow-hidden"
+      style={{ border: "1px solid var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
     >
       {/* Header */}
       <div
         className="px-6 py-5 flex items-center justify-between"
-        style={{ borderBottom: "1px solid var(--border)" }}
+        style={{ borderBottom: "1px solid var(--adm-border-subtle)" }}
       >
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-0.5"
-            style={{ color: "var(--accent)" }}
+            style={{ color: "var(--adm-primary)" }}
           >
             {t("account")}
           </p>
-          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+          <h2 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>
             {t("title")}
           </h2>
         </div>
@@ -237,61 +237,61 @@ export function AccountSettingsCard({
         {/* Author (shown on blog posts) */}
         <div
           className="rounded-xl p-5 space-y-3"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
             Author (for blog posts)
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Display name</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Display name</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => { setDisplayName(e.target.value); setProfileError(null); }}
                 placeholder="Your name"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Avatar URL</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Avatar URL</label>
               <input
                 type="text"
                 value={avatarUrl}
                 onChange={(e) => { setAvatarUrl(e.target.value); setProfileError(null); }}
                 placeholder="https://..."
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Job title</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Job title</label>
               <input
                 type="text"
                 value={jobTitle}
                 onChange={(e) => { setJobTitle(e.target.value); setProfileError(null); }}
                 placeholder="e.g. Content Lead"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Short bio</label>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Short bio</label>
               <textarea
                 value={bio}
                 onChange={(e) => { setBio(e.target.value); setProfileError(null); }}
                 placeholder="One line shown under your name on posts"
                 rows={2}
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
           </div>
-          {profileError && <p className="text-xs" style={{ color: "var(--danger)" }}>{profileError}</p>}
+          {profileError && <p className="text-xs" style={{ color: "var(--adm-error)" }}>{profileError}</p>}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -314,9 +314,9 @@ export function AccountSettingsCard({
               disabled={profileSaving}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
               style={{
-                background: "var(--accent)",
+                background: "var(--adm-primary-container)",
                 color: "white",
-                boxShadow: !profileSaving ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+                boxShadow: !profileSaving ? "var(--adm-cta-glow-shadow)" : "none",
               }}
             >
               {profileSaving ? t("saving") : t("saveChanges")}
@@ -330,11 +330,11 @@ export function AccountSettingsCard({
         {/* Website domain — editable */}
         <div
           className="rounded-xl p-5 space-y-3"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
             {tBrand("domainLabel")}
           </p>
@@ -344,7 +344,7 @@ export function AccountSettingsCard({
               value={domain}
               onChange={(e) => { setDomain(e.target.value); setDomainError(null); }}
               placeholder="yourdomain.com"
-              className="flex-1 min-w-[200px] px-4 py-2.5 rounded-lg text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              className="flex-1 min-w-[200px] px-4 py-2.5 rounded-lg text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
               style={inputStyle}
             />
             <button
@@ -366,7 +366,7 @@ export function AccountSettingsCard({
               disabled={domainSaving || domain.trim() === "" || domain.trim().toLowerCase().replace(/^https?:\/\//, "") === (settings.domain ?? "")}
               className="px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
               style={{
-                background: "var(--accent)",
+                background: "var(--adm-primary-container)",
                 color: "white",
               }}
             >
@@ -374,7 +374,7 @@ export function AccountSettingsCard({
             </button>
           </div>
           {domainError && (
-            <p className="text-xs" style={{ color: "var(--danger)" }}>{domainError}</p>
+            <p className="text-xs" style={{ color: "var(--adm-error)" }}>{domainError}</p>
           )}
         </div>
 
@@ -382,14 +382,14 @@ export function AccountSettingsCard({
         <div
           className="flex items-center justify-between px-4 py-3 rounded-xl"
           style={{
-            background: googleConnected ? "var(--success-bg)" : "var(--surface-raised)",
-            border: googleConnected ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+            background: googleConnected ? "rgba(34, 211, 160, 0.12)" : "var(--adm-surface-highest)",
+            border: googleConnected ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--adm-border-subtle)",
           }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: googleConnected ? "rgba(34,211,160,0.12)" : "var(--surface)" }}
+              style={{ background: googleConnected ? "rgba(34,211,160,0.12)" : "var(--adm-surface-high)" }}
             >
               <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
                 <path d="M43.6 20.5H42V20H24v8h11.3C33.7 32.2 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7.1 28.9 5 24 5 13 5 4 14 4 25s9 20 20 20c11.1 0 20-8.9 20-20 0-1.2-.1-2.3-.4-3.5z" fill="#FFC107" />
@@ -399,11 +399,11 @@ export function AccountSettingsCard({
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>
                 {googleConnected ? t("googleConnected") : t("googleNotConnected")}
               </p>
               {googleConnected && settings.google_connected_at && (
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                <p className="text-xs mt-0.5" style={{ color: "var(--adm-on-variant)" }}>
                   {new Date(settings.google_connected_at).toLocaleDateString(undefined, {
                     day: "numeric", month: "short", year: "numeric",
                   })}
@@ -415,9 +415,9 @@ export function AccountSettingsCard({
             href={`/api/google/oauth?locale=${locale}`}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
             style={{
-              background: googleConnected ? "transparent" : "var(--accent)",
-              color: googleConnected ? "var(--text-muted)" : "white",
-              border: googleConnected ? "1px solid var(--border)" : "none",
+              background: googleConnected ? "transparent" : "var(--adm-primary-container)",
+              color: googleConnected ? "var(--adm-on-variant)" : "white",
+              border: googleConnected ? "1px solid var(--adm-border-subtle)" : "none",
             }}
           >
             {googleConnected ? t("reconnectGoogle") : t("connectGoogle")}
@@ -430,24 +430,24 @@ export function AccountSettingsCard({
             style={{
               background: "rgba(245,166,35,0.1)",
               border: "1px solid rgba(245,166,35,0.3)",
-              color: "var(--text)",
+              color: "var(--adm-on-surface)",
             }}
           >
             <p className="font-semibold mb-1">{t("lastAutoRunFailedTitle")}</p>
-            <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{settings.last_generation_error}</p>
-            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("lastAutoRunFailedHint")}</p>
+            <p className="text-xs mb-1" style={{ color: "var(--adm-on-variant)" }}>{settings.last_generation_error}</p>
+            <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("lastAutoRunFailedHint")}</p>
           </div>
         )}
 
         {/* Post frequency */}
         <div
           className="rounded-xl p-5 space-y-6"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <div>
             <p
               className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--adm-on-variant)" }}
             >
               {t("postingFrequency")}
             </p>
@@ -461,15 +461,15 @@ export function AccountSettingsCard({
                     onClick={() => setFrequency(opt.value)}
                     className="px-4 py-3 rounded-xl text-left transition-all"
                     style={{
-                      background: active ? "rgba(124,92,252,0.12)" : "var(--surface)",
-                      border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                      boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
+                      background: active ? "var(--adm-primary-soft-bg)" : "var(--adm-surface-high)",
+                      border: active ? "1px solid var(--adm-accent-border)" : "1px solid var(--adm-border-subtle)",
+                      boxShadow: active ? "var(--adm-locale-glow)" : "none",
                     }}
                   >
-                    <div className="text-sm font-semibold" style={{ color: active ? "var(--accent)" : "var(--text)" }}>
+                    <div className="text-sm font-semibold" style={{ color: active ? "var(--adm-primary)" : "var(--adm-on-surface)" }}>
                       {opt.label}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    <div className="text-[11px] mt-0.5" style={{ color: "var(--adm-on-variant)" }}>
                       {opt.sublabel}
                     </div>
                   </button>
@@ -478,7 +478,7 @@ export function AccountSettingsCard({
             </div>
           </div>
 
-          {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
+          {error && <p className="text-sm" style={{ color: "var(--adm-error)" }}>{error}</p>}
 
           <div className="flex items-center gap-3">
             <button
@@ -486,9 +486,9 @@ export function AccountSettingsCard({
               disabled={saving || !changed}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
               style={{
-                background: "var(--accent)",
+                background: "var(--adm-primary-container)",
                 color: "white",
-                boxShadow: (!saving && changed) ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+                boxShadow: (!saving && changed) ? "var(--adm-cta-glow-shadow)" : "none",
               }}
             >
               {saving ? t("saving") : t("saveChanges")}
@@ -503,11 +503,11 @@ export function AccountSettingsCard({
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-1"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
             {t("webhook.autoPublishLabel")}
           </p>
-          <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>
+          <p className="text-xs mb-4" style={{ color: "var(--adm-on-variant)" }}>
             {hasWebhook
               ? t("webhook.autoPublishDescription")
               : t("webhook.noWebhookConfigured")}
@@ -518,11 +518,11 @@ export function AccountSettingsCard({
               <div
                 className="flex items-center justify-between px-4 py-3 rounded-xl"
                 style={{
-                  background: autoPublish ? "var(--success-bg)" : "var(--surface-raised)",
-                  border: autoPublish ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+                  background: autoPublish ? "rgba(34, 211, 160, 0.12)" : "var(--adm-surface-highest)",
+                  border: autoPublish ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--adm-border-subtle)",
                 }}
               >
-                <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>
                   {autoPublish ? t("webhook.autoPublishOn") : t("webhook.autoPublishOff")}
                 </p>
                 <button
@@ -532,7 +532,7 @@ export function AccountSettingsCard({
                   onClick={handleAutoPublishToggle}
                   disabled={autoSaving}
                   className="relative w-10 h-5 rounded-full transition-all flex-shrink-0 disabled:opacity-50"
-                  style={{ background: autoPublish ? "var(--success)" : "var(--border)" }}
+                  style={{ background: autoPublish ? "var(--success)" : "var(--adm-border-subtle)" }}
                 >
                   <span
                     className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform"
@@ -543,7 +543,7 @@ export function AccountSettingsCard({
                   />
                 </button>
               </div>
-              {autoError && <p className="text-sm mt-2" style={{ color: "var(--danger)" }}>{autoError}</p>}
+              {autoError && <p className="text-sm mt-2" style={{ color: "var(--adm-error)" }}>{autoError}</p>}
               {autoSaved && (
                 <p className="text-xs mt-2 font-medium" style={{ color: "var(--success)" }}>{t("saved")}</p>
               )}
@@ -552,9 +552,9 @@ export function AccountSettingsCard({
             <div
               className="px-4 py-3 rounded-xl text-xs"
               style={{
-                background: "var(--surface-raised)",
-                border: "1px solid var(--border)",
-                color: "var(--text-faint)",
+                background: "var(--adm-surface-highest)",
+                border: "1px solid var(--adm-border-subtle)",
+                color: "var(--adm-on-variant)",
               }}
             >
               {t("webhook.noWebhookConfigured")}
@@ -565,21 +565,21 @@ export function AccountSettingsCard({
         {/* Brand */}
         <div
           className="rounded-xl p-5 space-y-5"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
             {t("brand.title")}
           </p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
             {t("brand.description")}
           </p>
 
           <form onSubmit={handleBrandSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>
                 {tBrand("companyNameLabel")}
               </label>
               <input
@@ -587,18 +587,18 @@ export function AccountSettingsCard({
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Your Company Name"
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>
                 {tBrand("logoLabel")}
               </label>
               <div
-                className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:border-[var(--accent)]"
-                style={{ background: "var(--surface)", border: "1px dashed var(--border)" }}
+                className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:border-[var(--adm-primary-container)]"
+                style={{ background: "var(--adm-surface-high)", border: "1px dashed var(--adm-border-subtle)" }}
                 onClick={() => brandLogoInputRef.current?.click()}
               >
                 {logoPreview ? (
@@ -606,18 +606,18 @@ export function AccountSettingsCard({
                 ) : (
                   <div
                     className="w-16 h-16 rounded-lg flex items-center justify-center"
-                    style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+                    style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--adm-on-variant)" strokeWidth="1.5">
                       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                     </svg>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                  <p className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>
                     {logoPreview ? tBrand("logoChange") : tBrand("logoUpload")}
                   </p>
-                  <p className="text-xs" style={{ color: "var(--text-faint)" }}>{tBrand("logoHint")}</p>
+                  <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{tBrand("logoHint")}</p>
                 </div>
                 <input
                   ref={brandLogoInputRef}
@@ -630,11 +630,11 @@ export function AccountSettingsCard({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>
                 {tBrand("colorsLabel")}
               </label>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}>
                   <input
                     type="color"
                     value={primaryColor}
@@ -643,11 +643,11 @@ export function AccountSettingsCard({
                     style={{ background: "transparent" }}
                   />
                   <div>
-                    <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{tBrand("primaryColor")}</p>
-                    <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{primaryColor}</p>
+                    <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{tBrand("primaryColor")}</p>
+                    <p className="text-xs font-mono" style={{ color: "var(--adm-on-variant)" }}>{primaryColor}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}>
                   <input
                     type="color"
                     value={secondaryColor}
@@ -656,11 +656,11 @@ export function AccountSettingsCard({
                     style={{ background: "transparent" }}
                   />
                   <div>
-                    <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{tBrand("secondaryColor")}</p>
-                    <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{secondaryColor}</p>
+                    <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{tBrand("secondaryColor")}</p>
+                    <p className="text-xs font-mono" style={{ color: "var(--adm-on-variant)" }}>{secondaryColor}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}>
                   <input
                     type="color"
                     value={tertiaryColor}
@@ -669,11 +669,11 @@ export function AccountSettingsCard({
                     style={{ background: "transparent" }}
                   />
                   <div>
-                    <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{tBrand("tertiaryColor")}</p>
-                    <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{tertiaryColor}</p>
+                    <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{tBrand("tertiaryColor")}</p>
+                    <p className="text-xs font-mono" style={{ color: "var(--adm-on-variant)" }}>{tertiaryColor}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}>
                   <input
                     type="color"
                     value={alternativeColor || "#1e293b"}
@@ -682,15 +682,15 @@ export function AccountSettingsCard({
                     style={{ background: "transparent" }}
                   />
                   <div>
-                    <p className="text-xs font-medium" style={{ color: "var(--text)" }}>Alternative (optional, for cover variety)</p>
-                    <p className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>{alternativeColor || "—"}</p>
+                    <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>Alternative (optional, for cover variety)</p>
+                    <p className="text-xs font-mono" style={{ color: "var(--adm-on-variant)" }}>{alternativeColor || "—"}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>
                 {tBrand("fontStyleLabel")}
               </label>
               <input
@@ -698,13 +698,13 @@ export function AccountSettingsCard({
                 value={fontStyle}
                 onChange={(e) => setFontStyle(e.target.value)}
                 placeholder={tBrand("fontStylePlaceholder")}
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>
                 {tBrand("brandVoiceLabel")}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -715,9 +715,9 @@ export function AccountSettingsCard({
                     onClick={() => setBrandVoice(v.id)}
                     className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left"
                     style={{
-                      background: brandVoice === v.id ? "var(--accent)" : "var(--surface)",
-                      color: brandVoice === v.id ? "white" : "var(--text)",
-                      border: `1px solid ${brandVoice === v.id ? "var(--accent)" : "var(--border)"}`,
+                      background: brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
+                      color: brandVoice === v.id ? "white" : "var(--adm-on-surface)",
+                      border: `1px solid ${brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-border-subtle)"}`,
                     }}
                   >
                     {v.label}
@@ -726,7 +726,7 @@ export function AccountSettingsCard({
               </div>
             </div>
 
-            {brandError && <p className="text-sm" style={{ color: "var(--danger)" }}>{brandError}</p>}
+            {brandError && <p className="text-sm" style={{ color: "var(--adm-error)" }}>{brandError}</p>}
 
             <div className="flex items-center gap-3">
               <button
@@ -734,9 +734,9 @@ export function AccountSettingsCard({
                 disabled={brandSaving}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
                 style={{
-                  background: "var(--accent)",
+                  background: "var(--adm-primary-container)",
                   color: "white",
-                  boxShadow: !brandSaving ? "0 0 16px rgba(124,92,252,0.25)" : "none",
+                  boxShadow: !brandSaving ? "var(--adm-cta-glow-shadow)" : "none",
                 }}
               >
                 {brandSaving ? t("saving") : t("saveChanges")}
@@ -751,15 +751,15 @@ export function AccountSettingsCard({
         {/* Cover references + guidelines (AI banners) */}
         <div
           className="rounded-xl p-5 space-y-5"
-          style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
             {t("brandAssets.title")}
           </p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
             {t("brandAssets.description")}
           </p>
 
@@ -774,18 +774,18 @@ export function AccountSettingsCard({
               const src = brandAssetUrl(path ?? null);
               return (
                 <div key={slot} className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
                     {t("brandAssets.referenceSlot", { n: slot })}
                   </p>
                   <div
                     className="aspect-video rounded-xl overflow-hidden flex items-center justify-center"
-                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                    style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
                   >
                     {src ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={src} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.empty")}</span>
+                      <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.empty")}</span>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -808,7 +808,7 @@ export function AccountSettingsCard({
                       />
                       <span
                         className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
-                        style={{ background: "var(--accent)", color: "white" }}
+                        style={{ background: "var(--adm-primary-container)", color: "white" }}
                       >
                         {t("brandAssets.upload")}
                       </span>
@@ -824,7 +824,7 @@ export function AccountSettingsCard({
                           await postBrandAsset(fd);
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                        style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
                       >
                         {t("brandAssets.remove")}
                       </button>
@@ -835,21 +835,21 @@ export function AccountSettingsCard({
             })}
           </div>
 
-          <div className="space-y-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <div className="space-y-2 pt-2" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
               {t("brandAssets.guidelinesTitle")}
             </p>
-            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.guidelinesHint")}</p>
+            <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.guidelinesHint")}</p>
             {settings.brand_guidelines_text?.trim() ? (
               <pre
-                className="text-[11px] p-3 rounded-xl max-h-40 overflow-auto whitespace-pre-wrap"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                className="max-h-40 max-w-full overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-3 text-[11px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
                 {settings.brand_guidelines_text.slice(0, 2000)}
                 {settings.brand_guidelines_text.length > 2000 ? "…" : ""}
               </pre>
             ) : (
-              <p className="text-xs" style={{ color: "var(--text-faint)" }}>{t("brandAssets.noGuidelines")}</p>
+              <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.noGuidelines")}</p>
             )}
             <div className="flex flex-wrap gap-2">
               <label className="cursor-pointer">
@@ -870,7 +870,7 @@ export function AccountSettingsCard({
                 />
                 <span
                   className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ background: "var(--accent)", color: "white" }}
+                  style={{ background: "var(--adm-primary-container)", color: "white" }}
                 >
                   {t("brandAssets.uploadGuidelines")}
                 </span>
@@ -885,7 +885,7 @@ export function AccountSettingsCard({
                     await postBrandAsset(fd);
                   }}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                  style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
                 >
                   {t("brandAssets.removeGuidelines")}
                 </button>
@@ -893,7 +893,7 @@ export function AccountSettingsCard({
             </div>
           </div>
 
-          {brandAssetsError && <p className="text-sm" style={{ color: "var(--danger)" }}>{brandAssetsError}</p>}
+          {brandAssetsError && <p className="text-sm" style={{ color: "var(--adm-error)" }}>{brandAssetsError}</p>}
           {brandAssetsSaved && (
             <p className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</p>
           )}

@@ -61,8 +61,8 @@ export default async function DashboardPage() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className={`editorial-shell-glass rounded-2xl border p-5 ${stat.accent ? "editorial-shell-ai-glow border-[#6839ea]/25" : ""}`}
-            style={{ borderColor: stat.accent ? undefined : "var(--adm-border-subtle)" }}
+            className={`editorial-shell-glass rounded-2xl border p-5 ${stat.accent ? "editorial-shell-ai-glow" : ""}`}
+            style={{ borderColor: stat.accent ? "var(--adm-accent-border)" : "var(--adm-border-subtle)" }}
           >
             <div
               className="mb-0.5 text-2xl font-bold"

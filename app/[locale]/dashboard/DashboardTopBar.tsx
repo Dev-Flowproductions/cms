@@ -33,7 +33,7 @@ export function DashboardTopBar({ userEmail, userInitial }: { userEmail: string;
 
   return (
     <header
-      className="fixed right-0 top-0 z-40 flex h-14 w-full items-center justify-between border-b px-4 backdrop-blur-xl sm:px-8 lg:left-64 lg:h-16 lg:w-[calc(100%-16rem)]"
+      className="fixed right-0 top-0 z-40 flex h-14 w-full min-w-0 items-center justify-between overflow-x-hidden border-b px-4 backdrop-blur-xl sm:px-8 lg:left-64 lg:h-16 lg:w-[calc(100%-16rem)]"
       style={{
         background: "rgba(11, 19, 38, 0.82)",
         borderColor: "var(--adm-border-subtle)",

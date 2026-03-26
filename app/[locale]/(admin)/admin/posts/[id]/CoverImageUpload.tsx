@@ -138,7 +138,7 @@ export function CoverImageUpload({
             onClick={handleUpload}
             disabled={uploading}
             className="px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
-            style={{ background: "var(--adm-primary-container)", color: "#fff", boxShadow: "0 0 14px rgba(104, 57, 234, 0.35)" }}
+            style={{ background: "var(--adm-primary-container)", color: "#fff", boxShadow: "var(--adm-cta-glow-shadow)" }}
           >
             {uploading ? "Uploading…" : "Upload"}
           </button>
@@ -154,10 +154,10 @@ export function CoverImageUpload({
           disabled={generating || uploading}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
           style={{
-            background: generating ? "var(--adm-surface-highest)" : "linear-gradient(135deg, #6839ea, #8b6bef)",
+            background: generating ? "var(--adm-surface-highest)" : "var(--adm-gradient-cta)",
             color: generating ? "var(--adm-on-variant)" : "white",
             border: generating ? "1px solid var(--adm-border-subtle)" : "none",
-            boxShadow: generating ? "none" : "0 0 14px rgba(104, 57, 234, 0.35)",
+            boxShadow: generating ? "none" : "var(--adm-cta-glow-shadow)",
           }}
         >
           {generating ? (

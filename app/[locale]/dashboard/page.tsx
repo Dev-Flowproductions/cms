@@ -147,8 +147,7 @@ export default async function DashboardPage() {
         {/* Posts table */}
         <DashboardPostsTable posts={posts} isAdmin={isAdmin} />
 
-        {/* Account settings — only for non-admin users who have a client row */}
-        {!isAdmin && clientSettings && (
+        {clientSettings && (
           <AccountSettingsCard userId={user.id} settings={clientSettings} profile={profile} />
         )}
       </main>

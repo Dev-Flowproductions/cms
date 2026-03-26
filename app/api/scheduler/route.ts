@@ -121,7 +121,14 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const postId = await generatePostForClient(client, admin, genAI, imagenAI);
+      const postId = await generatePostForClient(client, admin, genAI, imagenAI, {
+        skipDueClaim: force || singleUserForce,
+        now,
+      });
+      if (postId === null) {
+        results.push({ client_id: client.id, domain: client.domain, status: "skipped_concurrent" });
+        continue;
+      }
       results.push({ client_id: client.id, domain: client.domain, status: "generated", post_id: postId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -131,8 +138,9 @@ export async function POST(req: NextRequest) {
   }
 
   const generated = results.filter((r) => r.status === "generated").length;
-  const skipped   = results.filter((r) => r.status === "skipped_not_due").length;
-  const errors    = results.filter((r) => r.status === "error").length;
+  const skipped =
+    results.filter((r) => r.status === "skipped_not_due" || r.status === "skipped_concurrent").length;
+  const errors = results.filter((r) => r.status === "error").length;
 
   console.log(`[scheduler] Done â€” generated: ${generated}, skipped: ${skipped}, errors: ${errors}`);
 
@@ -155,7 +163,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     message: "Scheduler endpoint is live. Trigger: Vercel Cron (time-based) or GET ?secret=CRON_SECRET or POST with Bearer CRON_SECRET.",
-    next_run: "Vercel Cron runs on schedule (see vercel.json). Manual: Run scheduler in admin or GET /api/scheduler?secret=CRON_SECRET",
+    next_run: "Vercel Cron runs on schedule (see vercel.json). Manual: GET /api/scheduler?secret=CRON_SECRET or POST with Bearer CRON_SECRET.",
   });
 }
 
@@ -179,11 +187,18 @@ type GeneratedContent = {
   seo_score?: { seo: number; aeo: number; geo: number; notes: string };
 };
 
+type SchedulerRunOpts = {
+  /** When true, skip the DB claim (admin force / per-user generate). */
+  skipDueClaim: boolean;
+  now: number;
+};
+
 type SchedulerClient = {
   id: string;
   user_id: string;
   domain: string;
   frequency: string;
+  last_post_generated_at?: string | null;
   google_access_token: string | null;
   google_scope: string | null;
   auto_publish?: boolean | null;
@@ -209,9 +224,27 @@ async function generatePostForClient(
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
   imagenAI: GoogleGenAI,
-): Promise<string> {
+  runOpts: SchedulerRunOpts,
+): Promise<string | null> {
   // Always generate in all three locales; primary is Portuguese (main site language)
   const primaryLocale: SupportedLocale = "pt";
+  const previousLastPost = client.last_post_generated_at ?? null;
+
+  // Atomic claim so concurrent scheduler runs (Inngest + traffic trigger, overlapping cron, etc.)
+  // cannot both pass the due check. Matches due logic: last_run <= now - interval (see FREQUENCY_INTERVAL_MS).
+  if (!runOpts.skipDueClaim) {
+    const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
+    const thresholdIso = new Date(runOpts.now - intervalMs).toISOString();
+    const claimIso = new Date(runOpts.now).toISOString();
+    const { data: claimed, error: claimError } = await admin
+      .from("clients")
+      .update({ last_post_generated_at: claimIso })
+      .eq("id", client.id)
+      .or(`last_post_generated_at.is.null,last_post_generated_at.lte."${thresholdIso}"`)
+      .select("id");
+    if (claimError) throw new Error(claimError.message);
+    if (!claimed?.length) return null;
+  }
 
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
@@ -251,7 +284,15 @@ async function generatePostForClient(
     .select("id")
     .single();
 
-  if (postError || !post) throw new Error(postError?.message ?? "Failed to create post row");
+  if (postError || !post) {
+    if (!runOpts.skipDueClaim) {
+      await admin
+        .from("clients")
+        .update({ last_post_generated_at: previousLastPost })
+        .eq("id", client.id);
+    }
+    throw new Error(postError?.message ?? "Failed to create post row");
+  }
 
   try {
   const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
@@ -839,10 +880,14 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error(`[scheduler] Generation failed for ${client.domain} (post ${post.id}):`, msg);
-    await admin.from("clients").update({
+    const clientPatch: Record<string, string | null> = {
       last_generation_error: msg,
       last_generation_error_at: new Date().toISOString(),
-    }).eq("id", client.id);
+    };
+    if (!runOpts.skipDueClaim) {
+      clientPatch.last_post_generated_at = previousLastPost;
+    }
+    await admin.from("clients").update(clientPatch).eq("id", client.id);
     await admin.from("posts").delete().eq("id", post.id);
     throw err;
   }

@@ -4,7 +4,6 @@ import { AdminNav } from "./AdminNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { AdminLogoutButton } from "./AdminLogoutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { RunSchedulerButton } from "./RunSchedulerButton";
 import { AdminSidebarShell } from "./AdminSidebarShell";
 import { AppLogo } from "@/components/AppLogo";
 
@@ -43,7 +42,6 @@ export default async function AdminLayout({
 
         {/* Sidebar footer */}
         <div className="px-3 py-4 space-y-1" style={{ borderTop: "1px solid var(--border)" }}>
-          <RunSchedulerButton />
           <AdminLogoutButton />
         </div>
       </AdminSidebarShell>

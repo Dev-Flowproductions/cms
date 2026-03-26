@@ -33,16 +33,6 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    key: "settings",
-    href: "/admin/settings",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M7.5 9.5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M12 7.5a4.5 4.5 0 01-.09.88l1.3 1.01-1 1.73-1.6-.65a4.5 4.5 0 01-1.53.88L8.85 13h-2l-.23-1.65a4.5 4.5 0 01-1.53-.88l-1.6.65-1-1.73 1.3-1.01A4.5 4.5 0 013.75 7.5c0-.3.03-.6.09-.88L2.54 5.61l1-1.73 1.6.65a4.5 4.5 0 011.53-.88L6.9 2h2l.23 1.65a4.5 4.5 0 011.53.88l1.6-.65 1 1.73-1.3 1.01c.06.28.09.58.09.88z" stroke="currentColor" strokeWidth="1.4" />
-      </svg>
-    ),
-  },
 ] as const;
 
 export function AdminNav() {

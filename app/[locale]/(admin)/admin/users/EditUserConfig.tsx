@@ -21,16 +21,13 @@ const BRAND_VOICES = [
   { id: "casual", label: "Casual & Conversational" },
 ] as const;
 
-const inputStyle = {
+const inputFieldStyle = {
   background: "var(--adm-surface-highest)",
-  border: "1px solid var(--adm-border-subtle)",
   color: "var(--adm-on-surface)",
-  borderRadius: "8px",
-  padding: "8px 12px",
-  fontSize: "13px",
-  width: "100%",
-  outline: "none",
 } as const;
+
+const inputClass =
+  "adm-input-edge w-full text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)] focus:ring-offset-0 focus:ring-offset-transparent";
 
 type Settings = Awaited<ReturnType<typeof getClientSettingsByAdmin>>;
 
@@ -51,8 +48,10 @@ export function EditUserConfig({
   const t = useTranslations("admin.usersPage");
   const tSettings = useTranslations("settings.frequency");
   const tSettingsMain = useTranslations("settings");
+  const tBrand = useTranslations("onboarding.brand");
+  const tWh = useTranslations("settings.webhook");
+  const tAssets = useTranslations("settings.brandAssets");
   const tCommon = useTranslations("common");
-  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,7 +106,6 @@ export function EditUserConfig({
     path && supabasePublic ? `${supabasePublic}/storage/v1/object/public/brand-assets/${path}` : null;
 
   function applySettingsData(data: Settings) {
-    setSettings(data);
     if (data.client) {
       setDomain(data.client.domain ?? "");
       setCompanyName(data.client.company_name ?? "");
@@ -181,11 +179,11 @@ export function EditUserConfig({
     }
   }
 
-  const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
-    { value: "daily", label: tSettings("daily") },
-    { value: "weekly", label: tSettings("weekly") },
-    { value: "biweekly", label: tSettings("biweekly") },
-    { value: "monthly", label: tSettings("monthly") },
+  const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
+    { value: "daily", label: tSettings("daily"), sublabel: tSettings("dailySublabel") },
+    { value: "weekly", label: tSettings("weekly"), sublabel: tSettings("weeklySublabel") },
+    { value: "biweekly", label: tSettings("biweekly"), sublabel: tSettings("biweeklySublabel") },
+    { value: "monthly", label: tSettings("monthly"), sublabel: tSettings("monthlySublabel") },
   ];
 
   async function handleSave() {
@@ -232,16 +230,29 @@ export function EditUserConfig({
 
   if (loading) {
     return (
-      <div className="p-4 text-sm" style={{ color: "var(--adm-on-variant)" }}>
-        Loading…
+      <div
+        className="rounded-2xl border px-6 py-16 text-center text-sm"
+        style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)", color: "var(--adm-on-variant)" }}
+      >
+        {tCommon("loading")}
       </div>
     );
   }
   if (error) {
     return (
-      <div className="p-4">
-        <p className="text-sm mb-3" style={{ color: "var(--adm-error)" }}>{error}</p>
-        <button type="button" onClick={onClose} className="text-xs px-3 py-1.5 rounded-xl" style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}>
+      <div
+        className="rounded-2xl border px-6 py-8"
+        style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+      >
+        <p className="mb-4 text-sm" style={{ color: "var(--adm-error)" }}>
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border px-4 py-2 text-sm font-medium transition-colors hover:bg-[var(--adm-interactive-hover)]"
+          style={{ borderColor: "var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+        >
           {tCommon("close")}
         </button>
       </div>
@@ -249,104 +260,234 @@ export function EditUserConfig({
   }
 
   return (
-    <div className="space-y-6">
-      <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
-        Full configuration
-      </p>
-
-      {/* Domain */}
-      <div>
-        <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Domain</label>
-        <input type="text" value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="yourdomain.com" style={inputStyle} />
-      </div>
-
-      {/* Frequency */}
-      <div>
-        <label className="block text-xs font-medium mb-2" style={{ color: "var(--adm-on-variant)" }}>{tSettingsMain("postingFrequency")}</label>
-        <div className="flex flex-wrap gap-2">
-          {FREQUENCY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setFrequency(opt.value)}
-              className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-              style={{
-                background: frequency === opt.value ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
-                color: frequency === opt.value ? "#fff" : "var(--adm-on-surface)",
-                border: `1px solid ${frequency === opt.value ? "transparent" : "var(--adm-outline-variant)"}`,
-                boxShadow: frequency === opt.value ? "var(--adm-cta-glow-shadow)" : "none",
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Brand */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Company name</label>
-          <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Logo URL</label>
-          <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Primary color</label>
-          <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Secondary color</label>
-          <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Tertiary color</label>
-          <input type="text" value={tertiaryColor} onChange={(e) => setTertiaryColor(e.target.value)} placeholder="#f59e0b" style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Alternative color (optional, for cover variety)</label>
-          <input type="text" value={alternativeColor} onChange={(e) => setAlternativeColor(e.target.value)} placeholder="#1e293b" style={inputStyle} />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Font style</label>
-          <input type="text" value={fontStyle} onChange={(e) => setFontStyle(e.target.value)} placeholder="modern" style={inputStyle} />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs font-medium mb-2" style={{ color: "var(--adm-on-variant)" }}>Brand voice</label>
-          <div className="flex flex-wrap gap-2">
-            {BRAND_VOICES.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => setBrandVoice(v.id)}
-                className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                style={{
-                  background: brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
-                  color: brandVoice === v.id ? "#fff" : "var(--adm-on-surface)",
-                  border: `1px solid ${brandVoice === v.id ? "transparent" : "var(--adm-border-subtle)"}`,
-                  boxShadow: brandVoice === v.id ? "var(--adm-cta-glow-shadow)" : "none",
-                }}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Optional branding files: logo file + brand guidelines */}
+    <div
+      className="mt-10 min-w-0 max-w-full rounded-2xl overflow-hidden"
+      style={{ border: "1px solid var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+    >
       <div
-        className="space-y-4 rounded-xl p-4 border"
-        style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
+        className="flex items-center justify-between px-6 py-5"
+        style={{ borderBottom: "1px solid var(--adm-border-subtle)" }}
       >
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
-            {t("configAssets.brandingTitle")}
+          <p
+            className="mb-0.5 text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--adm-primary)" }}
+          >
+            {tSettingsMain("account")}
           </p>
-          <p className="text-[11px] mt-1" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.brandingHint")}</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>
+            {tSettingsMain("title")}
+          </h2>
         </div>
+      </div>
+
+      <div className="space-y-8 px-6 py-6">
+        {/* Website domain */}
+        <div
+          className="space-y-3 rounded-xl p-5"
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+            {tBrand("domainLabel")}
+          </p>
+          <input
+            type="text"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder="yourdomain.com"
+            className={`${inputClass} w-full rounded-xl px-4 py-3`}
+            style={inputFieldStyle}
+          />
+        </div>
+
+        {/* Posting frequency */}
+        <div
+          className="space-y-6 rounded-xl p-5"
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
+        >
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tSettingsMain("postingFrequency")}
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {FREQUENCY_OPTIONS.map((opt) => {
+                const active = frequency === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFrequency(opt.value)}
+                    className={
+                      "rounded-xl border px-4 py-3 text-left transition-all " +
+                      (active
+                        ? "border-[var(--adm-accent-border)]"
+                        : "border-[var(--adm-border-subtle)] hover:border-[var(--adm-outline-variant)] hover:bg-[var(--adm-interactive-hover)]")
+                    }
+                    style={{
+                      background: active ? "var(--adm-primary-soft-bg)" : "var(--adm-surface-high)",
+                      boxShadow: active ? "var(--adm-locale-glow)" : "none",
+                    }}
+                  >
+                    <div
+                      className="text-sm font-semibold"
+                      style={{ color: active ? "var(--adm-primary)" : "var(--adm-on-surface)" }}
+                    >
+                      {opt.label}
+                    </div>
+                    <div className="mt-0.5 text-[11px]" style={{ color: "var(--adm-on-variant)" }}>
+                      {opt.sublabel}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Brand */}
+        <div
+          className="space-y-5 rounded-xl p-5"
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+            {tSettingsMain("brand.title")}
+          </p>
+          <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+            {tSettingsMain("brand.description")}
+          </p>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tBrand("companyNameLabel")}
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tBrand("logoLabel")} (URL)
+            </label>
+            <input
+              type="text"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://..."
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tBrand("colorsLabel")}
+            </label>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[
+                { label: tBrand("primaryColor"), hex: primaryColor, setHex: setPrimaryColor, fallback: "#7c5cfc" },
+                { label: tBrand("secondaryColor"), hex: secondaryColor, setHex: setSecondaryColor, fallback: "#22d3a0" },
+                { label: tBrand("tertiaryColor"), hex: tertiaryColor, setHex: setTertiaryColor, fallback: "#f59e0b" },
+                {
+                  label: "Alternative (optional, for cover variety)",
+                  hex: alternativeColor,
+                  setHex: setAlternativeColor,
+                  fallback: "#1e293b",
+                  optional: true,
+                },
+              ].map((row) => {
+                const raw = (row.hex ?? "").trim();
+                const pickerValue = /^#[0-9A-Fa-f]{6}$/.test(raw) ? raw.slice(0, 7) : row.fallback;
+                return (
+                  <div
+                    key={row.label}
+                    className="flex items-center gap-3 rounded-xl border p-3"
+                    style={{ background: "var(--adm-surface-high)", borderColor: "var(--adm-border-subtle)" }}
+                  >
+                    <input
+                      type="color"
+                      value={pickerValue}
+                      onChange={(e) => row.setHex(e.target.value)}
+                      className="h-10 w-10 cursor-pointer rounded-lg border-0 bg-transparent"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>
+                        {row.label}
+                      </p>
+                      <input
+                        type="text"
+                        value={row.hex}
+                        onChange={(e) => row.setHex(e.target.value)}
+                        placeholder={"optional" in row && row.optional ? "—" : undefined}
+                        className="mt-0.5 w-full bg-transparent font-mono text-xs outline-none"
+                        style={{ color: "var(--adm-on-variant)" }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tBrand("fontStyleLabel")}
+            </label>
+            <input
+              type="text"
+              value={fontStyle}
+              onChange={(e) => setFontStyle(e.target.value)}
+              placeholder={tBrand("fontStylePlaceholder")}
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tBrand("brandVoiceLabel")}
+            </label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {BRAND_VOICES.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setBrandVoice(v.id)}
+                  className={
+                    "rounded-xl border px-3 py-2.5 text-left text-xs font-medium transition-all " +
+                    (brandVoice === v.id
+                      ? "border-[var(--adm-primary-container)]"
+                      : "border-[var(--adm-border-subtle)] hover:border-[var(--adm-outline-variant)] hover:bg-[var(--adm-interactive-hover)]")
+                  }
+                  style={{
+                    background: brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
+                    color: brandVoice === v.id ? "white" : "var(--adm-on-surface)",
+                  }}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Branding file uploads */}
+        <div
+          className="space-y-5 rounded-xl border p-5"
+          style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {t("configAssets.brandingTitle")}
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>
+              {t("configAssets.brandingHint")}
+            </p>
+          </div>
         <div className="flex flex-wrap items-start gap-4">
           <div className="space-y-2">
             <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.logoFile")}</p>
@@ -402,7 +543,7 @@ export function EditUserConfig({
             <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.guidelinesHint")}</p>
             {brandGuidelinesText?.trim() ? (
               <pre
-                className="text-[10px] p-2 rounded-lg max-h-28 overflow-auto whitespace-pre-wrap"
+                className="max-h-40 max-w-full overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-3 text-[11px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
                 {brandGuidelinesText.slice(0, 1200)}
@@ -469,15 +610,24 @@ export function EditUserConfig({
         </div>
       )}
 
-      {/* Author */}
-      <div className="grid grid-cols-2 gap-3">
+        {/* Author (blog byline) */}
+        <div
+          className="space-y-3 rounded-xl border p-5"
+          style={{ background: "var(--adm-surface-highest)", borderColor: "var(--adm-border-subtle)" }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+            Author (for blog posts)
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Display name</label>
-          <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={inputStyle} />
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Display name</label>
+          <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                style={inputFieldStyle} />
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Avatar URL</label>
-          <input type="text" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} style={inputStyle} />
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Avatar URL</label>
+          <input type="text" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                style={inputFieldStyle} />
           <div className="flex flex-wrap items-center gap-2">
             {avatarUrl?.trim() ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -524,44 +674,47 @@ export function EditUserConfig({
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Job title</label>
-          <input type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Content Lead" style={inputStyle} />
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Job title</label>
+          <input type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Content Lead" className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                style={inputFieldStyle} />
         </div>
-        <div className="col-span-2">
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Bio</label>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={2} style={inputStyle} />
+        <div className="sm:col-span-2">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Bio</label>
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                style={inputFieldStyle} />
         </div>
-      </div>
+          </div>
+        </div>
 
-      {/* Cover reference images (optional) */}
-      <div
-        className="space-y-4 rounded-xl p-4 border"
-        style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
-      >
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
-            {t("configAssets.referenceTitle")}
-          </p>
-          <p className="text-[11px] mt-1" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.referenceHint")}</p>
-        </div>
+        {/* Cover references */}
+        <div
+          className="space-y-5 rounded-xl border p-5"
+          style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tAssets("title")}
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>{tAssets("description")}</p>
+          </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {([1, 2, 3] as const).map((slot) => {
             const path = slot === 1 ? coverRef1 : slot === 2 ? coverRef2 : coverRef3;
             const src = brandAssetUrl(path);
             return (
               <div key={slot} className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
-                  {t("configAssets.referenceSlot", { n: slot })}
+                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
+                  {tAssets("referenceSlot", { n: slot })}
                 </p>
                 <div
-                  className="aspect-video rounded-lg overflow-hidden flex items-center justify-center"
+                  className="flex aspect-video items-center justify-center overflow-hidden rounded-xl"
                   style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
                 >
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={src} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.emptySlot")}</span>
+                    <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{tAssets("empty")}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -612,44 +765,117 @@ export function EditUserConfig({
         </div>
       </div>
 
-      {/* Webhook */}
-      <div className="space-y-3">
-        <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Webhook URL</label>
-        <input type="url" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
-        <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Webhook secret</label>
-        <input type="text" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} style={inputStyle} />
-        <div>
-          <label className="block text-xs font-medium mb-1" style={{ color: "var(--adm-on-variant)" }}>Event format</label>
-          <select value={webhookEventFormat} onChange={(e) => setWebhookEventFormat(e.target.value as "spec" | "legacy")} style={inputStyle}>
-            <option value="spec">post.published (standard)</option>
-            <option value="legacy">cms.post.published (legacy)</option>
-          </select>
-          <p className="text-[11px] mt-0.5" style={{ color: "var(--adm-on-variant)" }}>Use legacy if your site expects cms.post.published</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="edit_auto_publish" checked={autoPublish} onChange={(e) => setAutoPublish(e.target.checked)} className="rounded" />
-          <label htmlFor="edit_auto_publish" className="text-xs" style={{ color: "var(--adm-on-surface)" }}>Auto-publish to webhook</label>
-        </div>
-      </div>
-
-      {saveError && <p className="text-xs" style={{ color: "var(--adm-error)" }}>{saveError}</p>}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-          style={{
-            background: "var(--adm-primary-container)",
-            color: "#fff",
-            boxShadow: "var(--adm-cta-glow-shadow)",
-          }}
+        {/* Webhook & auto-publish */}
+        <div
+          className="space-y-5 rounded-xl border p-5"
+          style={{ background: "var(--adm-surface-highest)", borderColor: "var(--adm-border-subtle)" }}
         >
-          {saving ? t("webhookSaving") : "Save all"}
-        </button>
-        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm" style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}>
-          {tCommon("cancel")}
-        </button>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tWh("title")}
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>{tWh("description")}</p>
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tWh("urlLabel")}
+            </label>
+            <input
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://..."
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tWh("secretLabel")}
+            </label>
+            <input
+              type="text"
+              value={webhookSecret}
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              placeholder={tWh("secretPlaceholder")}
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              Event format
+            </label>
+            <select
+              value={webhookEventFormat}
+              onChange={(e) => setWebhookEventFormat(e.target.value as "spec" | "legacy")}
+              className={`${inputClass} w-full rounded-xl px-4 py-3`}
+              style={inputFieldStyle}
+            >
+              <option value="spec">post.published (standard)</option>
+              <option value="legacy">cms.post.published (legacy)</option>
+            </select>
+            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>
+              Use legacy if your site expects cms.post.published
+            </p>
+          </div>
+          <div
+            className="flex items-center justify-between rounded-xl border px-4 py-3"
+            style={{
+              background: autoPublish ? "rgba(34, 211, 160, 0.12)" : "var(--adm-surface-high)",
+              borderColor: autoPublish ? "rgba(34,211,160,0.2)" : "var(--adm-border-subtle)",
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>
+              {autoPublish ? tWh("autoPublishOn") : tWh("autoPublishOff")}
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoPublish}
+              onClick={() => setAutoPublish((v) => !v)}
+              className="relative h-5 w-10 flex-shrink-0 rounded-full transition-all"
+              style={{ background: autoPublish ? "var(--success)" : "var(--adm-border-subtle)" }}
+            >
+              <span
+                className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full transition-transform"
+                style={{
+                  background: "white",
+                  transform: autoPublish ? "translateX(20px)" : "translateX(0)",
+                }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {saveError && (
+          <p className="text-sm" style={{ color: "var(--adm-error)" }}>
+            {saveError}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-40"
+            style={{
+              background: "var(--adm-primary-container)",
+              color: "#fff",
+              boxShadow: saving ? "none" : "var(--adm-cta-glow-shadow)",
+            }}
+          >
+            {saving ? tSettingsMain("saving") : t("saveAllChanges")}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--adm-interactive-hover)]"
+            style={{ borderColor: "var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+          >
+            {tCommon("cancel")}
+          </button>
+        </div>
       </div>
     </div>
   );

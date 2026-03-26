@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/lib/navigation";
 import { getPostWithLocalizations } from "@/lib/data/post-detail";
 import { requireTeamMember } from "@/lib/auth";
 import { getSourcesList, getCitationsForPost } from "../../sources/actions";
@@ -59,10 +60,30 @@ export default async function EditPostPage({
     return uploadCoverImage(id, formData);
   }
 
+  const postsListHref = `/admin/posts?user=${data.author_id}`;
+
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-6">{t("editPost")}</h1>
+    <div className="max-w-6xl">
+      <div className="mb-8">
+        <Link
+          href={postsListHref}
+          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{ color: "var(--adm-on-variant)" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {t("backToPosts")}
+        </Link>
+        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--adm-on-surface)" }}>
+          {t("editPost")}
+        </h1>
+        <p className="mt-1 font-mono text-sm" style={{ color: "var(--adm-on-variant)" }}>
+          {data.slug}
+        </p>
+      </div>
       <EditPostForm
+        postsListHref={postsListHref}
         post={data}
         statusOptions={statusOptions.map((s) => ({ value: s, label: tPost(s) }))}
         contentTypes={contentTypes.map((c) => ({ value: c, label: tContent(c) }))}

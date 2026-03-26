@@ -96,7 +96,7 @@ export function CoverImageUpload({
       {displayUrl && (
         <div
           className="relative overflow-hidden rounded-xl"
-          style={{ border: "1px solid var(--border)", maxWidth: "320px", aspectRatio: "16/9" }}
+          style={{ border: "1px solid var(--adm-border-subtle)", maxWidth: "320px", aspectRatio: "16/9" }}
         >
           <img
             src={displayUrl}
@@ -112,9 +112,9 @@ export function CoverImageUpload({
         <label
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all"
           style={{
-            background: "var(--surface-raised)",
-            border: "1px solid var(--border)",
-            color: selectedFile ? "var(--text)" : "var(--text-muted)",
+            background: "var(--adm-surface-highest)",
+            border: "1px solid var(--adm-border-subtle)",
+            color: selectedFile ? "var(--adm-on-surface)" : "var(--adm-on-variant)",
           }}
         >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -138,14 +138,14 @@ export function CoverImageUpload({
             onClick={handleUpload}
             disabled={uploading}
             className="px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
-            style={{ background: "var(--accent)", color: "white" }}
+            style={{ background: "var(--adm-primary-container)", color: "#fff", boxShadow: "0 0 14px rgba(104, 57, 234, 0.35)" }}
           >
             {uploading ? "Uploading…" : "Upload"}
           </button>
         )}
 
         {/* Divider */}
-        <span className="text-xs" style={{ color: "var(--text-faint)" }}>or</span>
+        <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>or</span>
 
         {/* Auto-generate from Unsplash */}
         <button
@@ -154,10 +154,10 @@ export function CoverImageUpload({
           disabled={generating || uploading}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
           style={{
-            background: generating ? "var(--surface-raised)" : "linear-gradient(135deg, #7c5cfc, #a78bfa)",
-            color: generating ? "var(--text-muted)" : "white",
-            border: generating ? "1px solid var(--border)" : "none",
-            boxShadow: generating ? "none" : "0 0 16px rgba(124,92,252,0.25)",
+            background: generating ? "var(--adm-surface-highest)" : "linear-gradient(135deg, #6839ea, #8b6bef)",
+            color: generating ? "var(--adm-on-variant)" : "white",
+            border: generating ? "1px solid var(--adm-border-subtle)" : "none",
+            boxShadow: generating ? "none" : "0 0 14px rgba(104, 57, 234, 0.35)",
           }}
         >
           {generating ? (
@@ -178,18 +178,18 @@ export function CoverImageUpload({
         </button>
 
         {success && (
-          <span className="text-xs font-medium" style={{ color: "var(--success)" }}>✓ Saved</span>
+          <span className="text-xs font-medium" style={{ color: "#4ade80" }}>✓ Saved</span>
         )}
       </div>
 
       {focusKeyword && (
-        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-          Will search Unsplash for: <span style={{ color: "var(--text-muted)" }}>{focusKeyword}</span>
+        <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+          Will search Unsplash for: <span style={{ color: "var(--adm-on-variant)" }}>{focusKeyword}</span>
         </p>
       )}
 
       {error && (
-        <p className="text-xs" style={{ color: "var(--danger)" }}>{error}</p>
+        <p className="text-xs" style={{ color: "var(--adm-error)" }}>{error}</p>
       )}
     </div>
   );

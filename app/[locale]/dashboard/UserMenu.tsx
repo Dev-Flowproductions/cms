@@ -4,7 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLocale, useTranslations } from "next-intl";
 
-export function UserMenu({ email, initial }: { email: string; initial: string }) {
+export function UserMenu({
+  email,
+  initial,
+  variant = "default",
+}: {
+  email: string;
+  initial: string;
+  variant?: "default" | "editorial";
+}) {
   const t = useTranslations("userMenu");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,22 +36,35 @@ export function UserMenu({ email, initial }: { email: string; initial: string })
     window.location.replace(`${window.location.origin}/${locale}/login`);
   }
 
+  const ed = variant === "editorial";
+
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2.5 focus:outline-none"
       >
-        <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
+        <span
+          className="hidden max-w-[140px] truncate text-xs sm:block"
+          style={{ color: ed ? "var(--adm-on-variant)" : "var(--text-muted)" }}
+        >
           {email}
         </span>
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-          style={{
-            background: open ? "var(--accent)" : "var(--accent-glow)",
-            border: "1.5px solid var(--accent)",
-            color: open ? "white" : "var(--accent)",
-          }}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all"
+          style={
+            ed
+              ? {
+                  background: open ? "var(--adm-primary-container)" : "rgba(104, 57, 234, 0.25)",
+                  border: "1.5px solid var(--adm-primary)",
+                  color: open ? "#fff" : "var(--adm-primary)",
+                }
+              : {
+                  background: open ? "var(--accent)" : "var(--accent-glow)",
+                  border: "1.5px solid var(--accent)",
+                  color: open ? "white" : "var(--accent)",
+                }
+          }
         >
           {initial}
         </div>
@@ -51,35 +72,46 @@ export function UserMenu({ email, initial }: { email: string; initial: string })
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-52 rounded-2xl overflow-hidden z-50"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-          }}
+          className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl"
+          style={
+            ed
+              ? {
+                  background: "var(--adm-surface-high)",
+                  border: "1px solid var(--adm-outline-variant)",
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+                }
+              : {
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                }
+          }
         >
-          {/* Email row */}
           <div
             className="px-4 py-3"
-            style={{ borderBottom: "1px solid var(--border)" }}
+            style={{ borderBottom: `1px solid ${ed ? "var(--adm-outline-variant)" : "var(--border)"}` }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-faint)" }}>
+            <p
+              className="mb-0.5 text-[11px] font-semibold uppercase tracking-widest"
+              style={{ color: ed ? "var(--adm-on-variant)" : "var(--text-faint)" }}
+            >
               {t("signedInAs")}
             </p>
-            <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
+            <p className="truncate text-xs font-medium" style={{ color: ed ? "var(--adm-on-surface)" : "var(--text)" }}>
               {email}
             </p>
           </div>
 
-          {/* Logout */}
           <div className="p-1.5">
             <button
               onClick={handleLogout}
               disabled={loading}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left disabled:opacity-50"
-              style={{ color: "var(--danger)" }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium transition-all disabled:opacity-50"
+              style={{ color: ed ? "var(--adm-error)" : "var(--danger)" }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,92,106,0.08)";
+                (e.currentTarget as HTMLButtonElement).style.background = ed
+                  ? "rgba(255, 180, 171, 0.1)"
+                  : "rgba(255,92,106,0.08)";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = "transparent";

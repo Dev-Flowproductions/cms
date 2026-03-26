@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePost } from "@/app/[locale]/(admin)/admin/posts/actions";
 import { ScoreDots } from "@/components/ScoreDisplay";
+import { POST_STATUS_BADGE_STYLES } from "@/lib/dashboard/post-status-styles";
 
 type SeoScore = { seo: number; aeo: number; geo: number };
 
@@ -35,19 +36,6 @@ function extractScore(
   if (s && typeof s.seo === "number") return s as SeoScore;
   return null;
 }
-
-const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  idea:       { bg: "rgba(120,120,160,0.12)", text: "var(--text-muted)", dot: "var(--text-muted)" },
-  research:   { bg: "rgba(99,179,237,0.1)",   text: "#63b3ed", dot: "#63b3ed" },
-  draft:      { bg: "rgba(245,166,35,0.1)",   text: "#f5a623", dot: "#f5a623" },
-  optimize:   { bg: "rgba(255,128,72,0.1)",   text: "#ff8048", dot: "#ff8048" },
-  format:     { bg: "rgba(124,92,252,0.12)",  text: "#a78bfa", dot: "#a78bfa" },
-  review:     { bg: "rgba(240,98,146,0.1)",   text: "#f06292", dot: "#f06292" },
-  approved:   { bg: "rgba(34,211,160,0.1)",   text: "#22d3a0", dot: "#22d3a0" },
-  scheduled:  { bg: "rgba(99,102,241,0.1)",   text: "#818cf8", dot: "#818cf8" },
-  published:  { bg: "rgba(34,211,160,0.12)",  text: "#22d3a0", dot: "#22d3a0" },
-  archived:   { bg: "rgba(255,92,106,0.1)",   text: "#ff5c6a", dot: "#ff5c6a" },
-};
 
 export function DashboardPostsTable({
   posts,
@@ -111,7 +99,7 @@ export function DashboardPostsTable({
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
               <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
-            New post
+            {t("dashboard.newPost")}
           </Link>
         )}
       </div>
@@ -149,7 +137,7 @@ export function DashboardPostsTable({
             {t("dashboard.noPostsYet")}
           </p>
           <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
-            {isAdmin ? t("dashboard.postsAutoCreated") : "Posts are generated automatically — or create one manually above."}
+            {isAdmin ? t("dashboard.postsAutoCreated") : t("dashboard.postsEmptyManualHint")}
           </p>
           {!isAdmin && (
             <Link
@@ -164,7 +152,7 @@ export function DashboardPostsTable({
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                 <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
-              Write your first post
+              {t("dashboard.writeFirstPost")}
             </Link>
           )}
         </div>
@@ -223,7 +211,7 @@ export function DashboardPostsTable({
             <tbody>
               {posts.map((post, i) => {
                 const authorName = getDisplayName(post.profiles);
-                const cfg = STATUS_CONFIG[post.status] ?? STATUS_CONFIG.idea;
+                const cfg = POST_STATUS_BADGE_STYLES[post.status] ?? POST_STATUS_BADGE_STYLES.idea;
                 const isDeleting = deletingId === post.id;
                 const isLast = i === posts.length - 1;
                 const score = extractScore(post.post_localizations, post.primary_locale);

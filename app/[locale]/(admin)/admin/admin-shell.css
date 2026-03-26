@@ -1,0 +1,46 @@
+/* Editorial shell — scoped to .admin-shell-root or .editorial-shell-root (MD3-inspired dark) */
+
+.admin-shell-root,
+.editorial-shell-root {
+  --adm-bg: #0b1326;
+  --adm-sidebar: #131b2e;
+  --adm-surface-high: #222a3d;
+  --adm-surface-highest: #2d3449;
+  --adm-on-surface: #dae2fd;
+  --adm-on-variant: #cac3d8;
+  --adm-primary: #ccbdff;
+  --adm-primary-container: #6839ea;
+  --adm-on-primary: #350097;
+  --adm-outline-variant: rgba(73, 68, 85, 0.35);
+  --adm-error: #ffb4ab;
+  --adm-border-subtle: rgba(73, 68, 85, 0.2);
+}
+
+.admin-shell-glass,
+.editorial-shell-glass {
+  background: rgba(23, 31, 51, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.admin-shell-ai-glow,
+.editorial-shell-ai-glow {
+  box-shadow: 0 0 40px 5px rgba(104, 57, 234, 0.12);
+}
+
+.admin-shell-root ::selection,
+.editorial-shell-root ::selection {
+  background: var(--adm-primary-container);
+  color: #fff;
+}
+
+.admin-shell-root ::-webkit-scrollbar-thumb,
+.editorial-shell-root ::-webkit-scrollbar-thumb {
+  background: var(--adm-surface-high);
+  border-radius: 10px;
+}
+
+.admin-shell-root ::-webkit-scrollbar-track,
+.editorial-shell-root ::-webkit-scrollbar-track {
+  background: transparent;
+}

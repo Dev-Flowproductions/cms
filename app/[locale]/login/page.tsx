@@ -44,69 +44,59 @@ export default function LoginPage() {
       setRedirecting(false);
       const message = err instanceof Error ? err.message : String(err);
       if (message === "Failed to fetch" || message.toLowerCase().includes("fetch")) {
-        setError(
-          t("auth.errors.networkError")
-        );
+        setError(t("auth.errors.networkError"));
       } else {
         setError(message);
       }
     }
   }
 
+  const inputClass =
+    "w-full rounded-lg border-none px-4 py-3 text-sm transition-all placeholder:text-[#948ea1]/80 focus:outline-none focus:ring-1 focus:ring-[#ccbdff]/50";
+
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
-      {/* Left panel — branding */}
+    <div
+      className="editorial-shell-root flex min-h-screen text-[var(--adm-on-surface)] antialiased"
+      style={{ background: "var(--adm-bg)" }}
+    >
       <div
-        className="hidden lg:flex flex-col justify-between w-1/2 p-16 relative overflow-hidden"
-        style={{ background: "var(--surface)" }}
+        className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-16 lg:flex"
+        style={{ background: "var(--adm-sidebar)" }}
       >
-        {/* Gradient orb */}
         <div
-          className="absolute top-[-120px] left-[-80px] w-[480px] h-[480px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(124,92,252,0.25) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
+          className="pointer-events-none absolute -left-20 -top-28 h-[480px] w-[480px] rounded-full bg-[#6839ea]/20 blur-[100px]"
+          aria-hidden
         />
         <div
-          className="absolute bottom-[-100px] right-[-60px] w-[360px] h-[360px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(124,92,252,0.15) 0%, transparent 70%)",
-            filter: "blur(60px)",
-          }}
+          className="pointer-events-none absolute -bottom-24 -right-16 h-[360px] w-[360px] rounded-full bg-[#ccbdff]/10 blur-[80px]"
+          aria-hidden
         />
 
-        {/* Logo */}
         <div className="relative z-10">
-          <AppLogo className="h-10 w-auto object-contain" />
+          <AppLogo className="h-10 w-auto object-contain opacity-95" />
         </div>
 
-        {/* Tagline */}
         <div className="relative z-10">
-          <h2
-            className="text-4xl font-bold leading-tight mb-4"
-            style={{ color: "var(--text)" }}
-          >
+          <h2 className="mb-4 text-4xl font-bold leading-tight tracking-tight" style={{ color: "var(--adm-on-surface)" }}>
             {t("login.tagline")}{" "}
-            <span className="text-gradient">{t("login.taglineAccent")}</span>
+            <span style={{ color: "var(--adm-primary)" }}>{t("login.taglineAccent")}</span>
           </h2>
-          <p className="text-base leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          <p className="max-w-md text-base leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
             {t("login.taglineSubtitle")}
           </p>
         </div>
 
-        {/* Stats row */}
-        <div className="relative z-10 flex gap-8">
+        <div className="relative z-10 flex gap-10">
           {[
             { value: "3", label: t("login.stats.locales") },
             { value: "AI", label: t("login.stats.assisted") },
             { value: "∞", label: t("login.stats.posts") },
           ].map((stat) => (
             <div key={stat.label}>
-              <div className="text-2xl font-bold" style={{ color: "var(--accent)" }}>
+              <div className="text-2xl font-bold" style={{ color: "var(--adm-primary)" }}>
                 {stat.value}
               </div>
-              <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+              <div className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
                 {stat.label}
               </div>
             </div>
@@ -114,18 +104,16 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm animate-slide-up">
-          {/* Mobile logo */}
-          <div className="mb-10 lg:hidden">
-            <AppLogo className="h-9 w-auto object-contain" />
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="editorial-shell-glass w-full max-w-sm animate-slide-up rounded-2xl border p-8 sm:p-10" style={{ borderColor: "var(--adm-border-subtle)" }}>
+          <div className="mb-8 lg:hidden">
+            <AppLogo className="h-9 w-auto object-contain opacity-95" />
           </div>
 
-          <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>
+          <h1 className="mb-1 text-2xl font-bold" style={{ color: "var(--adm-on-surface)" }}>
             {t("login.title")}
           </h1>
-          <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
+          <p className="mb-8 text-sm" style={{ color: "var(--adm-on-variant)" }}>
             {t("login.subtitle")}
           </p>
 
@@ -133,8 +121,8 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-semibold uppercase tracking-widest mb-2"
-                style={{ color: "var(--text-muted)" }}
+                className="mb-2 block text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: "var(--adm-on-variant)" }}
               >
                 {t("auth.email")}
               </label>
@@ -144,19 +132,10 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                className={inputClass}
                 style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text)",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--accent)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.boxShadow = "none";
+                  background: "var(--adm-surface-highest)",
+                  color: "var(--adm-on-surface)",
                 }}
                 autoComplete="email"
                 placeholder={t("login.emailPlaceholder")}
@@ -166,8 +145,8 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold uppercase tracking-widest mb-2"
-                style={{ color: "var(--text-muted)" }}
+                className="mb-2 block text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: "var(--adm-on-variant)" }}
               >
                 {t("auth.password")}
               </label>
@@ -177,19 +156,10 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl text-sm transition-all"
+                className={inputClass}
                 style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text)",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--accent)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.boxShadow = "none";
+                  background: "var(--adm-surface-highest)",
+                  color: "var(--adm-on-surface)",
                 }}
                 autoComplete="current-password"
                 placeholder="••••••••"
@@ -198,11 +168,11 @@ export default function LoginPage() {
 
             {error && (
               <div
-                className="px-4 py-3 rounded-xl text-sm"
+                className="rounded-lg px-4 py-3 text-sm"
                 style={{
-                  background: "rgba(255,92,106,0.08)",
-                  border: "1px solid rgba(255,92,106,0.25)",
-                  color: "var(--danger)",
+                  background: "rgba(255, 180, 171, 0.08)",
+                  border: "1px solid rgba(255, 180, 171, 0.25)",
+                  color: "var(--adm-error)",
                 }}
               >
                 {error}
@@ -212,49 +182,27 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || redirecting}
-              className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all disabled:opacity-50"
-              style={{
-                background: loading || redirecting ? "var(--accent-dim)" : "var(--accent)",
-                color: "white",
-                boxShadow: loading || redirecting ? "none" : "0 0 24px rgba(124,92,252,0.35)",
-              }}
-              onMouseEnter={(e) => {
-                if (!loading && !redirecting) {
-                  e.currentTarget.style.background = "var(--accent-dim)";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading && !redirecting) {
-                  e.currentTarget.style.background = "var(--accent)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
-              }}
+              className="w-full rounded-lg bg-gradient-to-r from-[#6839ea] to-[#8b6bef] py-3 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-[#6839ea]/25 transition-all disabled:opacity-50"
             >
-              {redirecting
-                ? t("login.redirecting")
-                : loading
-                ? t("login.signingIn")
-                : t("auth.signIn")}
+              {redirecting ? t("login.redirecting") : loading ? t("login.signingIn") : t("auth.signIn")}
             </button>
           </form>
 
-          {/* Legal links */}
           <div className="mt-8 flex items-center justify-center gap-4">
             <a
               href={`/${locale}/privacy`}
-              className="text-xs transition-opacity hover:opacity-70"
-              style={{ color: "var(--text-faint)" }}
+              className="text-xs transition-opacity hover:opacity-80"
+              style={{ color: "var(--adm-on-variant)" }}
             >
-              Privacy policy
+              {t("login.privacyPolicy")}
             </a>
-            <span style={{ color: "var(--border)" }}>·</span>
+            <span style={{ color: "var(--adm-outline-variant)" }}>·</span>
             <a
               href={`/${locale}/terms`}
-              className="text-xs transition-opacity hover:opacity-70"
-              style={{ color: "var(--text-faint)" }}
+              className="text-xs transition-opacity hover:opacity-80"
+              style={{ color: "var(--adm-on-variant)" }}
             >
-              Terms of use
+              {t("login.termsOfUse")}
             </a>
           </div>
         </div>

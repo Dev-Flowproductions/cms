@@ -72,6 +72,38 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus; userId?:
   return { posts: posts ?? [], clientByAuthor };
 }
 
+/** Latest posts across all clients — for admin home (bounded query). */
+export async function getRecentPostsForAdmin(limit: number) {
+  const admin = createAdminClient();
+  const { data: posts, error } = await admin
+    .from("posts")
+    .select("id, slug, status, primary_locale, author_id, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!posts?.length) return [];
+
+  const authorIds = [...new Set(posts.map((p) => p.author_id))];
+  const { data: clients } = await admin
+    .from("clients")
+    .select("user_id, company_name, brand_name")
+    .in("user_id", authorIds);
+  const accountByAuthor: Record<string, string> = {};
+  for (const c of clients ?? []) {
+    accountByAuthor[c.user_id] = (c.company_name ?? c.brand_name ?? "").trim() || "—";
+  }
+
+  return posts.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    status: p.status,
+    primary_locale: p.primary_locale,
+    author_id: p.author_id,
+    updated_at: p.updated_at,
+    accountName: accountByAuthor[p.author_id] ?? "—",
+  }));
+}
+
 export async function getPostsForDashboard(userId: string, isAdmin: boolean) {
   const supabase = await createClient();
   let query = supabase

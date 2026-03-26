@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/navigation";
+import { useTranslations } from "next-intl";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { CoverImageUpload } from "./CoverImageUpload";
 import { CitationsBlock } from "./CitationsBlock";
@@ -36,6 +37,8 @@ type Post = {
 };
 
 type Props = {
+  /** Account-scoped posts list (after delete / navigation). */
+  postsListHref: string;
   post: Post;
   statusOptions: Option[];
   contentTypes: Option[];
@@ -65,10 +68,10 @@ function InputField({ label, hint, children }: { label: string; hint?: string; c
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+        <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
           {label}
         </label>
-        {hint && <span className="text-xs" style={{ color: "var(--text-faint)" }}>{hint}</span>}
+        {hint && <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{hint}</span>}
       </div>
       {children}
     </div>
@@ -76,9 +79,9 @@ function InputField({ label, hint, children }: { label: string; hint?: string; c
 }
 
 const inputStyle = {
-  background: "var(--surface-raised)",
-  border: "1px solid var(--border)",
-  color: "var(--text)",
+  background: "var(--adm-surface-highest)",
+  border: "1px solid var(--adm-border-subtle)",
+  color: "var(--adm-on-surface)",
   borderRadius: "0.75rem",
   padding: "0.625rem 0.875rem",
   width: "100%",
@@ -86,10 +89,11 @@ const inputStyle = {
   outline: "none",
 } as React.CSSProperties;
 
-const focusStyle = { borderColor: "var(--accent)" };
-const blurStyle  = { borderColor: "var(--border)" };
+const focusStyle = { borderColor: "var(--adm-primary)" };
+const blurStyle  = { borderColor: "var(--adm-border-subtle)" };
 
 export function EditPostForm({
+  postsListHref,
   post,
   statusOptions,
   contentTypes,
@@ -103,6 +107,8 @@ export function EditPostForm({
   citations,
   publishConfig,
 }: Props) {
+  const t = useTranslations("admin");
+
   const [postState, setPostState] = useActionState(
     async (_: unknown, formData: FormData) => updatePostAction(formData),
     null
@@ -161,7 +167,7 @@ export function EditPostForm({
       const { deletePost } = await import("@/app/[locale]/(admin)/admin/posts/actions");
       const result = await deletePost(post.id);
       if (result.error) { setDeleteError(result.error); setDeleting(false); return; }
-      router.push("../posts");
+      router.push(postsListHref);
       router.refresh();
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : "Unknown error");
@@ -257,14 +263,14 @@ export function EditPostForm({
   }
 
   const sectionStyle = {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
+    background: "var(--adm-surface-high)",
+    border: "1px solid var(--adm-border-subtle)",
     borderRadius: "1rem",
     padding: "1.5rem",
   };
 
   const sectionHeadingStyle = {
-    color: "var(--accent)",
+    color: "var(--adm-primary)",
     fontSize: "0.65rem",
     fontWeight: 700,
     textTransform: "uppercase" as const,
@@ -272,8 +278,21 @@ export function EditPostForm({
     marginBottom: "1rem",
   };
 
+  const primaryCtaShadow = "0 0 14px rgba(104, 57, 234, 0.35)";
+  const primaryGradient = "linear-gradient(135deg, #6839ea, #8b6bef)";
+
   return (
     <div className="space-y-6">
+      <Link
+        href={postsListHref}
+        className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80 lg:hidden"
+        style={{ color: "var(--adm-on-variant)" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+          <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {t("backToPosts")}
+      </Link>
 
       {/* ── Publish confirmation modal ── */}
       {showPublishConfirm && (
@@ -284,23 +303,23 @@ export function EditPostForm({
         >
           <div
             className="w-full max-w-md rounded-2xl p-6 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
           >
             <div className="flex items-start gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(34,211,160,0.12)" }}
+                style={{ background: "rgba(104, 57, 234, 0.12)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#22d3a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--adm-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                <h3 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>
                   Ready to publish?
                 </h3>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                  This will push the post to the client&apos;s website via webhook and mark it as <strong style={{ color: "var(--text)" }}>published</strong>.
+                <p className="text-sm mt-1" style={{ color: "var(--adm-on-variant)" }}>
+                  This will push the post to the client&apos;s website via webhook and mark it as <strong style={{ color: "var(--adm-on-surface)" }}>published</strong>.
                 </p>
               </div>
             </div>
@@ -310,9 +329,9 @@ export function EditPostForm({
                 disabled={publishing}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                 style={{
-                  background: "linear-gradient(135deg, #22d3a0, #34d399)",
-                  color: "var(--bg)",
-                  boxShadow: "0 0 16px rgba(34,211,160,0.3)",
+                  background: primaryGradient,
+                  color: "#fff",
+                  boxShadow: primaryCtaShadow,
                 }}
               >
                 {publishing ? "Publishing…" : "Yes, publish now"}
@@ -322,9 +341,9 @@ export function EditPostForm({
                 disabled={publishing}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={{
-                  background: "var(--surface-raised)",
-                  color: "var(--text-muted)",
-                  border: "1px solid var(--border)",
+                  background: "var(--adm-surface-highest)",
+                  color: "var(--adm-on-variant)",
+                  border: "1px solid var(--adm-border-subtle)",
                 }}
               >
                 No, keep editing
@@ -343,34 +362,34 @@ export function EditPostForm({
         >
           <div
             className="w-full max-w-md rounded-2xl p-6 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--danger)" }}
+            style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-error)" }}
           >
             <div className="flex items-start gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--danger-bg)" }}
+                style={{ background: "rgba(255, 180, 171, 0.12)" }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--adm-error)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-bold" style={{ color: "var(--text)" }}>Delete this post?</h3>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                <h3 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>Delete this post?</h3>
+                <p className="text-sm mt-1" style={{ color: "var(--adm-on-variant)" }}>
                   This will permanently delete the post and all its translations from the CMS.
                   {post.status === "published" && (
-                    <span style={{ color: "var(--danger)" }}> It will also be removed from the client&apos;s website.</span>
+                    <span style={{ color: "var(--adm-error)" }}> It will also be removed from the client&apos;s website.</span>
                   )}
                 </p>
               </div>
             </div>
-            {deleteError && <p className="text-sm" style={{ color: "var(--danger)" }}>{deleteError}</p>}
+            {deleteError && <p className="text-sm" style={{ color: "var(--adm-error)" }}>{deleteError}</p>}
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                style={{ background: "var(--danger)", color: "white" }}
+                style={{ background: "var(--adm-error)", color: "white" }}
               >
                 {deleting ? "Deleting…" : "Yes, delete permanently"}
               </button>
@@ -378,7 +397,7 @@ export function EditPostForm({
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: "var(--surface-raised)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
+                style={{ background: "var(--adm-surface-highest)", color: "var(--adm-on-variant)", border: "1px solid var(--adm-border-subtle)" }}
               >
                 Cancel
               </button>
@@ -388,7 +407,7 @@ export function EditPostForm({
       )}
 
       {/* ── Post settings ── */}
-      <section style={sectionStyle}>
+      <section className="admin-shell-glass" style={sectionStyle}>
         <p style={sectionHeadingStyle}>{labels.postSettings}</p>
 
         {post.status === "draft" && post.slug.startsWith("draft-") && (
@@ -397,7 +416,7 @@ export function EditPostForm({
             style={{
               background: "rgba(245,166,35,0.1)",
               border: "1px solid rgba(245,166,35,0.3)",
-              color: "var(--text)",
+              color: "var(--adm-on-surface)",
             }}
           >
             <strong>Incomplete generation.</strong> This post was created by the scheduler but generation did not finish. Use <strong>Generate with AI</strong> below for each locale (PT, EN, FR), then set status to <strong>Review</strong> and save.
@@ -477,12 +496,16 @@ export function EditPostForm({
           </InputField>
 
           {postState?.error && (
-            <p className="text-sm" style={{ color: "var(--danger)" }}>{postState.error}</p>
+            <p className="text-sm" style={{ color: "var(--adm-error)" }}>{postState.error}</p>
           )}
           <div className="flex items-center gap-3 flex-wrap">
             <button type="submit"
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: "var(--accent)", color: "white" }}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-95"
+              style={{
+                background: "var(--adm-primary-container)",
+                color: "#fff",
+                boxShadow: primaryCtaShadow,
+              }}
             >
               {labels.save}
             </button>
@@ -497,13 +520,13 @@ export function EditPostForm({
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                   style={{
                     background: publishing
-                      ? "var(--surface-raised)"
+                      ? "var(--adm-surface-highest)"
                       : post.webhook_status === "failed"
-                        ? "var(--danger)"
-                        : "linear-gradient(135deg, #22d3a0, #34d399)",
-                    color: publishing ? "var(--text-muted)" : "white",
-                    border: publishing ? "1px solid var(--border)" : "none",
-                    boxShadow: publishing ? "none" : post.webhook_status === "failed" ? "0 0 12px rgba(239,68,68,0.3)" : "0 0 16px rgba(34,211,160,0.25)",
+                        ? "var(--adm-error)"
+                        : primaryGradient,
+                    color: publishing ? "var(--adm-on-variant)" : "white",
+                    border: publishing ? "1px solid var(--adm-border-subtle)" : "none",
+                    boxShadow: publishing ? "none" : post.webhook_status === "failed" ? "0 0 12px rgba(239,68,68,0.3)" : primaryCtaShadow,
                   }}
                 >
                   {publishing ? (
@@ -527,7 +550,7 @@ export function EditPostForm({
             )}
 
             {!publishConfig?.hasWebhook && (
-              <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+              <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
                 No webhook configured for this author
               </span>
             )}
@@ -536,19 +559,19 @@ export function EditPostForm({
             {publishConfig?.hasWebhook && (post.webhook_status || post.webhook_error) && (
               <div className="flex flex-col gap-0.5">
                 {post.webhook_status === "success" && (
-                  <span className="text-xs font-medium" style={{ color: "var(--success)" }}>
+                  <span className="text-xs font-medium" style={{ color: "#4ade80" }}>
                     Last push: success — if the post still doesn&apos;t appear on the site, the site may not be handling the webhook payload.
                   </span>
                 )}
                 {post.webhook_status === "failed" && post.webhook_error && (
-                  <span className="text-xs font-medium max-w-md" style={{ color: "var(--danger)" }} title={post.webhook_error}>
+                  <span className="text-xs font-medium max-w-md" style={{ color: "var(--adm-error)" }} title={post.webhook_error}>
                     Last push failed: {post.webhook_error.slice(0, 80)}{post.webhook_error.length > 80 ? "…" : ""}
                   </span>
                 )}
                 {post.webhook_status === "pending" && (
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Push pending…</span>
+                  <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>Push pending…</span>
                 )}
-                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                <span className="text-[10px]" style={{ color: "var(--adm-on-variant)" }}>
                   Only &quot;Publish to website&quot; pushes to the site. Changing status to Published and saving does not.
                 </span>
               </div>
@@ -562,8 +585,8 @@ export function EditPostForm({
                 disabled={deleting}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
                 style={{
-                  background: "var(--danger-bg)",
-                  color: "var(--danger)",
+                  background: "rgba(255, 180, 171, 0.12)",
+                  color: "var(--adm-error)",
                   border: "1px solid rgba(239,68,68,0.2)",
                 }}
               >
@@ -574,12 +597,12 @@ export function EditPostForm({
               </button>
             </div>
             {publishError && (
-              <div className="rounded-lg px-3 py-2 text-sm font-medium" style={{ background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}>
+              <div className="rounded-lg px-3 py-2 text-sm font-medium" style={{ background: "rgba(239,68,68,0.1)", color: "var(--adm-error)", border: "1px solid rgba(239,68,68,0.3)" }}>
                 {publishError}
               </div>
             )}
             {publishSuccess && (
-              <span className="text-xs font-medium" style={{ color: "var(--success)" }}>
+              <span className="text-xs font-medium" style={{ color: "#4ade80" }}>
                 ✓ Published to website
               </span>
             )}
@@ -588,7 +611,7 @@ export function EditPostForm({
       </section>
 
       {/* ── Content (per locale) ── */}
-      <section style={sectionStyle}>
+      <section className="admin-shell-glass" style={sectionStyle}>
         {/* Header row: locale tabs + Generate button */}
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
           <div className="flex gap-2">
@@ -596,9 +619,10 @@ export function EditPostForm({
               <button key={l} type="button" onClick={() => setActiveLocale(l)}
                 className="px-3 py-1.5 text-xs font-semibold uppercase rounded-lg transition-all"
                 style={{
-                  background: activeLocale === l ? "var(--accent)" : "var(--surface-raised)",
-                  color: activeLocale === l ? "white" : "var(--text-muted)",
-                  border: activeLocale === l ? "none" : "1px solid var(--border)",
+                  background: activeLocale === l ? "var(--adm-primary-container)" : "var(--adm-surface-highest)",
+                  color: activeLocale === l ? "#fff" : "var(--adm-on-variant)",
+                  border: activeLocale === l ? "none" : "1px solid var(--adm-outline-variant)",
+                  boxShadow: activeLocale === l ? primaryCtaShadow : "none",
                 }}
               >
                 {l}
@@ -608,18 +632,18 @@ export function EditPostForm({
 
           {/* Generate with AI */}
           <div className="flex items-center gap-3">
-            {genError && <span className="text-xs" style={{ color: "var(--danger)" }}>{genError}</span>}
-            {genSuccess && <span className="text-xs font-medium" style={{ color: "var(--success)" }}>✓ Generated</span>}
+            {genError && <span className="text-xs" style={{ color: "var(--adm-error)" }}>{genError}</span>}
+            {genSuccess && <span className="text-xs font-medium" style={{ color: "#4ade80" }}>✓ Generated</span>}
             <button
               type="button"
               onClick={handleGenerate}
               disabled={generating || isPending}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
               style={{
-                background: generating ? "var(--surface-raised)" : "linear-gradient(135deg, #7c5cfc, #a78bfa)",
+                background: generating ? "var(--adm-surface-highest)" : primaryGradient,
                 color: "white",
-                border: generating ? "1px solid var(--border)" : "none",
-                boxShadow: generating ? "none" : "0 0 20px rgba(124,92,252,0.3)",
+                border: generating ? "1px solid var(--adm-border-subtle)" : "none",
+                boxShadow: generating ? "none" : primaryCtaShadow,
               }}
             >
               {generating ? (
@@ -689,9 +713,9 @@ export function EditPostForm({
           {/* SEO fields */}
           <div
             className="rounded-xl p-4 space-y-4"
-            style={{ background: "rgba(124,92,252,0.05)", border: "1px solid rgba(124,92,252,0.15)" }}
+            style={{ background: "rgba(104, 57, 234, 0.06)", border: "1px solid rgba(104, 57, 234, 0.2)" }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-primary)" }}>
               SEO / AEO
             </p>
             <InputField label="SEO title" hint="50-60 chars">
@@ -704,7 +728,7 @@ export function EditPostForm({
                 onFocus={e => Object.assign(e.currentTarget.style, focusStyle)}
                 onBlur={e => Object.assign(e.currentTarget.style, blurStyle)}
               />
-              <p className="mt-1 text-xs" style={{ color: (draft.seo_title?.length ?? 0) > 60 ? "var(--danger)" : "var(--text-faint)" }}>
+              <p className="mt-1 text-xs" style={{ color: (draft.seo_title?.length ?? 0) > 60 ? "var(--adm-error)" : "var(--adm-on-variant)" }}>
                 {draft.seo_title?.length ?? 0} / 60
               </p>
             </InputField>
@@ -719,7 +743,7 @@ export function EditPostForm({
                 onFocus={e => Object.assign(e.currentTarget.style, focusStyle)}
                 onBlur={e => Object.assign(e.currentTarget.style, blurStyle)}
               />
-              <p className="mt-1 text-xs" style={{ color: (draft.seo_description?.length ?? 0) > 160 ? "var(--danger)" : "var(--text-faint)" }}>
+              <p className="mt-1 text-xs" style={{ color: (draft.seo_description?.length ?? 0) > 160 ? "var(--adm-error)" : "var(--adm-on-variant)" }}>
                 {draft.seo_description?.length ?? 0} / 160
               </p>
             </InputField>
@@ -741,9 +765,9 @@ export function EditPostForm({
           {draft.content_md && (
             <div
               className="rounded-xl p-5"
-              style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+              style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
             >
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--adm-on-variant)" }}>
                 {labels.preview}
               </p>
               <MarkdownPreview content={draft.content_md} coverImageUrl={coverUrl} />
@@ -756,28 +780,32 @@ export function EditPostForm({
               className="rounded-xl p-4 space-y-3"
               style={{ background: "rgba(34,211,160,0.05)", border: "1px solid rgba(34,211,160,0.15)" }}
             >
-              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--success)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>
                 FAQ blocks (AEO · {draft.faq_blocks.length} items)
               </p>
               {draft.faq_blocks.map((faq, i) => (
                 <div key={i} className="space-y-1">
-                  <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Q: {faq.question}</p>
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>A: {faq.answer}</p>
+                  <p className="text-sm font-medium" style={{ color: "var(--adm-on-surface)" }}>Q: {faq.question}</p>
+                  <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>A: {faq.answer}</p>
                 </div>
               ))}
             </div>
           )}
 
           {locState?.error && (
-            <p className="text-sm" style={{ color: "var(--danger)" }}>{locState.error}</p>
+            <p className="text-sm" style={{ color: "var(--adm-error)" }}>{locState.error}</p>
           )}
           {locState?.success && (
-            <p className="text-sm font-medium" style={{ color: "var(--success)" }}>Saved!</p>
+            <p className="text-sm font-medium" style={{ color: "#4ade80" }}>Saved!</p>
           )}
 
           <button type="submit"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: "var(--accent)", color: "white" }}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-95"
+            style={{
+              background: "var(--adm-primary-container)",
+              color: "#fff",
+              boxShadow: primaryCtaShadow,
+            }}
           >
             {labels.save}
           </button>

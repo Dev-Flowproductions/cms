@@ -1,3 +1,5 @@
+import "../(admin)/admin/admin-shell.css";
+
 export default async function LoginLayout({
   children,
 }: {

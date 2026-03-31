@@ -797,7 +797,7 @@ export function AccountSettingsCard({
 
         {/* Cover references + guidelines (AI banners) */}
         <div
-          className="rounded-xl p-5 space-y-5"
+          className="rounded-xl p-6 sm:p-8 space-y-6 sm:space-y-8"
           style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
         >
           <p
@@ -806,11 +806,11 @@ export function AccountSettingsCard({
           >
             {t("brandAssets.title")}
           </p>
-          <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
             {t("brandAssets.description")}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             {([1, 2, 3] as const).map((slot) => {
               const path =
                 slot === 1
@@ -820,19 +820,19 @@ export function AccountSettingsCard({
                     : settings.cover_reference_image_3;
               const src = brandAssetUrl(path ?? null);
               return (
-                <div key={slot} className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
+                <div key={slot} className="flex min-h-0 flex-col space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
                     {t("brandAssets.referenceSlot", { n: slot })}
                   </p>
                   <div
-                    className="aspect-video rounded-xl overflow-hidden flex items-center justify-center"
+                    className="flex min-h-[min(52vh,520px)] w-full items-center justify-center overflow-hidden rounded-xl p-2 sm:min-h-[min(48vh,480px)]"
                     style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
                   >
                     {src ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <img src={src} alt="" className="max-h-[min(52vh,500px)] w-full object-contain sm:max-h-[min(48vh,460px)]" />
                     ) : (
-                      <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.empty")}</span>
+                      <span className="px-4 py-16 text-sm" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.empty")}</span>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -882,14 +882,14 @@ export function AccountSettingsCard({
             })}
           </div>
 
-          <div className="space-y-3 pt-4" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
+          <div className="space-y-4 pt-6 sm:pt-8" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
               {t("brandAssets.guidelinesTitle")}
             </p>
-            <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.guidelinesHint")}</p>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.guidelinesHint")}</p>
             {settings.brand_guidelines_text?.trim() ? (
               <pre
-                className="min-h-[14rem] max-h-[min(70vh,36rem)] max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-4 text-xs leading-relaxed"
+                className="max-h-[min(88vh,56rem)] min-h-[36rem] w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-5 text-sm leading-relaxed sm:min-h-[40rem]"
                 style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
                 {settings.brand_guidelines_text}

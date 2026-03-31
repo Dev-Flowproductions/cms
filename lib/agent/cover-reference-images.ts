@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { MAX_BRAND_UPLOAD_BYTES } from "@/lib/brand/brand-asset-limits";
 import type { CoverReferenceImagePart } from "./gemini-cover-image";
 
 export type { CoverReferenceImagePart };
@@ -10,6 +11,10 @@ function guessMimeFromPath(path: string): string {
   if (p.endsWith(".png")) return "image/png";
   if (p.endsWith(".webp")) return "image/webp";
   if (p.endsWith(".gif")) return "image/gif";
+  if (p.endsWith(".heic") || p.endsWith(".heif")) return "image/heic";
+  if (p.endsWith(".avif")) return "image/avif";
+  if (p.endsWith(".bmp")) return "image/bmp";
+  if (p.endsWith(".tif") || p.endsWith(".tiff")) return "image/tiff";
   return "image/jpeg";
 }
 
@@ -30,7 +35,7 @@ export async function loadCoverReferenceImageParts(
       continue;
     }
     const buf = Buffer.from(await data.arrayBuffer());
-    if (buf.length > 4 * 1024 * 1024) {
+    if (buf.length > MAX_BRAND_UPLOAD_BYTES) {
       console.warn("[cover-ref] Skipping oversized image", path);
       continue;
     }

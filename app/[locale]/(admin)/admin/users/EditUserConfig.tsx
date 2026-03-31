@@ -505,18 +505,18 @@ export function EditUserConfig({
 
         {/* Branding file uploads */}
         <div
-          className="space-y-5 rounded-xl border p-5"
+          className="space-y-6 rounded-xl border p-6 sm:p-8 sm:space-y-8"
           style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
         >
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
               {t("configAssets.brandingTitle")}
             </p>
-            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
               {t("configAssets.brandingHint")}
             </p>
           </div>
-        <div className="flex flex-wrap items-start gap-4">
+        <div className="flex flex-wrap items-start gap-6">
           <div className="space-y-2">
             <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.logoFile")}</p>
             {logoUrl?.trim() ? (
@@ -566,12 +566,12 @@ export function EditUserConfig({
               )}
             </div>
           </div>
-          <div className="space-y-3 min-w-[200px] flex-1 min-h-0">
+          <div className="min-h-0 w-full min-w-0 flex-1 basis-full space-y-3 sm:basis-auto">
             <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.guidelinesTitle")}</p>
-            <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.guidelinesHint")}</p>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.guidelinesHint")}</p>
             {brandGuidelinesText?.trim() ? (
               <pre
-                className="min-h-[12rem] max-h-[min(65vh,32rem)] max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-4 text-xs leading-relaxed"
+                className="max-h-[min(88vh,56rem)] min-h-[32rem] w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-5 text-sm leading-relaxed sm:min-h-[36rem]"
                 style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
                 {brandGuidelinesText}
@@ -1007,33 +1007,33 @@ export function EditUserConfig({
 
         {/* Cover references */}
         <div
-          className="space-y-5 rounded-xl border p-5"
+          className="space-y-6 rounded-xl border p-6 sm:p-8 sm:space-y-8"
           style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
         >
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
               {tAssets("title")}
             </p>
-            <p className="mt-1 text-xs" style={{ color: "var(--adm-on-variant)" }}>{tAssets("description")}</p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>{tAssets("description")}</p>
           </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
           {([1, 2, 3] as const).map((slot) => {
             const path = slot === 1 ? coverRef1 : slot === 2 ? coverRef2 : coverRef3;
             const src = brandAssetUrl(path);
             return (
-              <div key={slot} className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
+              <div key={slot} className="flex min-h-0 flex-col space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
                   {tAssets("referenceSlot", { n: slot })}
                 </p>
                 <div
-                  className="flex aspect-video items-center justify-center overflow-hidden rounded-xl"
+                  className="flex min-h-[min(52vh,520px)] w-full items-center justify-center overflow-hidden rounded-xl p-2 sm:min-h-[min(48vh,480px)]"
                   style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
                 >
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <img src={src} alt="" className="max-h-[min(52vh,500px)] w-full object-contain sm:max-h-[min(48vh,460px)]" />
                   ) : (
-                    <span className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{tAssets("empty")}</span>
+                    <span className="px-4 py-16 text-sm" style={{ color: "var(--adm-on-variant)" }}>{tAssets("empty")}</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">

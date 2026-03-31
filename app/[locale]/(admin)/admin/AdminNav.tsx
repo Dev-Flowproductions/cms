@@ -3,78 +3,92 @@
 import { Link } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/lib/navigation";
+import type { ReactNode } from "react";
 
-const NAV_ITEMS = [
-  {
-    key: "dashboard",
-    href: "/admin",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M1.5 3h4v4h-4V3zM9.5 3h4v4h-4V3zM1.5 8h4v4h-4V8zM9.5 8h4v4h-4V8z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "posts",
-    href: "/admin/posts",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M2 3h11M2 7.5h7M2 12h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "users",
-    href: "/admin/users",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <circle cx="7.5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M2 13c0-3.314 2.462-6 5.5-6s5.5 2.686 5.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "settings",
-    href: "/admin/settings",
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M7.5 9.5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M12 7.5a4.5 4.5 0 01-.09.88l1.3 1.01-1 1.73-1.6-.65a4.5 4.5 0 01-1.53.88L8.85 13h-2l-.23-1.65a4.5 4.5 0 01-1.53-.88l-1.6.65-1-1.73 1.3-1.01A4.5 4.5 0 013.75 7.5c0-.3.03-.6.09-.88L2.54 5.61l1-1.73 1.6.65a4.5 4.5 0 011.53-.88L6.9 2h2l.23 1.65a4.5 4.5 0 011.53.88l1.6-.65 1 1.73-1.3 1.01c.06.28.09.58.09.88z" stroke="currentColor" strokeWidth="1.4" />
-      </svg>
-    ),
-  },
-] as const;
+const ICON_BOX = "h-[22px] w-[22px] shrink-0";
+
+function DashboardIcon({ isActive }: { isActive: boolean }) {
+  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
+  return (
+    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 4h7v7H4V4zM13 4h7v7h-7V4zM4 13h7v7H4v-7zM13 13h7v7h-7v-7z"
+        stroke={c}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function UsersIcon({ isActive }: { isActive: boolean }) {
+  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
+  return (
+    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="9" cy="8" r="3.5" stroke={c} strokeWidth="1.6" />
+      <path
+        d="M3 20v-1a5 5 0 015-5h2a5 5 0 015 5v1"
+        stroke={c}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16 11a3 3 0 100-6M21 20v-1a4 4 0 00-3-3.87"
+        stroke={c}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PostsIcon({ isActive }: { isActive: boolean }) {
+  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
+  return (
+    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 6h16M4 12h11M4 18h8" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const NAV_ITEMS: {
+  key: "dashboard" | "users" | "posts";
+  href: string;
+  Icon: (p: { isActive: boolean }) => ReactNode;
+}[] = [
+  { key: "dashboard", href: "/admin", Icon: DashboardIcon },
+  { key: "users", href: "/admin/users", Icon: UsersIcon },
+  { key: "posts", href: "/admin/posts", Icon: PostsIcon },
+];
+
+function navItemActive(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AdminNav() {
   const t = useTranslations("admin");
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1">
-      <p
-        className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest"
-        style={{ color: "var(--text-faint)" }}
-      >
-        {t("navigationLabel")}
-      </p>
+    <nav className="space-y-1 px-1" aria-label={t("navigationLabel")}>
       {NAV_ITEMS.map((item) => {
-        const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        const isActive = navItemActive(pathname, item.href);
+        const Icon = item.Icon;
         return (
           <Link
             key={item.key}
             href={item.href}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+            className={[
+              "mx-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-colors",
+              isActive ? "shadow-sm" : "hover:bg-[var(--adm-surface-hover)]",
+            ].join(" ")}
             style={{
-              background: isActive ? "rgba(124,92,252,0.12)" : "transparent",
-              color: isActive ? "var(--accent)" : "var(--text-muted)",
-              border: isActive ? "1px solid rgba(124,92,252,0.2)" : "1px solid transparent",
+              background: isActive ? "var(--adm-surface-high)" : "transparent",
+              color: isActive ? "var(--adm-primary)" : "var(--adm-on-variant)",
             }}
           >
-            <span
-              style={{ color: isActive ? "var(--accent)" : "var(--text-muted)" }}
-            >
-              {item.icon}
-            </span>
+            <Icon isActive={isActive} />
             {t(item.key)}
           </Link>
         );

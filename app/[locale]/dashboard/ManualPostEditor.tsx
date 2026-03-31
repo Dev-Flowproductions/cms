@@ -68,7 +68,7 @@ export function ManualPostEditor() {
     }
 
     startTransition(() => {
-      router.push(`/admin/posts/${result.postId}`);
+      router.push(`/dashboard/posts/${result.postId}`);
     });
   }
 

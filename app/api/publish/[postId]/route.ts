@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
+import { publishSeoScoreGate } from "@/lib/agent/score-post";
 
 export async function POST(
   _req: NextRequest,
@@ -37,9 +38,9 @@ export async function POST(
   const { data: post, error: postError } = await admin
     .from("posts")
     .select(`
-      id, slug, author_id, status, updated_at, webhook_status,
+      id, slug, author_id, status, updated_at, webhook_status, primary_locale,
       post_localizations (
-        locale, title, excerpt, content_md, seo_title, seo_description, jsonld
+        locale, title, excerpt, content_md, seo_title, seo_description, jsonld, seo_score
       ),
       cover_image_path
     `)
@@ -105,6 +106,7 @@ export async function POST(
     seo_title: string | null;
     seo_description: string | null;
     jsonld: unknown;
+    seo_score: unknown;
   }) => ({
     ...l,
     content_md: (l.content_md ?? "")
@@ -112,8 +114,17 @@ export async function POST(
       .trim(),
   }));
 
-  // Prefer 'pt' as primary, then 'en', then first available
+  const primaryLocale = (post as { primary_locale?: string }).primary_locale ?? "pt";
+  const gate = publishSeoScoreGate({
+    primaryLocale,
+    localizations: cleanedLocalizations,
+  });
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: 422 });
+  }
+
   const primary =
+    cleanedLocalizations.find((l) => l.locale === primaryLocale) ??
     cleanedLocalizations.find((l) => l.locale === "pt") ??
     cleanedLocalizations.find((l) => l.locale === "en") ??
     cleanedLocalizations[0];

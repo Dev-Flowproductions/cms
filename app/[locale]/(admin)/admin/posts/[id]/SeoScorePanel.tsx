@@ -19,10 +19,10 @@ function StarBar({ score }: { score: number }) {
   const s = normalizeScore(score);
   const filled = Math.round((s / SCORE_MAX) * 5);
   const color =
-    s >= 90 ? "var(--success)" :
+    s >= 90 ? "#4ade80" :
     s >= 70 ? "#f59e0b" :
     s >= 50 ? "#f97316" :
-    "var(--danger)";
+    "var(--adm-error)";
 
   return (
     <div className="flex items-center gap-1.5">
@@ -55,29 +55,29 @@ export function SeoScorePanel({ score }: { score: ScoreData }) {
   };
   const avg = Math.round((s.seo + s.aeo + s.geo) / 3);
   const avgColor =
-    avg >= 90 ? "var(--success)" :
+    avg >= 90 ? "#4ade80" :
     avg >= 70 ? "#f59e0b" :
     avg >= 50 ? "#f97316" :
-    "var(--danger)";
+    "var(--adm-error)";
 
   return (
     <div
       className="rounded-xl p-4 space-y-3"
       style={{
-        background: "rgba(124,92,252,0.04)",
-        border: "1px solid rgba(124,92,252,0.15)",
+        background: "rgba(104, 57, 234, 0.06)",
+        border: "1px solid rgba(104, 57, 234, 0.2)",
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <p
           className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "var(--adm-primary)" }}
         >
           Content Score
         </p>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-semibold" style={{ color: "var(--text-faint)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--adm-on-variant)" }}>
             avg
           </span>
           <span
@@ -101,18 +101,18 @@ export function SeoScorePanel({ score }: { score: ScoreData }) {
           <div
             key={label}
             className="rounded-lg p-3 space-y-1.5"
-            style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
+            style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
           >
             <div className="flex items-center justify-between">
               <span
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "var(--text-muted)" }}
+                style={{ color: "var(--adm-on-variant)" }}
               >
                 {label}
               </span>
             </div>
             <StarBar score={value} />
-            <p className="text-[10px] leading-tight" style={{ color: "var(--text-faint)" }}>
+            <p className="text-[10px] leading-tight" style={{ color: "var(--adm-on-variant)" }}>
               {hint}
             </p>
           </div>
@@ -123,9 +123,9 @@ export function SeoScorePanel({ score }: { score: ScoreData }) {
       {score.notes && (
         <div
           className="rounded-lg px-3 py-2"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)" }}
         >
-          <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: "var(--adm-on-variant)" }}>
             {score.notes}
           </p>
         </div>

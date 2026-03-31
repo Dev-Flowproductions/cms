@@ -5,17 +5,29 @@ import type { UserWithPostCount } from "@/lib/data/posts";
 
 export function UsersListClient({ users }: { users: UserWithPostCount[] }) {
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+    <div
+      className="admin-shell-glass overflow-hidden rounded-2xl border"
+      style={{ borderColor: "var(--adm-border-subtle)" }}
+    >
       <table className="w-full text-sm">
         <thead>
-          <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-            <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <tr style={{ background: "var(--adm-surface-high)", borderBottom: "1px solid var(--adm-border-subtle)" }}>
+            <th
+              className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--adm-on-variant)" }}
+            >
               Account
             </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            <th
+              className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--adm-on-variant)" }}
+            >
               Domain
             </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            <th
+              className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--adm-on-variant)" }}
+            >
               Posts
             </th>
             <th className="w-32" />
@@ -24,7 +36,11 @@ export function UsersListClient({ users }: { users: UserWithPostCount[] }) {
         <tbody>
           {users.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-4 py-10 text-center text-sm" style={{ color: "var(--text-faint)", background: "var(--surface)" }}>
+              <td
+                colSpan={4}
+                className="px-4 py-12 text-center text-sm"
+                style={{ color: "var(--adm-on-variant)" }}
+              >
                 No accounts with posts yet
               </td>
             </tr>
@@ -32,25 +48,30 @@ export function UsersListClient({ users }: { users: UserWithPostCount[] }) {
             users.map((u, idx) => (
               <tr
                 key={u.user_id}
+                className="adm-row-hover"
                 style={{
-                  background: idx % 2 === 0 ? "var(--surface)" : "var(--surface-raised)",
-                  borderTop: "1px solid var(--border)",
+                  background: idx % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent",
+                  borderTop: "1px solid var(--adm-border-subtle)",
                 }}
               >
-                <td className="px-4 py-3 font-medium" style={{ color: "var(--text)" }}>
+                <td className="px-4 py-3 font-medium" style={{ color: "var(--adm-on-surface)" }}>
                   {u.account_name}
                 </td>
-                <td className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
+                <td className="px-4 py-3 text-sm" style={{ color: "var(--adm-on-variant)" }}>
                   {u.domain ?? "—"}
                 </td>
-                <td className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
+                <td className="px-4 py-3 text-sm tabular-nums" style={{ color: "var(--adm-on-variant)" }}>
                   {u.post_count}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/posts?user=${u.user_id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap hover:opacity-80"
-                    style={{ background: "var(--accent)", color: "white" }}
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
+                    style={{
+                      background: "var(--adm-primary-container)",
+                      color: "#fff",
+                      boxShadow: "0 0 16px rgba(104, 57, 234, 0.25)",
+                    }}
                   >
                     View posts
                   </Link>

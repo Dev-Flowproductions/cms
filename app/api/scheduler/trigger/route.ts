@@ -15,31 +15,26 @@ const RATE_LIMIT_MINUTES = 15;
 export async function GET() {
   const admin = createAdminClient();
 
-  const { data: row, error: readError } = await admin
-    .from("scheduler_meta")
-    .select("last_trigger_at")
-    .eq("id", 1)
-    .single();
-
-  if (readError) {
-    console.error("[scheduler/trigger] Failed to read scheduler_meta:", readError.message);
-    return NextResponse.json({ ok: true, triggered: false });
-  }
-
-  const lastAt = row?.last_trigger_at ? new Date(row.last_trigger_at).getTime() : 0;
   const now = Date.now();
-  if (lastAt && now - lastAt < RATE_LIMIT_MINUTES * 60 * 1000) {
-    return NextResponse.json({ ok: true, triggered: false, rate_limited: true });
-  }
+  const nowIso = new Date(now).toISOString();
+  const cutoffIso = new Date(now - RATE_LIMIT_MINUTES * 60 * 1000).toISOString();
 
-  const { error: updateError } = await admin
+  // Single atomic update so concurrent requests cannot both pass the rate limit
+  // (read-then-update allowed double /api/scheduler POSTs).
+  const { data: claimed, error: updateError } = await admin
     .from("scheduler_meta")
-    .update({ last_trigger_at: new Date().toISOString() })
-    .eq("id", 1);
+    .update({ last_trigger_at: nowIso })
+    .eq("id", 1)
+    .or(`last_trigger_at.is.null,last_trigger_at.lt."${cutoffIso}"`)
+    .select("id");
 
   if (updateError) {
-    console.error("[scheduler/trigger] Failed to update last_trigger_at:", updateError.message);
+    console.error("[scheduler/trigger] Failed to claim scheduler_meta:", updateError.message);
     return NextResponse.json({ ok: true, triggered: false });
+  }
+
+  if (!claimed?.length) {
+    return NextResponse.json({ ok: true, triggered: false, rate_limited: true });
   }
 
   const origin =

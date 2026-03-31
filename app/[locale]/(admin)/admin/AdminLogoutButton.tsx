@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLocale, useTranslations } from "next-intl";
 
-export function AdminLogoutButton() {
+export function AdminLogoutButton({ className = "" }: { className?: string }) {
   const t = useTranslations("admin");
   const [loading, setLoading] = useState(false);
   const locale = useLocale();
@@ -20,20 +20,28 @@ export function AdminLogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all w-full disabled:opacity-50"
-      style={{ color: "var(--danger)" }}
+      className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all disabled:opacity-50 ${className}`}
+      style={{
+        background: "var(--adm-surface-high)",
+        color: "var(--adm-primary)",
+      }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,92,106,0.08)";
+        (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.08)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+        (e.currentTarget as HTMLButtonElement).style.filter = "";
       }}
     >
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <svg
+        className="h-[18px] w-[18px] shrink-0"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden
+      >
         <path
-          d="M5 2H2.5A1.5 1.5 0 001 3.5v7A1.5 1.5 0 002.5 12H5M9 10l3-3-3-3M13 7H5"
+          d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />

@@ -12,6 +12,59 @@ export type SeoScoreResult = {
   notes: string;
 };
 
+/** Align with ScoreDisplay: legacy 0–10 integers scale to 0–100. */
+function normalizeScoreDimension(val: number): number {
+  if (val >= 0 && val <= 10 && val % 1 === 0) return Math.round(val * 10);
+  return Math.min(100, Math.max(0, Math.round(val)));
+}
+
+/** Rounded mean of SEO / AEO / GEO — same basis as the admin “avg” badge. */
+export function seoScoreAverage(score: SeoScoreResult): number {
+  const seo = normalizeScoreDimension(score.seo);
+  const aeo = normalizeScoreDimension(score.aeo);
+  const geo = normalizeScoreDimension(score.geo);
+  return Math.round((seo + aeo + geo) / 3);
+}
+
+/** Publishing and auto-publish require this bar (average ≥ 90). */
+export function seoScoreMeetsPublishBar(score: SeoScoreResult | null | undefined): boolean {
+  if (!score || typeof score.seo !== "number" || typeof score.aeo !== "number" || typeof score.geo !== "number") {
+    return false;
+  }
+  return seoScoreAverage(score) >= 90;
+}
+
+export type LocalizationScoreRow = { locale: string; seo_score?: unknown };
+
+/**
+ * Same bar as {@link seoScoreMeetsPublishBar} for the primary localization row (matches admin “avg” badge).
+ */
+export function publishSeoScoreGate(args: {
+  primaryLocale: string;
+  localizations: LocalizationScoreRow[];
+}): { ok: true } | { ok: false; error: string } {
+  const primary =
+    args.localizations.find((l) => l.locale === args.primaryLocale) ??
+    args.localizations.find((l) => l.locale === "pt") ??
+    args.localizations.find((l) => l.locale === "en") ??
+    args.localizations[0];
+  if (!primary) {
+    return { ok: false, error: "Post has no content." };
+  }
+  const score = primary.seo_score as SeoScoreResult | null | undefined;
+  if (!seoScoreMeetsPublishBar(score ?? null)) {
+    const avg = score ? seoScoreAverage(score) : null;
+    return {
+      ok: false,
+      error:
+        avg != null
+          ? `Average SEO score must be 90+ before publish (current ${avg}). Edit and re-run AI scoring or improve content.`
+          : "Primary locale is missing seo_score. Run Generate with AI on the primary locale before publishing.",
+    };
+  }
+  return { ok: true };
+}
+
 export type ScoredContent = {
   title: string;
   content_md: string;
@@ -28,16 +81,21 @@ const SCORE_SYSTEM = `You are an SEO editor. Score blog posts (0-100) for SEO, A
 **GEO:** 3+ attributed stats ("According to [Source], ..."). 5+ named entities. Date-anchored facts.
 
 Score 0-100 based on how well each dimension is met. 90+ = strong, most criteria present. 70-89 = good with gaps. 50-69 = several gaps. <50 = major gaps.
+The product uses the rounded average of seo, aeo, and geo; posts are not published until that average is at least 90.
 Output ONLY valid JSON, nothing else: { "seo": 0-100, "aeo": 0-100, "geo": 0-100, "notes": "1 sentence" }`;
+
+export type ScorePostOptions = {
+  /** Embedding-ordered CMS instructions + client block; scoring criteria come from here. */
+  systemInstruction?: string;
+};
 
 export async function scorePost(
   genAI: GoogleGenerativeAI,
   modelName: string,
-  content: ScoredContent
+  content: ScoredContent,
+  options?: ScorePostOptions
 ): Promise<SeoScoreResult | null> {
-  const prompt = `${SCORE_SYSTEM}
-
-Evaluate this blog post. Read the content carefully. Apply the 90+ criteria strictly. Score each dimension based on actual presence of required elements.
+  const userMessage = `Evaluate this blog post. Read the content carefully. Apply the 90+ criteria strictly. Score each dimension based on actual presence of required elements.
 
 TITLE: ${content.title}
 SEO TITLE: ${content.seo_title}
@@ -52,8 +110,24 @@ FAQs: ${content.faq_blocks.length} questions
 Output ONLY this JSON, nothing else:
 { "seo": <0-100>, "aeo": <0-100>, "geo": <0-100>, "notes": "<1 sentence>" }`;
 
+  const prompt = options?.systemInstruction
+    ? userMessage
+    : `${SCORE_SYSTEM}
+
+${userMessage}`;
+
   try {
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel(
+      options?.systemInstruction
+        ? {
+            model: modelName,
+            systemInstruction: `${options.systemInstruction}
+
+---
+You are an SEO editor. Score this user message's blog post 0–100 for SEO, AEO, and GEO using the instructions above. Output ONLY valid JSON: { "seo": number, "aeo": number, "geo": number, "notes": string }.`,
+          }
+        : { model: modelName }
+    );
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
     let clean = text

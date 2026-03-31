@@ -1,8 +1,16 @@
 /**
- * Shared cover image generation prompt.
- * Rules: primary color background only, elements on borders, text centered (European style: first letter caps, rest lowercase), brand font.
- * Composition varies per image (minimal, balanced, rich, structured, organic) for visual variety.
+ * Text prompt for **raster** cover generation (Gemini image model).
+ * JSON post generation also has a `cover` chunk in `instruction-chunks.ts` for `cover_image_*` fields — keep both aligned on brand colours and English-on-image rules.
  */
+
+/** Very long subjects can produce empty image parts from the image model — keep bounded. */
+export const COVER_IMAGE_SUBJECT_MAX_CHARS = 2000;
+
+export function truncateCoverImageSubject(subject: string): string {
+  const s = subject.trim();
+  if (s.length <= COVER_IMAGE_SUBJECT_MAX_CHARS) return s;
+  return `${s.slice(0, COVER_IMAGE_SUBJECT_MAX_CHARS).trimEnd()}…`;
+}
 
 const COMPOSITION_VARIATIONS = [
   "Balanced editorial: clear thematic imagery tied to the article — metaphors, symbols, or abstract shapes with depth and layering. Professional polish, not empty.",
@@ -45,14 +53,24 @@ export type CoverVisualIdentity = {
   imageStyle?: string;
 } | null;
 
+export type BuildCoverPromptOptions = {
+  /**
+   * When true, `headline` may be the localized article title — instruct the model to render
+   * 2–4 words in English only on the image (do not copy non-English text).
+   */
+  headlineMayBeNonEnglish?: boolean;
+};
+
 /** Build the Imagen prompt for editorial blog cover. */
 export function buildCoverPrompt(
   subject: string,
   headline: string,
   brandStyle: CoverBrandStyle,
-  visualIdentity: CoverVisualIdentity
+  visualIdentity: CoverVisualIdentity,
+  options?: BuildCoverPromptOptions
 ): string {
-  // European style: first letter caps, rest lowercase (sentence case)
+  const needsEnglishDerivation = options?.headlineMayBeNonEnglish === true;
+  // European style: first letter caps, rest lowercase (sentence case) — for known-English headlines
   const t = headline.trim();
   const headlineForImage = t.length > 0 ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t;
 
@@ -88,12 +106,25 @@ export function buildCoverPrompt(
   const brandStr = brandParts.length > 0 ? brandParts.join(" ") + " " : "";
   const variation = pickCompositionVariation();
 
+  /** Covers are shared across locales — visible typography must stay English. */
+  const englishOnlyRule =
+    "ON-IMAGE TEXT LANGUAGE: Every letter and word shown on the image MUST be English only. " +
+    "Do not render Portuguese, French, or any non-English language as readable text — even if the article topic is described in another language above.";
+
+  const headlineInstruction = needsEnglishDerivation
+    ? `${englishOnlyRule} ` +
+      `Centered on-image headline: exactly ONE line, 2–4 words, ENGLISH ONLY (European sentence case: first letter caps, rest lowercase). ` +
+      `The article title below may be in another language — do NOT copy it onto the image; invent a short natural English phrase that fits the topic. ` +
+      `Topic / title reference: "${headlineForImage}". `
+    : `${englishOnlyRule} ` +
+      `Include this text ONCE only, centered: "${headlineForImage}". European style: first letter caps, rest lowercase. `;
+
   return (
     `Editorial blog hero graphic: ${subject}. ` +
     `Composition: ${variation} Wide banner 16:9. ` +
     brandStr +
     `Polished vector or editorial illustration feel; controlled depth (shadows, layers) allowed. Clean edges, high clarity. ` +
-    `Include this text ONCE only, centered: "${headlineForImage}". European style: first letter caps, rest lowercase. ` +
+    headlineInstruction +
     `Text must be the TOP LAYER, centered; no shapes overlapping the text. Use the brand font/style. Bold editorial typography. No logos or brand names.`
   );
 }

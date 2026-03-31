@@ -1,157 +1,106 @@
-import { getAuthUserWithRoles, hasAdminRole } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
+import { getAuthUserWithRoles } from "@/lib/auth";
 import { getPostsForDashboard } from "@/lib/data/posts";
-import { getLocale, getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
 import { Link } from "@/lib/navigation";
-import { DashboardPostsTable } from "./DashboardPostsTable";
-import { LocaleSwitcher } from "@/components/LocaleSwitcher";
-import { UserMenu } from "./UserMenu";
-import { AccountSettingsCard } from "./AccountSettingsCard";
-import { getClientSettings, getMyProfile } from "@/app/[locale]/(admin)/admin/users/actions";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { AppLogo } from "@/components/AppLogo";
+import { getClientSettings } from "@/app/[locale]/(admin)/admin/users/actions";
+import { DashboardRecentPosts } from "./DashboardRecentPosts";
+
 export default async function DashboardPage() {
-  const { user, roles } = await getAuthUserWithRoles();
-  const isAdmin = hasAdminRole(roles);
-
-  // Admins land in the admin panel; no separate dashboard header link
-  if (isAdmin) {
-    const locale = await getLocale();
-    redirect(`/${locale}/admin`);
-  }
-
-  const t = await getTranslations();
+  const { user } = await getAuthUserWithRoles();
+  const t = await getTranslations("dashboard");
   const posts = await getPostsForDashboard(user.id, false);
-  const [clientSettings, profile] = await Promise.all([
-    getClientSettings(user.id).catch(() => null),
-    getMyProfile().catch(() => null),
-  ]);
+  const clientSettings = await getClientSettings(user.id).catch(() => null);
 
-  // Incomplete onboarding: no client row or domain not set — send to onboarding
-  if (!clientSettings || !clientSettings.domain) {
-    const locale = await getLocale();
-    redirect(`/${locale}/onboarding/domain`);
-  }
-
-  const initial = (user.email ?? "?")[0].toUpperCase();
+  const published = posts.filter((p) => p.status === "published").length;
+  const draft = posts.filter((p) => p.status === "draft").length;
+  const inReview = posts.filter((p) => p.status === "review").length;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      {/* Topbar */}
-      <header
-        className="sticky top-0 z-40 backdrop-blur-xl"
-        style={{
-          background: "color-mix(in srgb, var(--surface) 85%, transparent)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6 py-0 flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <AppLogo className="h-8 w-auto object-contain" />
-          </Link>
-
-          {/* Right side */}
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <LocaleSwitcher />
-            <UserMenu email={user.email ?? ""} initial={initial} />
-          </div>
+    <div className="max-w-6xl">
+      {clientSettings?.config_pending_admin && (
+        <div
+          className="editorial-shell-glass mb-8 flex items-center gap-3 rounded-xl border px-4 py-3"
+          style={{
+            background: "rgba(245,158,11,0.08)",
+            borderColor: "rgba(245,158,11,0.35)",
+            color: "#fbbf24",
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          <p className="text-sm font-medium">{t("waitingForAdmin")}</p>
         </div>
+      )}
+
+      <header className="mb-10">
+        <div className="mb-4 flex items-center gap-2">
+          <span
+            className="rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white"
+            style={{ background: "var(--adm-primary-container)" }}
+          >
+            {t("workspaceUser")}
+          </span>
+          <div className="h-px w-12 bg-[var(--adm-outline-variant)]" />
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl" style={{ color: "var(--adm-on-surface)" }}>
+          {t("welcome", { email: user.email ?? "" })}
+        </h1>
+        <p className="mt-2 max-w-xl text-base leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+          {t("overviewSubtitle")}
+        </p>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        {/* Pending admin config banner */}
-        {clientSettings?.config_pending_admin && (
+      <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {[
+          { label: t("stats.total"), value: posts.length },
+          { label: t("stats.published"), value: published, accent: true },
+          { label: t("stats.draft"), value: draft },
+          { label: t("stats.review"), value: inReview },
+        ].map((stat) => (
           <div
-            className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3"
-            style={{
-              background: "rgba(245,158,11,0.12)",
-              border: "1px solid rgba(245,158,11,0.35)",
-              color: "#b45309",
-            }}
+            key={stat.label}
+            className={`editorial-shell-glass rounded-2xl border p-5 ${stat.accent ? "editorial-shell-ai-glow" : ""}`}
+            style={{ borderColor: stat.accent ? "var(--adm-accent-border)" : "var(--adm-border-subtle)" }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4M12 16h.01" />
-            </svg>
-            <p className="text-sm font-medium">{t("dashboard.waitingForAdmin")}</p>
-          </div>
-        )}
-
-        {/* Hero section */}
-        <div className="mb-10 relative">
-          {/* Glow */}
-          <div
-            className="absolute -top-8 -left-8 w-64 h-32 rounded-full pointer-events-none"
-            style={{
-              background: "radial-gradient(ellipse, rgba(124,92,252,0.15) 0%, transparent 70%)",
-              filter: "blur(30px)",
-            }}
-          />
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-2"
-            style={{ color: "var(--accent)" }}
-          >
-            {t("dashboard.workspaceUser")}
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
-            {t("dashboard.welcome", { email: user.email ?? "" })}
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-            {t("dashboard.userSubtitle")}
-          </p>
-        </div>
-
-        {/* Stats strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-          {[
-            {
-              label: t("dashboard.stats.total"),
-              value: posts.length,
-              accent: false,
-            },
-            {
-              label: t("dashboard.stats.published"),
-              value: posts.filter((p) => p.status === "published").length,
-              accent: true,
-            },
-            {
-              label: t("dashboard.stats.draft"),
-              value: posts.filter((p) => p.status === "draft").length,
-              accent: false,
-            },
-          ].map((stat) => (
             <div
-              key={stat.label}
-              className="rounded-2xl p-5"
-              style={{
-                background: "var(--surface)",
-                border: stat.accent ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                boxShadow: stat.accent ? "0 0 20px rgba(124,92,252,0.08)" : "none",
-              }}
+              className="mb-0.5 text-2xl font-bold"
+              style={{ color: stat.accent ? "var(--adm-primary)" : "var(--adm-on-surface)" }}
             >
-              <div
-                className="text-2xl font-bold mb-0.5"
-                style={{ color: stat.accent ? "var(--accent)" : "var(--text)" }}
-              >
-                {stat.value}
-              </div>
-              <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                {stat.label}
-              </div>
+              {stat.value}
             </div>
-          ))}
-        </div>
+            <div className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {/* Posts table */}
-        <DashboardPostsTable posts={posts} isAdmin={isAdmin} />
+      <DashboardRecentPosts posts={posts} limit={8} />
 
-        {/* Account settings — only for non-admin users who have a client row */}
-        {!isAdmin && clientSettings && (
-          <AccountSettingsCard userId={user.id} settings={clientSettings} profile={profile} />
-        )}
-      </main>
+      <div
+        className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t pt-8 text-xs font-semibold uppercase tracking-wider"
+        style={{ borderColor: "var(--adm-border-subtle)" }}
+      >
+        <Link
+          href="/dashboard/posts"
+          className="transition-colors hover:underline hover:decoration-2 hover:underline-offset-4"
+          style={{ color: "var(--adm-primary)" }}
+        >
+          {t("viewAllPosts")}
+        </Link>
+        <span style={{ color: "var(--adm-outline-variant)" }} aria-hidden>
+          ·
+        </span>
+        <Link
+          href="/dashboard/settings"
+          className="transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4"
+          style={{ color: "var(--adm-on-variant)" }}
+        >
+          {t("settings")}
+        </Link>
+      </div>
     </div>
   );
 }

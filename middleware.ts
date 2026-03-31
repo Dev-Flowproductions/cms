@@ -118,6 +118,6 @@ export const config = {
     "/admin",
     "/admin/:path*",
     "/(en|pt|fr)/:path*",
-    "/api/google/:path*",
+    "/api/:path*",
   ],
 };

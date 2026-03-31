@@ -1,10 +1,47 @@
 /**
- * General system instructions for blog post generation.
- * Used for every project. Combined with per-user CLIENT-SPECIFIC INSTRUCTIONS at runtime.
- * Target: 10/10 across SEO, AEO, and GEO.
+ * General blog instructions — single source of truth for JSON post generation rules.
+ *
+ * ## Pipeline (clear split of roles)
+ * 1. **This file** — Text of the rules only:
+ *    - `GENERAL_INSTRUCTION_FIXED_PREFIX` / `GENERAL_INSTRUCTION_FIXED_SUFFIX` — always first/last; never reordered.
+ *    - `GENERAL_INSTRUCTION_RANKED_CHUNKS` — middle sections; **order is chosen at runtime** by embedding similarity
+ *      to the task (see `instruction-embeddings.ts`).
+ *    - `SYSTEM_INSTRUCTIONS_GENERAL` — default chunk order; used when embedding ranking fails.
+ * 2. **`instruction-embeddings.ts`** — Gemini Embedding 2: builds a short query from task (see `CONTENT_TYPE_*` below),
+ *      ranks chunk ids, calls `joinGeneralInstructionsInOrder`. Cover images optionally prepend only `cover`+`formatting` chunks.
+ * 3. **`instructions.ts`** — `resolveSystemInstructionsWithEmbeddings()` = ranked general + **ranked** client sections
+ *      (parsed from `clients.custom_instructions` via `client-instruction-embeddings.ts`, same embedding query per `taskKind`).
+ *      `buildPrompt()` is the **user** message (context only: dates, links, topic); it should not repeat long rule blocks.
+ * 4. **`generate-client-instructions.ts`** — Builds stored client text; keep `BRAND …` / `WEBSITE` headers so the parser can split sections for ranking.
+ *
+ * **Raster covers** — `cover-prompt.ts` + optional embedding prefix (`taskKind: "cover"`); separate from full system size.
+ *
+ * **Quality agents** (score / review / revise) — same chunk library, `taskKind: "quality_loop"` for ordering.
  */
 
-export const SYSTEM_INSTRUCTIONS_GENERAL = `
+export type GeneralInstructionRankedChunk = {
+  id: string;
+  text: string;
+  /** Omit from ranked set when the post has no internal URL list */
+  onlyWithInternalLinks?: boolean;
+};
+
+/** One line per type — `buildPrompt()` CONTEXT only (must stay aligned with chunk word-count expectations). */
+export const CONTENT_TYPE_PROMPT_HINT: Record<string, string> = {
+  hero: "1800-2500 words, comprehensive, 3+ statistics",
+  hub: "1000-1400 words, focused sub-topic, 2+ statistics",
+  hygiene: "600-900 words, FAQ/how-to, snippet-optimised",
+};
+
+/** Richer line — **only** for the embedding retrieval query in `instruction-embeddings.ts` (ranks middle chunks). */
+export const CONTENT_TYPE_EMBEDDING_HINT: Record<string, string> = {
+  hero: "Long-form pillar article 1800–2500 words, comprehensive, multiple statistics, deep H2/H3 sections.",
+  hub: "Hub article 1000–1400 words, focused sub-topic, practical and scannable.",
+  hygiene: "Shorter FAQ or how-to 600–900 words, snippet-optimised, question-and-answer emphasis.",
+};
+
+/** Role, post structure, and scoring preamble — always first. */
+export const GENERAL_INSTRUCTION_FIXED_PREFIX = `
 You are an expert content strategist writing publish-ready blog posts.
 Write in the client's brand voice. NEVER invent statistics.
 
@@ -42,11 +79,17 @@ date above the body. Start content_md with the INTRO paragraph.
    - 2 paragraphs, reinforce core argument, specific CTA
 
 ═══════════════════════════════════════
-TARGET: 90+ on SEO, AEO, GEO (all three required)
+TARGET: 90+ average across SEO, AEO, and GEO (publishing bar)
 ═══════════════════════════════════════
 
-Every post MUST satisfy the requirements below. Posts are scored and revised until all three dimensions reach 90+.
+Every post MUST satisfy the requirements below. Posts are scored and revised until the rounded average of the three scores reaches 90+.
+`.trim();
 
+/** Middle sections — reordered by similarity to the task query (Gemini embeddings). */
+export const GENERAL_INSTRUCTION_RANKED_CHUNKS: GeneralInstructionRankedChunk[] = [
+  {
+    id: "seo",
+    text: `
 ═══════════════════════════════════════
 SEO (90+ requirements)
 ═══════════════════════════════════════
@@ -58,7 +101,11 @@ SEO (90+ requirements)
 - 1200+ words (1800+ for hero content)
 - SEO title: 50-60 chars (HARD MAX 60 — never more) | Meta: 145-158 chars (HARD MAX 160 — never more)
 - Sentence case headings (European style)
-
+`.trim(),
+  },
+  {
+    id: "aeo",
+    text: `
 ═══════════════════════════════════════
 AEO (90+ requirements — AI citability)
 ═══════════════════════════════════════
@@ -76,7 +123,11 @@ AEO (90+ requirements — AI citability)
 - EEAT: First-person or expert voice, named methodologies/tools, specific cited sources. No generic "experts say".
 
 - **Bold** key claims and important terms on first use — AI scans for bold text
-
+`.trim(),
+  },
+  {
+    id: "geo",
+    text: `
 ═══════════════════════════════════════
 GEO (90+ requirements — generative engine citation)
 ═══════════════════════════════════════
@@ -90,7 +141,11 @@ GEO (90+ requirements — generative engine citation)
 - 2+ DATE-ANCHORED facts: "In 2025...", "As of March 2025...", "A 2024 report found..."
 
 - NEVER use vague attributions. Always name the source and year.
-
+`.trim(),
+  },
+  {
+    id: "formatting",
+    text: `
 ═══════════════════════════════════════
 FORMATTING
 ═══════════════════════════════════════
@@ -100,7 +155,12 @@ FORMATTING
 - No em dashes, no horizontal rules
 - No images in content_md (the template shows the cover above the body)
 - All content in the specified locale language
-
+`.trim(),
+  },
+  {
+    id: "internal_links",
+    onlyWithInternalLinks: true,
+    text: `
 ═══════════════════════════════════════
 INTERNAL LINKS (in the article body — required when URLs are provided)
 ═══════════════════════════════════════
@@ -120,7 +180,11 @@ When the CONTEXT includes "INTERNAL LINKS", embed exactly 3 contextual links ins
 - Spread links across intro, body, conclusion. Use markdown: [anchor phrase](full-url-from-list). Each link = different destination. Link inside paragraphs, not headings.
 - Link only to topic/explainer pages (services, martech, about). Do not link to individual project/portfolio/case-study pages.
 - If no URL list is provided, do not add internal links.
-
+`.trim(),
+  },
+  {
+    id: "cover",
+    text: `
 ═══════════════════════════════════════
 COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
 ═══════════════════════════════════════
@@ -129,10 +193,15 @@ The cover is a GRAPHIC ILLUSTRATION banner, not a photograph.
 
 - BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
 - COMPOSITION: FEW elements (1–2 accents). Thematic shapes matching the post. Do NOT fill borders. No repeating elements. Sparse placement in corners. Center stays clear.
-- TEXT: Short headline, centered, ONE line, 2–4 words, IN ENGLISH. European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos.
-- cover_image_description: 2–3 sentences — topic-specific editorial illustration (metaphors, icons, or scenes); use client brand colours from context only; solid or subtle edge treatment. Headline: European sentence case.
-- cover_image_headline: 2–4 words, English. If omitted, truncated title is used.
+- TEXT ON IMAGE: Short headline, centered, ONE line, 2–4 words — ALWAYS IN ENGLISH (same for every locale). European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos. Never put Portuguese, French, or other languages as visible text on the cover.
+- cover_image_description: 2–3 sentences in English describing the editorial illustration (metaphors, icons, scenes); use client brand colours from context only; solid or subtle edge treatment. Do not instruct non-English words to appear as typed text on the image.
+- cover_image_headline: REQUIRED for non-English posts: 2–4 words IN ENGLISH that capture the topic for the cover (not a translation of the title word-for-word unless natural). If the post title is not English, you MUST still output an English cover headline. If omitted, derive a short English phrase from the topic — never use the localized title as cover text when it is not English.
+`.trim(),
+  },
+];
 
+/** JSON schema block — always last. */
+export const GENERAL_INSTRUCTION_FIXED_SUFFIX = `
 ═══════════════════════════════════════
 OUTPUT (JSON only, no markdown fences)
 ═══════════════════════════════════════
@@ -141,8 +210,8 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "2–3 sentences: editorial illustration clearly tied to the article topic; client brand colours only; specific visual ideas not generic shapes.",
-  "cover_image_headline": "Optional. 2-6 word phrase IN ENGLISH for the cover image. If omitted, English title or equivalent is used.",
+  "cover_image_description": "2–3 sentences in English: editorial illustration tied to the article topic; client brand colours only; no non-English words meant to appear as text on the image.",
+  "cover_image_headline": "2–6 words, ALWAYS ENGLISH — the exact phrase to render on the cover image for all locales. If the article title is in pt/fr/other, still output a natural English headline for the image (never copy non-English title words here).",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
@@ -152,5 +221,27 @@ OUTPUT (JSON only, no markdown fences)
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }
 
-**seo_score — SELF-ASSESS:** After writing, score seo/aeo/geo 0-100. TARGET 90+ on all three. If any dimension is below 90, note the specific gap in "notes". Penalize: missing "According to [Source] (year)" stats → geo < 90; weak/generic core argument → aeo < 90; keyword missing from H2s → seo < 90. notes = 1 sentence with specific gaps to fix.
+**seo_score — SELF-ASSESS:** After writing, score seo/aeo/geo 0-100. TARGET: rounded average of the three ≥ 90 (posts do not publish below that). If the average would be below 90, note the specific gap in "notes". Penalize: missing "According to [Source] (year)" stats → geo low; weak/generic core argument → aeo low; keyword missing from H2s → seo low. notes = 1 sentence with specific gaps to fix.
 `.trim();
+
+const CANONICAL_RANK_ORDER = GENERAL_INSTRUCTION_RANKED_CHUNKS.map((c) => c.id);
+
+/** Join ranked sections in the given order (ids must exist in GENERAL_INSTRUCTION_RANKED_CHUNKS). */
+export function joinGeneralInstructionsInOrder(rankOrder: string[]): string {
+  const byId = new Map(GENERAL_INSTRUCTION_RANKED_CHUNKS.map((c) => [c.id, c.text]));
+  const middle = joinRankedInstructionChunksInOrder(rankOrder);
+  return `${GENERAL_INSTRUCTION_FIXED_PREFIX}\n\n${middle}\n\n${GENERAL_INSTRUCTION_FIXED_SUFFIX}`.trim();
+}
+
+/** Middle sections only (no fixed prefix/suffix) — for short prompts e.g. Imagen. */
+export function joinRankedInstructionChunksInOrder(rankOrder: string[]): string {
+  const byId = new Map(GENERAL_INSTRUCTION_RANKED_CHUNKS.map((c) => [c.id, c.text]));
+  return rankOrder
+    .map((id) => byId.get(id))
+    .filter((t): t is string => typeof t === "string" && t.length > 0)
+    .join("\n\n")
+    .trim();
+}
+
+/** Original monolithic general instructions (canonical ordering). */
+export const SYSTEM_INSTRUCTIONS_GENERAL = joinGeneralInstructionsInOrder(CANONICAL_RANK_ORDER);

@@ -1,16 +1,65 @@
 /**
- * Gemini system instructions for blog post generation.
- * Uses general instructions + per-user CLIENT-SPECIFIC INSTRUCTIONS (generated after onboarding).
+ * Composes **system** + **user** messages for post generation.
+ * Rule text: `instruction-chunks.ts` + embedding order via `instruction-embeddings.ts`.
+ * Brand text: `generate-client-instructions.ts` → `clients.custom_instructions` (sections ranked by embeddings per task).
  */
 
-import { SYSTEM_INSTRUCTIONS_GENERAL } from "./instructions-general";
+import type { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  buildClientInstructionsWithEmbeddingOrder,
+  joinClientInstructionChunksCanonical,
+  parseClientInstructionsIntoChunks,
+} from "./client-instruction-embeddings";
+import { CONTENT_TYPE_PROMPT_HINT, SYSTEM_INSTRUCTIONS_GENERAL } from "./instruction-chunks";
+import {
+  buildGeneralInstructionsWithEmbeddingOrder,
+  buildInstructionRetrievalQuery,
+} from "./instruction-embeddings";
+import type { InstructionSelectionContext, InstructionTaskKind } from "./instruction-embeddings";
 import type { EnrichedUrl } from "./site-urls";
+
+export type { InstructionSelectionContext, InstructionTaskKind };
 
 /** Combined system instructions: general + client-specific (when provided). */
 export function getSystemInstructions(clientSpecificInstructions: string | null): string {
   const base = SYSTEM_INSTRUCTIONS_GENERAL;
   if (!clientSpecificInstructions?.trim()) return base;
   return `${base}\n\n${clientSpecificInstructions.trim()}`;
+}
+
+/**
+ * General middle sections + client-specific sections are each ordered with Gemini Embedding 2 for the
+ * current task (`ctx.taskKind`). Prefix/suffix of general rules stay fixed. Falls back to
+ * {@link getSystemInstructions} if general embedding fails.
+ */
+export async function resolveSystemInstructionsWithEmbeddings(
+  genAI: GoogleGenerativeAI,
+  clientSpecificInstructions: string | null,
+  ctx: InstructionSelectionContext,
+): Promise<string> {
+  try {
+    const general = await buildGeneralInstructionsWithEmbeddingOrder(genAI, ctx);
+    if (!clientSpecificInstructions?.trim()) return general;
+
+    const chunks = parseClientInstructionsIntoChunks(clientSpecificInstructions);
+    const q = buildInstructionRetrievalQuery(ctx);
+    let clientBlock: string;
+    try {
+      if (chunks.length <= 1) {
+        clientBlock = chunks[0]?.text ?? clientSpecificInstructions.trim();
+      } else {
+        clientBlock = await buildClientInstructionsWithEmbeddingOrder(genAI, chunks, q);
+      }
+    } catch (ce) {
+      console.warn("[instructions] Client embedding order failed, using canonical section order:", ce);
+      clientBlock = chunks.length ? joinClientInstructionChunksCanonical(chunks) : clientSpecificInstructions.trim();
+    }
+
+    return `${general}\n\n${clientBlock}`;
+  } catch (e) {
+    console.warn("[instructions] Embedding ordering failed, using canonical general instructions:", e);
+    return getSystemInstructions(clientSpecificInstructions);
+  }
 }
 
 /** @deprecated Use getSystemInstructions(client.custom_instructions) for new code. */
@@ -47,12 +96,6 @@ export type PostContext = {
   existing_draft?: string | null;
 };
 
-const CONTENT_TYPE_GUIDE: Record<string, string> = {
-  hero: "1800-2500 words, comprehensive, 3+ statistics",
-  hub: "1000-1400 words, focused sub-topic, 2+ statistics",
-  hygiene: "600-900 words, FAQ/how-to, snippet-optimised",
-};
-
 export type BuildPromptOptions = {
   /** When true, brand identity/visual/analysis are in system (client-specific instructions); do not duplicate in prompt. */
   hasCustomInstructions?: boolean;
@@ -71,7 +114,7 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   lines.push("═══════════════════════════════");
   lines.push(`Today: ${currentDate}`);
   lines.push(`Language: ${post.locale}`);
-  lines.push(`Content type: ${post.content_type} — ${CONTENT_TYPE_GUIDE[post.content_type] ?? "standard"}`);
+  lines.push(`Content type: ${post.content_type} — ${CONTENT_TYPE_PROMPT_HINT[post.content_type] ?? "standard"}`);
   lines.push(`Publication date: ${post.publication_date}`);
 
   if (client.domain) lines.push(`Website: ${client.domain}`);
@@ -202,11 +245,10 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
 
   lines.push("");
   lines.push("═══════════════════════════════");
-  lines.push("CHECKLIST");
+  lines.push("SESSION CHECKLIST (system instructions hold full SEO/AEO/GEO/FAQ/schema rules)");
   lines.push("═══════════════════════════════");
-  lines.push("TARGET 90+ on all three. SEO: keyword in title/intro/2+ H2s/seo_title/meta, 5-8 variants.");
-  lines.push("AEO: core argument, definition block, 5 FAQs (required), **bold** claims, EEAT.");
-  lines.push("GEO: 3+ 'According to [Source] (Year), X%' stats, 5+ named entities, 2+ date-anchored facts.");
+  lines.push("Use the system instructions as the authority for structure, scoring targets, and JSON fields.");
+  lines.push("Publishing requires rounded average of seo/aeo/geo ≥ 90 after the post-generation quality pass.");
   if (client.recentPostTitles?.length) {
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
@@ -216,8 +258,8 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   } else {
     lines.push("CRITICAL: No internal site URL list was provided — do not add internal [text](url) links to the site.");
   }
-  lines.push("CRITICAL: cover_image_description = 2–3 sentences: substantive editorial illustration for THIS article’s topic — specific metaphors, symbols, or scenes (not generic abstract blobs). Use ONLY colours from BRAND VISUAL above (client palette). Headline on-image: European sentence case, brand font feel. Avoid cliché stock imagery.");
-  lines.push("seo_score: TARGET 90+ on SEO, AEO, GEO. If below 90, notes = specific gap to fix.");
+  lines.push("CRITICAL: Cover fields — on-image text ENGLISH only; cover_image_description in English; follow BRAND VISUAL in system/client instructions.");
+  lines.push("seo_score in JSON: self-assess per system instructions; if average would be < 90, notes = specific gaps.");
 
   return lines.join("\n");
 }

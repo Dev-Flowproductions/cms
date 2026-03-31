@@ -23,12 +23,12 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-40 flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+        className="lg:hidden fixed top-3 left-3 z-40 flex h-9 w-9 items-center justify-center rounded-xl transition-all"
         style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          color: "var(--text-muted)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          background: "var(--adm-surface-high)",
+          border: "1px solid var(--adm-outline-variant)",
+          color: "var(--adm-on-variant)",
+          boxShadow: "var(--adm-menu-button-shadow)",
         }}
         aria-label="Open menu"
       >
@@ -50,14 +50,14 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
       <aside
         className={[
           "flex flex-col h-screen overflow-y-auto",
-          // Desktop: static sidebar
-          "hidden lg:flex lg:sticky lg:top-0 lg:w-60 lg:flex-shrink-0",
+          // Desktop: static sidebar (16rem — matches editorial shell)
+          "hidden lg:flex lg:sticky lg:top-0 lg:w-64 lg:flex-shrink-0",
           // Mobile: fixed full-height drawer
           open ? "!flex fixed top-0 left-0 z-50 w-72" : "",
         ].join(" ")}
         style={{
-          background: "var(--surface)",
-          borderRight: "1px solid var(--border)",
+          background: "var(--adm-sidebar)",
+          borderRight: "1px solid var(--adm-border-subtle)",
           transition: "transform 0.25s ease",
         }}
       >
@@ -65,11 +65,11 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="lg:hidden absolute top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg lg:hidden"
           style={{
-            background: "var(--surface-raised)",
-            border: "1px solid var(--border)",
-            color: "var(--text-muted)",
+            background: "var(--adm-surface-high)",
+            border: "1px solid var(--adm-outline-variant)",
+            color: "var(--adm-on-variant)",
           }}
           aria-label="Close menu"
         >

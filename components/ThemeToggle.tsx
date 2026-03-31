@@ -1,8 +1,30 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useTheme } from "./ThemeProvider";
 
-export function ThemeToggle({ className }: { className?: string }) {
+const defaultButtonStyle: CSSProperties = {
+  width: "32px",
+  height: "32px",
+  borderRadius: "8px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--surface-raised)",
+  border: "1px solid var(--border)",
+  color: "var(--text-muted)",
+  cursor: "pointer",
+  transition: "all 0.15s ease",
+  flexShrink: 0,
+};
+
+export function ThemeToggle({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   const { theme, toggle } = useTheme();
 
   return (
@@ -11,20 +33,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       className={className}
-      style={{
-        width: "32px",
-        height: "32px",
-        borderRadius: "8px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--surface-raised)",
-        border: "1px solid var(--border)",
-        color: "var(--text-muted)",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        flexShrink: 0,
-      }}
+      style={{ ...defaultButtonStyle, ...style }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)";
         (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)";

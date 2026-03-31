@@ -7,9 +7,9 @@ import { useTranslations } from "next-intl";
 type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
 
 const inputBase: React.CSSProperties = {
-  background: "var(--surface-raised)",
-  border: "1px solid var(--border)",
-  color: "var(--text)",
+  background: "var(--adm-surface-highest)",
+  border: "1px solid var(--adm-border-subtle)",
+  color: "var(--adm-on-surface)",
   borderRadius: "12px",
   padding: "10px 14px",
   fontSize: "13px",
@@ -40,11 +40,11 @@ function Field({
     autoComplete: "off" as const,
     style: inputBase,
     onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      e.currentTarget.style.borderColor = "var(--accent)";
-      e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-glow)";
+      e.currentTarget.style.borderColor = "var(--adm-primary)";
+      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(104, 57, 234, 0.22)";
     },
     onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      e.currentTarget.style.borderColor = "var(--border)";
+      e.currentTarget.style.borderColor = "var(--adm-border-subtle)";
       e.currentTarget.style.boxShadow = "none";
     },
   };
@@ -53,10 +53,10 @@ function Field({
       <label
         htmlFor={name}
         className="block text-xs font-semibold uppercase tracking-widest mb-1.5"
-        style={{ color: "var(--text-muted)" }}
+        style={{ color: "var(--adm-on-variant)" }}
       >
         {label}
-        {required && <span style={{ color: "var(--accent)" }}> *</span>}
+        {required && <span style={{ color: "var(--adm-primary)" }}> *</span>}
       </label>
       {textarea ? (
         <textarea {...inputProps} rows={3} />
@@ -116,10 +116,10 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
 
   return (
     <div
-      className="rounded-2xl p-6 mb-8"
+      className="admin-shell-glass rounded-2xl p-6 mb-8"
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
+        background: "var(--adm-surface-high)",
+        border: "1px solid var(--adm-border-subtle)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
       }}
     >
@@ -127,11 +127,11 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
         <div>
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-0.5"
-            style={{ color: "var(--accent)" }}
+            style={{ color: "var(--adm-primary)" }}
           >
             {t("createForm.eyebrow")}
           </p>
-          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+          <h2 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>
             {t("createForm.title")}
           </h2>
         </div>
@@ -139,7 +139,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
           type="button"
           onClick={onCancel}
           className="text-xs px-3 py-1.5 rounded-xl transition-all"
-          style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+          style={{ color: "var(--adm-on-variant)", border: "1px solid var(--adm-border-subtle)" }}
         >
           {tCommon("cancel")}
         </button>
@@ -153,8 +153,8 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
         </div>
 
         {/* Author (shown on blog posts) */}
-        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--adm-on-variant)" }}>
             Author (for blog posts)
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -170,9 +170,9 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
         <div className="mb-6">
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-2"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: "var(--adm-on-variant)" }}
           >
-            {tSettings("postingFrequency")} <span style={{ color: "var(--accent)" }}>*</span>
+            {tSettings("postingFrequency")} <span style={{ color: "var(--adm-primary)" }}>*</span>
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {FREQUENCY_OPTIONS.map((opt) => {
@@ -184,10 +184,10 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
                   onClick={() => setFrequency(opt.value)}
                   className="px-4 py-3 rounded-xl text-sm font-medium transition-all"
                   style={{
-                    background: active ? "rgba(124,92,252,0.12)" : "var(--surface-raised)",
-                    border: active ? "1px solid rgba(124,92,252,0.4)" : "1px solid var(--border)",
-                    color: active ? "var(--accent)" : "var(--text-muted)",
-                    boxShadow: active ? "0 0 12px rgba(124,92,252,0.1)" : "none",
+                    background: active ? "var(--adm-primary-container)" : "var(--adm-surface-highest)",
+                    border: active ? "none" : "1px solid var(--adm-outline-variant)",
+                    color: active ? "#fff" : "var(--adm-on-variant)",
+                    boxShadow: active ? "0 0 14px rgba(104, 57, 234, 0.35)" : "none",
                   }}
                 >
                   {opt.label}
@@ -203,8 +203,8 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
         </div>
 
         {/* Brand */}
-        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--adm-on-variant)" }}>
             Brand
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -216,7 +216,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
             <Field label="Alternative color (optional, for cover variety)" name="alternative_color" type="text" placeholder="#1e293b" />
             <Field label="Font style" name="font_style" placeholder="modern" />
             <div className="sm:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>Brand voice</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Brand voice</p>
               <div className="flex flex-wrap gap-2">
                 {BRAND_VOICES.map((v) => (
                   <button
@@ -225,9 +225,10 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
                     onClick={() => setBrandVoice(v.id)}
                     className="px-3 py-2 rounded-xl text-xs font-medium transition-all"
                     style={{
-                      background: brandVoice === v.id ? "var(--accent)" : "var(--surface)",
-                      color: brandVoice === v.id ? "white" : "var(--text)",
-                      border: `1px solid ${brandVoice === v.id ? "var(--accent)" : "var(--border)"}`,
+                      background: brandVoice === v.id ? "var(--adm-primary-container)" : "var(--adm-surface-high)",
+                      color: brandVoice === v.id ? "#fff" : "var(--adm-on-surface)",
+                      border: `1px solid ${brandVoice === v.id ? "transparent" : "var(--adm-border-subtle)"}`,
+                      boxShadow: brandVoice === v.id ? "0 0 14px rgba(104, 57, 234, 0.35)" : "none",
                     }}
                   >
                     {v.label}
@@ -239,8 +240,8 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
         </div>
 
         {/* Webhook & auto-publish */}
-        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+        <div className="mb-6 rounded-xl p-4" style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--adm-on-variant)" }}>
             Publishing
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -254,7 +255,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
                 onChange={(e) => setAutoPublish(e.target.checked)}
                 className="rounded"
               />
-              <label htmlFor="auto_publish" className="text-sm" style={{ color: "var(--text)" }}>
+              <label htmlFor="auto_publish" className="text-sm" style={{ color: "var(--adm-on-surface)" }}>
                 Auto-publish (send new posts to webhook when generated)
               </label>
             </div>
@@ -267,7 +268,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
             style={{
               background: "rgba(255,92,106,0.08)",
               border: "1px solid rgba(255,92,106,0.25)",
-              color: "var(--danger)",
+              color: "var(--adm-error)",
             }}
           >
             {error}
@@ -280,9 +281,9 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
             disabled={loading}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             style={{
-              background: "var(--accent)",
-              color: "white",
-              boxShadow: loading ? "none" : "0 0 20px rgba(124,92,252,0.3)",
+              background: "var(--adm-primary-container)",
+              color: "#fff",
+              boxShadow: loading ? "none" : "0 0 14px rgba(104, 57, 234, 0.35)",
             }}
           >
             {loading ? t("creating") : t("createAccount")}
@@ -291,7 +292,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
             type="button"
             onClick={onCancel}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold"
-            style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
           >
             {tCommon("cancel")}
           </button>

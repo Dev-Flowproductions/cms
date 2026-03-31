@@ -112,8 +112,8 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
 
   if (loading) {
     return (
-      <div className="mt-6 rounded-2xl p-5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading checklist…</p>
+      <div className="mt-6 rounded-2xl p-5" style={{ border: "1px solid var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}>
+        <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>Loading checklist…</p>
       </div>
     );
   }
@@ -121,39 +121,39 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
   return (
     <div
       className="mt-6 rounded-2xl overflow-hidden"
-      style={{ border: "1px solid rgba(124,92,252,0.3)", background: "var(--surface)" }}
+      style={{ border: "1px solid rgba(104, 57, 234, 0.35)", background: "var(--adm-surface-high)" }}
     >
       {/* Header */}
       <div
         className="px-6 py-4 flex items-center justify-between"
-        style={{ borderBottom: "1px solid var(--border)", background: "rgba(124,92,252,0.04)" }}
+        style={{ borderBottom: "1px solid var(--adm-border-subtle)", background: "rgba(104, 57, 234, 0.06)" }}
       >
         <div className="flex items-center gap-3">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(124,92,252,0.15)" }}
+            style={{ background: "rgba(104, 57, 234, 0.15)" }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--adm-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-primary)" }}>
               Review checklist
             </p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+            <p className="text-xs mt-0.5" style={{ color: "var(--adm-on-variant)" }}>
               {items.filter((i) => i.passed).length} / {items.length} items passed
             </p>
           </div>
         </div>
         {/* Progress bar */}
-        <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+        <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--adm-border-subtle)" }}>
           <div
             className="h-full rounded-full transition-all"
             style={{
               width: `${items.length ? (items.filter((i) => i.passed).length / items.length) * 100 : 0}%`,
-              background: allPassed ? "var(--success)" : "var(--accent)",
+              background: allPassed ? "#4ade80" : "var(--adm-primary)",
             }}
           />
         </div>
@@ -166,8 +166,8 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
             key={item.key}
             className="rounded-xl px-4 py-3 transition-all"
             style={{
-              background: item.passed ? "rgba(34,211,160,0.06)" : "var(--surface-raised)",
-              border: item.passed ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--border)",
+              background: item.passed ? "rgba(34,211,160,0.06)" : "var(--adm-surface-highest)",
+              border: item.passed ? "1px solid rgba(34,211,160,0.2)" : "1px solid var(--adm-border-subtle)",
             }}
           >
             <div className="flex items-start gap-3">
@@ -176,8 +176,8 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
                 onClick={() => setItemPassed(i, !item.passed)}
                 className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
                 style={{
-                  background: item.passed ? "var(--success)" : "var(--surface)",
-                  border: item.passed ? "none" : "1px solid var(--border)",
+                  background: item.passed ? "#4ade80" : "var(--adm-surface-high)",
+                  border: item.passed ? "none" : "1px solid var(--adm-border-subtle)",
                 }}
               >
                 {item.passed && (
@@ -187,7 +187,7 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
                 )}
               </button>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium" style={{ color: item.passed ? "var(--text)" : "var(--text-muted)" }}>
+                <p className="text-sm font-medium" style={{ color: item.passed ? "var(--adm-on-surface)" : "var(--adm-on-variant)" }}>
                   {CHECKLIST_LABELS[item.key] ?? item.key}
                 </p>
                 <input
@@ -197,12 +197,12 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
                   onChange={(e) => setItemNotes(i, e.target.value)}
                   className="mt-1.5 w-full text-xs px-2.5 py-1.5 rounded-lg outline-none transition-all"
                   style={{
-                    background: "var(--surface)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text)",
+                    background: "var(--adm-surface-high)",
+                    border: "1px solid var(--adm-border-subtle)",
+                    color: "var(--adm-on-surface)",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--adm-primary)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--adm-border-subtle)"; }}
                 />
               </div>
             </div>
@@ -212,14 +212,14 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
 
       {/* Footer — actions */}
       {error && (
-        <div className="mx-6 mb-4 px-4 py-2.5 rounded-xl text-xs" style={{ background: "rgba(255,92,106,0.08)", border: "1px solid rgba(255,92,106,0.25)", color: "var(--danger)" }}>
+        <div className="mx-6 mb-4 px-4 py-2.5 rounded-xl text-xs" style={{ background: "rgba(255, 180, 171, 0.08)", border: "1px solid rgba(255, 180, 171, 0.28)", color: "var(--adm-error)" }}>
           {error}
         </div>
       )}
 
       <div
         className="px-6 py-4 flex items-center gap-3 flex-wrap"
-        style={{ borderTop: "1px solid var(--border)" }}
+        style={{ borderTop: "1px solid var(--adm-border-subtle)" }}
       >
         {/* Save checklist */}
         <button
@@ -228,14 +228,14 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
           disabled={saving}
           className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
-            background: "var(--surface-raised)",
-            color: "var(--text-muted)",
-            border: "1px solid var(--border)",
+            background: "var(--adm-surface-highest)",
+            color: "var(--adm-on-variant)",
+            border: "1px solid var(--adm-border-subtle)",
           }}
         >
           {saving ? "Saving…" : "Save checklist"}
         </button>
-        {savedOk && <span className="text-xs font-medium" style={{ color: "var(--success)" }}>✓ Saved</span>}
+        {savedOk && <span className="text-xs font-medium" style={{ color: "#4ade80" }}>✓ Saved</span>}
 
         <div className="flex-1" />
 
@@ -246,9 +246,9 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
           disabled={rejecting || approving}
           className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
-            background: "rgba(255,92,106,0.1)",
-            color: "var(--danger)",
-            border: "1px solid rgba(255,92,106,0.25)",
+            background: "rgba(255, 180, 171, 0.1)",
+            color: "var(--adm-error)",
+            border: "1px solid rgba(255, 180, 171, 0.25)",
           }}
         >
           {rejecting ? "Rejecting…" : "Reject — send back to draft"}
@@ -261,10 +261,10 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
           disabled={approving || rejecting || !allPassed}
           className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
-            background: allPassed ? "linear-gradient(135deg, #22d3a0, #34d399)" : "var(--surface-raised)",
-            color: allPassed ? "var(--bg)" : "var(--text-faint)",
-            border: allPassed ? "none" : "1px solid var(--border)",
-            boxShadow: allPassed ? "0 0 16px rgba(34,211,160,0.25)" : "none",
+            background: allPassed ? "var(--adm-gradient-cta)" : "var(--adm-surface-highest)",
+            color: allPassed ? "#fff" : "var(--adm-on-variant)",
+            border: allPassed ? "none" : "1px solid var(--adm-border-subtle)",
+            boxShadow: allPassed ? "var(--adm-cta-glow-shadow)" : "none",
           }}
           title={!allPassed ? "Tick all checklist items before approving" : undefined}
         >
@@ -285,7 +285,7 @@ export function ReviewChecklistBlock({ postId }: { postId: string }) {
           )}
         </button>
         {!allPassed && (
-          <p className="w-full text-xs text-right" style={{ color: "var(--text-faint)" }}>
+          <p className="w-full text-xs text-right" style={{ color: "var(--adm-on-variant)" }}>
             Tick all items to enable approval
           </p>
         )}

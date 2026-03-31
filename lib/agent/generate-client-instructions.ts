@@ -1,6 +1,10 @@
 /**
- * Generates CLIENT-SPECIFIC INSTRUCTIONS from onboarding/client data.
- * Stored in clients.custom_instructions and combined with general instructions when creating posts.
+ * Builds the **client/brand** block stored in `clients.custom_instructions`.
+ * Appended after embedding-ordered general instructions (`resolveSystemInstructionsWithEmbeddings`).
+ * Do not restate global SEO/AEO/GEO rules here — those live in `instruction-chunks.ts`.
+ *
+ * Section titles (`BRAND IDENTITY`, `BRAND VISUAL`, `WEBSITE`, …) are used to split this text for
+ * embedding-based reordering per task (post, translation, quality_loop, cover).
  */
 
 import type { BrandBook } from "@/lib/brand-book/types";

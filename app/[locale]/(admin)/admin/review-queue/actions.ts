@@ -1,7 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, getUser } from "@/lib/auth";
+import { publishSeoScoreGate } from "@/lib/agent/score-post";
 
 
 export async function getReviewChecklist(postId: string) {
@@ -52,8 +54,22 @@ export async function saveReviewChecklist(
 export async function approvePost(postId: string) {
   const { user } = await requireAdmin();
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  // Set status to published directly — approval IS publishing
+  const { data: postRow } = await admin
+    .from("posts")
+    .select("primary_locale, post_localizations(locale, seo_score)")
+    .eq("id", postId)
+    .eq("status", "review")
+    .maybeSingle();
+  if (!postRow) return { error: "Post not found" };
+
+  const gate = publishSeoScoreGate({
+    primaryLocale: postRow.primary_locale ?? "pt",
+    localizations: (postRow.post_localizations ?? []) as { locale: string; seo_score?: unknown }[],
+  });
+  if (!gate.ok) return { error: gate.error };
+
   const { error } = await supabase
     .from("posts")
     .update({ status: "published", published_at: new Date().toISOString() })
@@ -96,6 +112,7 @@ export async function publishPost(postId: string) {
   const user = await getUser();
   if (!user) return { error: "Unauthorized" };
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const { data: post } = await supabase
     .from("posts")
@@ -106,6 +123,19 @@ export async function publishPost(postId: string) {
   if (post.status !== "approved") {
     return { error: "Post must be approved before publishing." };
   }
+
+  const { data: postRow } = await admin
+    .from("posts")
+    .select("primary_locale, post_localizations(locale, seo_score)")
+    .eq("id", postId)
+    .maybeSingle();
+  if (!postRow) return { error: "Post not found" };
+
+  const gate = publishSeoScoreGate({
+    primaryLocale: postRow.primary_locale ?? "pt",
+    localizations: (postRow.post_localizations ?? []) as { locale: string; seo_score?: unknown }[],
+  });
+  if (!gate.ok) return { error: gate.error };
 
   const { error } = await supabase
     .from("posts")

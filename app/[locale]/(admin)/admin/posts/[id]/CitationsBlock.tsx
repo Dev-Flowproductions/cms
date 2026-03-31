@@ -57,9 +57,9 @@ export function CitationsBlock({
   return (
     <section
       className="rounded-xl p-5"
-      style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+      style={{ border: "1px solid var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
     >
-      <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>
+      <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--adm-on-surface)" }}>
         Citations
       </h2>
       <ul className="space-y-2 mb-4">
@@ -71,12 +71,12 @@ export function CitationsBlock({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
-                style={{ color: "var(--accent)" }}
+                style={{ color: "var(--adm-primary)" }}
               >
                 {(source(c) as Source)?.title || (source(c) as Source)?.url}
               </a>
               {c.claim && (
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                <p className="text-xs mt-0.5" style={{ color: "var(--adm-on-variant)" }}>
                   {c.claim}
                 </p>
               )}
@@ -85,7 +85,7 @@ export function CitationsBlock({
               type="button"
               onClick={() => handleRemove(c.id)}
               className="text-xs font-medium flex-shrink-0 hover:underline transition-colors"
-              style={{ color: "var(--danger)" }}
+              style={{ color: "var(--adm-error)" }}
             >
               Remove
             </button>
@@ -98,7 +98,7 @@ export function CitationsBlock({
           type="button"
           onClick={() => setAdding(true)}
           className="text-xs font-semibold transition-colors hover:underline"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "var(--adm-primary)" }}
         >
           + Add citation
         </button>
@@ -107,7 +107,12 @@ export function CitationsBlock({
           <select
             name="source_id"
             required
-            className="input-field"
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none transition-all"
+            style={{
+              background: "var(--adm-surface-highest)",
+              border: "1px solid var(--adm-border-subtle)",
+              color: "var(--adm-on-surface)",
+            }}
           >
             <option value="">Select source</option>
             {sources.map((s) => (
@@ -117,23 +122,42 @@ export function CitationsBlock({
           <input
             name="claim"
             placeholder="Claim"
-            className="input-field"
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none transition-all"
+            style={{
+              background: "var(--adm-surface-highest)",
+              border: "1px solid var(--adm-border-subtle)",
+              color: "var(--adm-on-surface)",
+            }}
           />
           <input
             name="quote"
             placeholder="Quote"
-            className="input-field"
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none transition-all"
+            style={{
+              background: "var(--adm-surface-highest)",
+              border: "1px solid var(--adm-border-subtle)",
+              color: "var(--adm-on-surface)",
+            }}
           />
           <input
             name="section_anchor"
             placeholder="Section anchor (#h2-intro)"
-            className="input-field"
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none transition-all"
+            style={{
+              background: "var(--adm-surface-highest)",
+              border: "1px solid var(--adm-border-subtle)",
+              color: "var(--adm-on-surface)",
+            }}
           />
           <div className="flex gap-2 pt-1">
             <button
               type="submit"
               className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: "var(--accent)", color: "white" }}
+              style={{
+                background: "var(--adm-primary-container)",
+                color: "#fff",
+                boxShadow: "0 0 14px rgba(104, 57, 234, 0.35)",
+              }}
             >
               Add
             </button>
@@ -142,9 +166,9 @@ export function CitationsBlock({
               onClick={() => setAdding(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{
-                background: "var(--surface-raised)",
-                color: "var(--text-muted)",
-                border: "1px solid var(--border)",
+                background: "var(--adm-surface-highest)",
+                color: "var(--adm-on-variant)",
+                border: "1px solid var(--adm-border-subtle)",
               }}
             >
               Cancel

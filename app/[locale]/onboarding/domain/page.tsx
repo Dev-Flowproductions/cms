@@ -22,6 +22,7 @@ async function saveBrandInfo(data: {
   tertiaryColor: string | null;
   fontStyle: string;
   brandVoice: string;
+  brandGuidelinesText: string;
 }) {
   const formData = new FormData();
   formData.append("domain", data.domain);
@@ -31,6 +32,9 @@ async function saveBrandInfo(data: {
   if (data.tertiaryColor) formData.append("tertiaryColor", data.tertiaryColor);
   formData.append("fontStyle", data.fontStyle);
   formData.append("brandVoice", data.brandVoice);
+  if (data.brandGuidelinesText.trim()) {
+    formData.append("brandGuidelinesText", data.brandGuidelinesText.trim());
+  }
   if (data.logoFile) {
     formData.append("logo", data.logoFile);
   }
@@ -48,6 +52,7 @@ export default function OnboardingBrandPage() {
   const locale = useLocale();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const guidelinesFileRef = useRef<HTMLInputElement>(null);
 
   const [domain, setDomain] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -60,6 +65,34 @@ export default function OnboardingBrandPage() {
   const [brandVoice, setBrandVoice] = useState("professional");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [brandGuidelinesText, setBrandGuidelinesText] = useState("");
+  const [guidelinesExtracting, setGuidelinesExtracting] = useState(false);
+
+  async function handleGuidelinesFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setGuidelinesExtracting(true);
+    setError(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/onboarding/guidelines-extract", {
+        method: "POST",
+        body: fd,
+      });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok) {
+        setError(data.error ?? t("guidelinesExtractError"));
+        return;
+      }
+      setBrandGuidelinesText(data.text ?? "");
+    } catch {
+      setError(t("guidelinesExtractError"));
+    } finally {
+      setGuidelinesExtracting(false);
+    }
+  }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -87,6 +120,7 @@ export default function OnboardingBrandPage() {
       tertiaryColor: tertiaryColor || null,
       fontStyle: fontStyle.trim() || "modern",
       brandVoice,
+      brandGuidelinesText,
     });
 
     setLoading(false);
@@ -271,6 +305,46 @@ export default function OnboardingBrandPage() {
               onChange={(e) => setFontStyle(e.target.value)}
               placeholder={t("fontStylePlaceholder")}
               className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Brand guidelines: upload to fill, or type by hand */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
+              {t("guidelinesLabel")}
+            </label>
+            <p className="text-xs mb-2" style={{ color: "var(--text-faint)" }}>
+              {t("guidelinesHint")}
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button
+                type="button"
+                disabled={guidelinesExtracting}
+                onClick={() => guidelinesFileRef.current?.click()}
+                className="px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
+                style={{
+                  background: "var(--surface-raised)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {guidelinesExtracting ? t("guidelinesExtracting") : t("guidelinesUpload")}
+              </button>
+              <input
+                ref={guidelinesFileRef}
+                type="file"
+                accept=".pdf,.txt,.md,text/plain,application/pdf"
+                onChange={handleGuidelinesFile}
+                className="hidden"
+              />
+            </div>
+            <textarea
+              value={brandGuidelinesText}
+              onChange={(e) => setBrandGuidelinesText(e.target.value)}
+              rows={6}
+              placeholder={t("guidelinesPlaceholder")}
+              className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y min-h-[120px]"
               style={inputStyle}
             />
           </div>

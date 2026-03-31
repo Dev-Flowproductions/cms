@@ -17,10 +17,12 @@ export default async function AdminPostsPage({
   if (!userId) {
     const users = await getUsersWithPostCount();
     return (
-      <div>
-        <div className="mb-6">
-          <h1 className="text-xl font-bold">{t("posts")}</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+      <div className="max-w-6xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--adm-on-surface)" }}>
+            {t("posts")}
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--adm-on-variant)" }}>
             Select an account to view and manage posts
           </p>
         </div>
@@ -36,19 +38,19 @@ export default async function AdminPostsPage({
     clientByAuthor[userId]?.company_name ?? clientByAuthor[userId]?.brand_name ?? "—";
 
   return (
-    <div>
-      <div className="mb-6 flex items-center gap-4">
+    <div className="max-w-6xl">
+      <div className="mb-8 flex flex-wrap items-center gap-4">
         <Link
           href="/admin/posts"
-          className="text-sm font-medium flex items-center gap-1.5"
-          style={{ color: "var(--text-muted)" }}
+          className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-[color:var(--adm-primary)] hover:underline hover:decoration-2 hover:underline-offset-4"
+          style={{ color: "var(--adm-on-variant)" }}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           All accounts
         </Link>
-        <h1 className="text-xl font-bold">
+        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--adm-on-surface)" }}>
           {accountName}
         </h1>
       </div>

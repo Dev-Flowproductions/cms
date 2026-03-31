@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { z } from "zod";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
+import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import type { Locale } from "@/lib/types/db";
 
 const createPostSchema = z.object({
@@ -156,6 +157,21 @@ export async function updatePost(postId: string, formData: FormData) {
     }
   }
   if (slug !== undefined) updates.slug = slug;
+
+  if (updates.status === "published") {
+    const admin = createAdminClient();
+    const { data: postRow } = await admin
+      .from("posts")
+      .select("primary_locale, post_localizations(locale, seo_score)")
+      .eq("id", postId)
+      .maybeSingle();
+    if (!postRow) return { error: "Post not found" };
+    const gate = publishSeoScoreGate({
+      primaryLocale: postRow.primary_locale ?? "pt",
+      localizations: (postRow.post_localizations ?? []) as { locale: string; seo_score?: unknown }[],
+    });
+    if (!gate.ok) return { error: gate.error };
+  }
 
   const { error } = await supabase.from("posts").update(updates).eq("id", postId);
   if (error) return { error: error.message };

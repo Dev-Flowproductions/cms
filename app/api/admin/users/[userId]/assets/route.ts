@@ -5,11 +5,15 @@ import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
 import { normalizeAdminAssetAction, resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
 import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
-import { MAX_GUIDELINES_FILE_BYTES, MAX_GUIDELINES_FILE_MB } from "@/lib/brand/guidelines-limits";
+import {
+  MAX_BRAND_UPLOAD_BYTES,
+  MAX_BRAND_UPLOAD_MB,
+  MAX_SMALL_IMAGE_BYTES,
+  MAX_SMALL_IMAGE_MB,
+} from "@/lib/brand/brand-asset-limits";
 
 const BRAND_BUCKET = "brand-assets";
 const LOGOS_BUCKET = "logos";
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 function isLikelyImageFile(blob: Blob): boolean {
   if (blob.type.startsWith("image/")) return true;
@@ -97,7 +101,7 @@ export async function POST(
   } catch {
     return NextResponse.json(
       {
-        error: `Could not read upload (body too large or broken). Guidelines max ${MAX_GUIDELINES_FILE_MB}MB; try a smaller file or compress the PDF.`,
+        error: `Could not read upload (body too large or broken). Max ${MAX_BRAND_UPLOAD_MB}MB per file; try a smaller file or compress.`,
       },
       { status: 413 },
     );
@@ -137,8 +141,11 @@ export async function POST(
     if (!isLikelyImageFile(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+    if (file.size > MAX_SMALL_IMAGE_BYTES) {
+      return NextResponse.json(
+        { error: `Image too large (max ${MAX_SMALL_IMAGE_MB}MB)` },
+        { status: 400 },
+      );
     }
 
     const prevPath = logosPathFromPublicUrl(clientRow.logo_url);
@@ -186,8 +193,11 @@ export async function POST(
     if (!isLikelyImageFile(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+    if (file.size > MAX_SMALL_IMAGE_BYTES) {
+      return NextResponse.json(
+        { error: `Image too large (max ${MAX_SMALL_IMAGE_MB}MB)` },
+        { status: 400 },
+      );
     }
 
     const prevPath = logosPathFromPublicUrl(profileRow?.avatar_url);
@@ -259,8 +269,11 @@ export async function POST(
     if (!isLikelyImageFile(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+    if (file.size > MAX_SMALL_IMAGE_BYTES) {
+      return NextResponse.json(
+        { error: `Image too large (max ${MAX_SMALL_IMAGE_MB}MB)` },
+        { status: 400 },
+      );
     }
 
     const fileName = file instanceof File ? file.name : "avatar.png";
@@ -337,8 +350,11 @@ export async function POST(
     if (!isLikelyImageFile(file)) {
       return NextResponse.json({ error: "Images only (JPEG, PNG, WebP)" }, { status: 400 });
     }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+    if (file.size > MAX_BRAND_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: `Image too large (max ${MAX_BRAND_UPLOAD_MB}MB)` },
+        { status: 400 },
+      );
     }
 
     const prev =
@@ -387,9 +403,9 @@ export async function POST(
     if (!blob) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (blob.size > MAX_GUIDELINES_FILE_BYTES) {
+    if (blob.size > MAX_BRAND_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: `File too large (max ${MAX_GUIDELINES_FILE_MB}MB)` },
+        { error: `File too large (max ${MAX_BRAND_UPLOAD_MB}MB)` },
         { status: 400 },
       );
     }

@@ -566,16 +566,15 @@ export function EditUserConfig({
               )}
             </div>
           </div>
-          <div className="space-y-2 min-w-[200px] flex-1">
+          <div className="space-y-3 min-w-[200px] flex-1 min-h-0">
             <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.guidelinesTitle")}</p>
             <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.guidelinesHint")}</p>
             {brandGuidelinesText?.trim() ? (
               <pre
-                className="max-h-40 max-w-full overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-3 text-[11px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className="min-h-[12rem] max-h-[min(65vh,32rem)] max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-4 text-xs leading-relaxed"
                 style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
-                {brandGuidelinesText.slice(0, 1200)}
-                {brandGuidelinesText.length > 1200 ? "…" : ""}
+                {brandGuidelinesText}
               </pre>
             ) : (
               <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.noGuidelines")}</p>
@@ -584,7 +583,7 @@ export function EditUserConfig({
               <label className="cursor-pointer">
                 <input
                   type="file"
-                  accept=".pdf,.txt,.md,text/plain,application/pdf"
+                  accept=".pdf,.txt,.md,.markdown,.text,text/plain,text/markdown,application/pdf,application/x-pdf,application/octet-stream"
                   className="hidden"
                   disabled={assetBusy}
                   onChange={async (e) => {

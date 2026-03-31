@@ -203,8 +203,20 @@ export function AccountSettingsCard({
     setBrandAssetsSaved(false);
     try {
       const res = await fetch("/api/settings/brand-assets", { method: "POST", body: formData });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      let data: { error?: string } = {};
+      try {
+        data = (await res.json()) as { error?: string };
+      } catch {
+        /* non-JSON body */
+      }
+      if (!res.ok) {
+        throw new Error(
+          data.error ??
+            (res.status === 413
+              ? "Upload too large or incomplete. Try a smaller file or compress the PDF."
+              : "Request failed"),
+        );
+      }
       setBrandAssetsSaved(true);
       router.refresh();
       setTimeout(() => setBrandAssetsSaved(false), 3000);
@@ -870,18 +882,17 @@ export function AccountSettingsCard({
             })}
           </div>
 
-          <div className="space-y-2 pt-2" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
+          <div className="space-y-3 pt-4" style={{ borderTop: "1px solid var(--adm-border-subtle)" }}>
             <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
               {t("brandAssets.guidelinesTitle")}
             </p>
             <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.guidelinesHint")}</p>
             {settings.brand_guidelines_text?.trim() ? (
               <pre
-                className="max-h-40 max-w-full overflow-x-hidden overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-3 text-[11px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className="min-h-[14rem] max-h-[min(70vh,36rem)] max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl p-4 text-xs leading-relaxed"
                 style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
               >
-                {settings.brand_guidelines_text.slice(0, 2000)}
-                {settings.brand_guidelines_text.length > 2000 ? "…" : ""}
+                {settings.brand_guidelines_text}
               </pre>
             ) : (
               <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.noGuidelines")}</p>
@@ -890,7 +901,7 @@ export function AccountSettingsCard({
               <label className="cursor-pointer">
                 <input
                   type="file"
-                  accept=".pdf,.txt,.md,text/plain,application/pdf"
+                  accept=".pdf,.txt,.md,.markdown,.text,text/plain,text/markdown,application/pdf,application/x-pdf,application/octet-stream"
                   className="hidden"
                   disabled={brandAssetsBusy}
                   onChange={async (e) => {

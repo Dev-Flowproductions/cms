@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
 import { resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
 import { getMultipartBlob } from "@/lib/http/form-data";
-import { MAX_GUIDELINES_FILE_BYTES, MAX_GUIDELINES_FILE_MB } from "@/lib/brand/guidelines-limits";
+import { MAX_BRAND_UPLOAD_BYTES, MAX_BRAND_UPLOAD_MB } from "@/lib/brand/brand-asset-limits";
 
 /** Extract text from a guidelines file for onboarding preview (no DB write). */
 export async function POST(request: Request) {
@@ -15,14 +15,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      {
+        error: `Could not read upload (body too large or broken). Max ${MAX_BRAND_UPLOAD_MB}MB; try a smaller file or compress the PDF.`,
+      },
+      { status: 413 },
+    );
+  }
   const blob = getMultipartBlob(formData, "file", "upload");
   if (!blob) {
     return NextResponse.json({ error: "No file" }, { status: 400 });
   }
-  if (blob.size > MAX_GUIDELINES_FILE_BYTES) {
+  if (blob.size > MAX_BRAND_UPLOAD_BYTES) {
     return NextResponse.json(
-      { error: `File too large (max ${MAX_GUIDELINES_FILE_MB}MB)` },
+      { error: `File too large (max ${MAX_BRAND_UPLOAD_MB}MB)` },
       { status: 400 },
     );
   }

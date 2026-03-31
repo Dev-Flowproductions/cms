@@ -4,10 +4,10 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
-  // API routes hit middleware (session refresh); Next buffers the full body. Large guideline PDFs
-  // (e.g. 20MB+) need headroom above the app file cap + multipart overhead.
+  // API routes hit middleware (session refresh); Next buffers the full body. Brand guidelines PDFs
+  // and large cover reference images need headroom above per-file caps + multipart overhead.
   experimental: {
-    middlewareClientMaxBodySize: "64mb",
+    middlewareClientMaxBodySize: "256mb",
   },
   images: {
     remotePatterns: [

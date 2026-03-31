@@ -9,8 +9,8 @@ export type RejectedGuidelinesFile = {
   error: string;
 };
 
-/** Scan first bytes for PDF header (handles BOM / junk before %PDF). */
-export function bufferContainsPdfHeader(buf: Buffer, maxScan = 2048): boolean {
+/** Scan leading bytes for %PDF (handles BOM, long comments, some exports that delay the header). */
+export function bufferContainsPdfHeader(buf: Buffer, maxScan = 65536): boolean {
   const limit = Math.min(buf.length, maxScan);
   for (let i = 0; i <= limit - 4; i++) {
     if (
@@ -46,9 +46,13 @@ export function resolveGuidelinesBuffer(
   buf: Buffer,
 ): ResolvedGuidelinesFile | RejectedGuidelinesFile {
   const lower = fileName.toLowerCase();
-  const mime = (declaredMime || "").toLowerCase();
+  const mime = (declaredMime || "").toLowerCase().trim();
 
-  if (lower.endsWith(".pdf") || mime.includes("pdf") || bufferContainsPdfHeader(buf)) {
+  const pdfByName = /\.pdf$/i.test(fileName.trim());
+  const pdfByMime =
+    mime.includes("pdf") || mime === "application/acrobat" || mime.endsWith("+pdf");
+
+  if (pdfByName || pdfByMime || bufferContainsPdfHeader(buf)) {
     return { ok: true, ext: "pdf", contentType: "application/pdf" };
   }
 

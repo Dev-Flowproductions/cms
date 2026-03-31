@@ -334,7 +334,7 @@ export default function OnboardingBrandPage() {
               <input
                 ref={guidelinesFileRef}
                 type="file"
-                accept=".pdf,.txt,.md,text/plain,application/pdf"
+                accept=".pdf,.txt,.md,.markdown,.text,text/plain,text/markdown,application/pdf,application/x-pdf,application/octet-stream"
                 onChange={handleGuidelinesFile}
                 className="hidden"
               />
@@ -342,9 +342,9 @@ export default function OnboardingBrandPage() {
             <textarea
               value={brandGuidelinesText}
               onChange={(e) => setBrandGuidelinesText(e.target.value)}
-              rows={6}
+              rows={10}
               placeholder={t("guidelinesPlaceholder")}
-              className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y min-h-[120px]"
+              className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y min-h-[200px]"
               style={inputStyle}
             />
           </div>

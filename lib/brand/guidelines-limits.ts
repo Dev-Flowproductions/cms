@@ -1,8 +1,5 @@
-/**
- * Brand guidelines uploads (PDF / Markdown / TXT).
- * Must stay below `experimental.middlewareClientMaxBodySize` in next.config.ts
- * after multipart encoding overhead.
- */
-export const MAX_GUIDELINES_FILE_BYTES = 40 * 1024 * 1024;
-
-export const MAX_GUIDELINES_FILE_MB = 40;
+/** Re-exports for code that imported `guidelines-limits`; prefer `brand-asset-limits` for new code. */
+export {
+  MAX_BRAND_UPLOAD_BYTES as MAX_GUIDELINES_FILE_BYTES,
+  MAX_BRAND_UPLOAD_MB as MAX_GUIDELINES_FILE_MB,
+} from "./brand-asset-limits";

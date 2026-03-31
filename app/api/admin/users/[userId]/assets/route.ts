@@ -4,7 +4,11 @@ import { getUser, getUserRoles, hasAdminRole } from "@/lib/auth";
 import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
 import { normalizeAdminAssetAction, resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
-import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
+import {
+  getMultipartBlob,
+  getMultipartSmallTextField,
+  isLikelyImageBlob,
+} from "@/lib/http/form-data";
 import {
   MAX_BRAND_UPLOAD_BYTES,
   MAX_BRAND_UPLOAD_MB,
@@ -14,12 +18,6 @@ import {
 
 const BRAND_BUCKET = "brand-assets";
 const LOGOS_BUCKET = "logos";
-
-function isLikelyImageFile(blob: Blob): boolean {
-  if (blob.type.startsWith("image/")) return true;
-  const n = blob instanceof File ? blob.name.toLowerCase() : "";
-  return /\.(jpe?g|png|webp|gif)$/i.test(n);
-}
 
 function isValidTargetUserId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
@@ -138,7 +136,7 @@ export async function POST(
     if (!file) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!isLikelyImageFile(file)) {
+    if (!isLikelyImageBlob(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
     if (file.size > MAX_SMALL_IMAGE_BYTES) {
@@ -190,7 +188,7 @@ export async function POST(
     if (!file) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!isLikelyImageFile(file)) {
+    if (!isLikelyImageBlob(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
     if (file.size > MAX_SMALL_IMAGE_BYTES) {
@@ -266,7 +264,7 @@ export async function POST(
     if (!file) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!isLikelyImageFile(file)) {
+    if (!isLikelyImageBlob(file)) {
       return NextResponse.json({ error: "Images only" }, { status: 400 });
     }
     if (file.size > MAX_SMALL_IMAGE_BYTES) {
@@ -347,7 +345,7 @@ export async function POST(
     if (!file) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!isLikelyImageFile(file)) {
+    if (!isLikelyImageBlob(file)) {
       return NextResponse.json({ error: "Images only (JPEG, PNG, WebP)" }, { status: 400 });
     }
     if (file.size > MAX_BRAND_UPLOAD_BYTES) {
@@ -367,7 +365,11 @@ export async function POST(
 
     const fileName = file instanceof File ? file.name : "cover.jpg";
     const ext = fileName.split(".").pop()?.toLowerCase() || "jpg";
-    const safeExt = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext) ? ext : "jpg";
+    const safeExt = ["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "avif", "bmp", "tif", "tiff"].includes(
+      ext,
+    )
+      ? ext
+      : "jpg";
     const path = `${targetId}/cover-ref-${slot}-${Date.now()}.${safeExt}`;
     const uploadMime =
       file.type && file.type.startsWith("image/")
@@ -378,7 +380,15 @@ export async function POST(
             ? "image/webp"
             : safeExt === "gif"
               ? "image/gif"
-              : "image/jpeg";
+              : safeExt === "heic" || safeExt === "heif"
+                ? "image/heic"
+                : safeExt === "avif"
+                  ? "image/avif"
+                  : safeExt === "bmp"
+                    ? "image/bmp"
+                    : safeExt === "tif" || safeExt === "tiff"
+                      ? "image/tiff"
+                      : "image/jpeg";
 
     const { error: upErr } = await admin.storage.from(BRAND_BUCKET).upload(path, file as File, {
       cacheControl: "3600",

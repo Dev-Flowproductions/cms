@@ -342,9 +342,9 @@ export default function OnboardingBrandPage() {
             <textarea
               value={brandGuidelinesText}
               onChange={(e) => setBrandGuidelinesText(e.target.value)}
-              rows={10}
+              rows={16}
               placeholder={t("guidelinesPlaceholder")}
-              className="w-full px-4 py-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y min-h-[200px]"
+              className="w-full min-h-[min(52vh,28rem)] resize-y rounded-xl px-4 py-4 text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--accent)]"
               style={inputStyle}
             />
           </div>

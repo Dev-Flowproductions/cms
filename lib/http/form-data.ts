@@ -44,3 +44,10 @@ export function getMultipartBlob(formData: FormData, ...names: string[]): Blob |
   }
   return null;
 }
+
+/** True when MIME is image/* or the filename looks like a common raster image (handles empty browser MIME). */
+export function isLikelyImageBlob(blob: Blob): boolean {
+  if (blob.type.startsWith("image/")) return true;
+  const n = blob instanceof File ? blob.name.toLowerCase() : "";
+  return /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(n);
+}

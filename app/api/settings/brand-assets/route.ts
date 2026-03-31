@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
 import { normalizeAdminAssetAction, resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
-import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
+import {
+  getMultipartBlob,
+  getMultipartSmallTextField,
+  isLikelyImageBlob,
+} from "@/lib/http/form-data";
 import {
   MAX_BRAND_UPLOAD_BYTES,
   MAX_BRAND_UPLOAD_MB,
@@ -94,8 +98,11 @@ export async function POST(request: Request) {
     if (!file?.size) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Images only (JPEG, PNG, WebP)" }, { status: 400 });
+    if (!isLikelyImageBlob(file)) {
+      return NextResponse.json(
+        { error: "Images only (JPEG, PNG, WebP, GIF, HEIC, …)" },
+        { status: 400 },
+      );
     }
     if (file.size > MAX_BRAND_UPLOAD_BYTES) {
       return NextResponse.json(
@@ -113,13 +120,36 @@ export async function POST(request: Request) {
     await removeStoragePath(prev);
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const safeExt = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext) ? ext : "jpg";
+    const safeExt = ["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "avif", "bmp", "tif", "tiff"].includes(
+      ext,
+    )
+      ? ext
+      : "jpg";
     const path = `${user.id}/cover-ref-${slot}-${Date.now()}.${safeExt}`;
+
+    const uploadMime =
+      file.type && file.type.startsWith("image/")
+        ? file.type
+        : safeExt === "png"
+          ? "image/png"
+          : safeExt === "webp"
+            ? "image/webp"
+            : safeExt === "gif"
+              ? "image/gif"
+              : safeExt === "heic" || safeExt === "heif"
+                ? "image/heic"
+                : safeExt === "avif"
+                  ? "image/avif"
+                  : safeExt === "bmp"
+                    ? "image/bmp"
+                    : safeExt === "tif" || safeExt === "tiff"
+                      ? "image/tiff"
+                      : "image/jpeg";
 
     const { error: upErr } = await admin.storage.from(BUCKET).upload(path, file, {
       cacheControl: "3600",
       upsert: true,
-      contentType: file.type,
+      contentType: uploadMime,
     });
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });

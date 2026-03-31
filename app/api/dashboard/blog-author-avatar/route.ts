@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
+import {
+  getMultipartBlob,
+  getMultipartSmallTextField,
+  isLikelyImageBlob,
+} from "@/lib/http/form-data";
 
 const LOGOS_BUCKET = "logos";
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-
-function isLikelyImageFile(blob: Blob): boolean {
-  if (blob.type.startsWith("image/")) return true;
-  const n = blob instanceof File ? blob.name.toLowerCase() : "";
-  return /\.(jpe?g|png|webp|gif)$/i.test(n);
-}
 
 function logosPathFromPublicUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
@@ -71,7 +69,7 @@ export async function POST(request: Request) {
   if (!file) {
     return NextResponse.json({ error: "No file" }, { status: 400 });
   }
-  if (!isLikelyImageFile(file)) {
+  if (!isLikelyImageBlob(file)) {
     return NextResponse.json({ error: "Images only" }, { status: 400 });
   }
   if (file.size > MAX_IMAGE_BYTES) {

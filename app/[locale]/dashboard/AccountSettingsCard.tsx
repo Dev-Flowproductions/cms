@@ -9,8 +9,10 @@ import {
   updateClientDomain,
   updateUserAutoPublish,
   updateProfile,
-  type Frequency,
 } from "@/app/[locale]/(admin)/admin/users/actions";
+import { type Frequency, normalizeFrequencyForUi } from "@/lib/scheduler/frequency";
+import { BlogAuthorsClient } from "./blog-authors/BlogAuthorsClient";
+import type { BlogAuthorRow } from "./blog-authors/actions";
 
 const BRAND_VOICES = [
   { id: "professional", label: "Professional & Authoritative" },
@@ -25,7 +27,7 @@ type Settings = {
   domain: string | null;
   google_access_token: string | null;
   google_connected_at: string | null;
-  frequency: Frequency;
+  frequency: string;
   webhook_url: string | null;
   auto_publish: boolean;
   company_name?: string | null;
@@ -65,18 +67,21 @@ export function AccountSettingsCard({
   userId,
   settings,
   profile,
+  extraBlogAuthors = [],
 }: {
   userId: string;
   settings: Settings | null;
   profile?: Profile;
+  extraBlogAuthors?: BlogAuthorRow[];
 }) {
   const t = useTranslations("settings");
+  const tBlogExtra = useTranslations("settings.blogAuthors");
   const tBrand = useTranslations("onboarding.brand");
   const locale = useLocale();
   const router = useRouter();
   const brandLogoInputRef = useRef<HTMLInputElement>(null);
 
-  const [frequency, setFrequency] = useState<Frequency>(settings?.frequency ?? "weekly");
+  const [frequency, setFrequency] = useState<Frequency>(() => normalizeFrequencyForUi(settings?.frequency));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +122,6 @@ export function AccountSettingsCard({
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
-    { value: "daily",    label: t("frequency.daily"),    sublabel: t("frequency.dailySublabel") },
     { value: "weekly",   label: t("frequency.weekly"),   sublabel: t("frequency.weeklySublabel") },
     { value: "biweekly", label: t("frequency.biweekly"), sublabel: t("frequency.biweeklySublabel") },
     { value: "monthly",  label: t("frequency.monthly"),  sublabel: t("frequency.monthlySublabel") },
@@ -131,7 +135,7 @@ export function AccountSettingsCard({
 
   const googleConnected = !!settings.google_connected_at;
   const hasWebhook = !!settings.webhook_url;
-  const changed = frequency !== settings.frequency;
+  const changed = frequency !== normalizeFrequencyForUi(settings.frequency);
 
   async function handleSave() {
     setSaving(true);
@@ -327,6 +331,27 @@ export function AccountSettingsCard({
               <span className="text-xs font-medium" style={{ color: "var(--success)" }}>{t("saved")}</span>
             )}
           </div>
+        </div>
+
+        {/* Extra byline personas (same flow as former Blog authors page) */}
+        <div
+          className="rounded-xl p-5 space-y-4"
+          style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--adm-on-variant)" }}
+          >
+            {tBlogExtra("extraSectionTitle")}
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+            {tBlogExtra("extraSectionHint")}
+          </p>
+          <BlogAuthorsClient
+            embeddedInSettings
+            profileByline={null}
+            initialAuthors={extraBlogAuthors}
+          />
         </div>
 
         {/* Website domain — editable */}

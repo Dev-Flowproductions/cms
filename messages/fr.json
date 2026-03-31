@@ -40,7 +40,6 @@
     "redirecting": "Redirection…",
     "signingIn": "Connexion…",
     "stats": {
-      "locales": "Langues",
       "assisted": "Assisté",
       "posts": "Articles"
     }
@@ -66,8 +65,6 @@
     "connectGoogle": "Connecter Google",
     "reconnectGoogle": "Reconnecter Google",
     "frequency": {
-      "daily": "Quotidien",
-      "dailySublabel": "1 article / jour",
       "weekly": "Hebdomadaire",
       "weeklySublabel": "1 article / semaine",
       "biweekly": "Bihebdomadaire",
@@ -94,6 +91,10 @@
     "brand": {
       "title": "Marque",
       "description": "Modifiez le nom de l'entreprise, le logo, les couleurs et la voix. Les changements sont utilisés pour générer le contenu."
+    },
+    "blogAuthors": {
+      "extraSectionTitle": "Auteurs supplémentaires",
+      "extraSectionHint": "Chaque nouvel article choisit au hasard un auteur parmi votre profil par défaut ci-dessus et les personnes listées ici."
     },
     "brandAssets": {
       "title": "Références de couverture et directives",
@@ -255,9 +256,14 @@
       "noPosts": "Aucun article pour l'instant. Créez-en un pour commencer.",
       "actions": "Actions",
       "deletePost": "Supprimer",
+      "deleteSelected": "Supprimer la sélection",
+      "selectedCount": "{count} sélectionné(s)",
+      "selectAllAria": "Sélectionner tous les articles",
+      "selectRowAria": "Sélectionner l'article",
       "deletingPost": "Suppression…",
       "confirmDeleteTitle": "Voulez-vous vraiment continuer ?",
       "confirmDeletePost": "Cela supprimera définitivement « {slug} » et toutes les versions linguistiques du CMS.",
+      "confirmDeleteSelected": "Cela supprimera définitivement {count} article(s) et toutes les versions linguistiques du CMS. Action irréversible.",
       "confirmNo": "Non, annuler",
       "confirmYes": "Oui, supprimer"
     },
@@ -285,7 +291,6 @@
       "emptyHint": "Créez le premier compte client ci-dessus.",
       "backToUsers": "Retour aux comptes",
       "userDetailEyebrow": "Compte client",
-      "userDetailSubtitle": "Les mêmes sections que les réglages côté client — domaine, marque, webhooks, calendrier et profil.",
       "dangerZone": "Zone sensible",
       "saveAllChanges": "Enregistrer tout",
       "adminActionsTitle": "Actions administrateur",
@@ -337,6 +342,14 @@
       "instructionsDescription": "Ce texte est combiné aux instructions générales lors de la génération d'articles pour cet utilisateur. Modifiez pour personnaliser marque, ton et consignes de couverture.",
       "instructionsPlaceholder": "Les instructions seront générées à partir des données de marque en cliquant sur Créer les instructions.",
       "instructionsSaving": "Enregistrement…",
+      "clientSpecificInstructionsTitle": "Instructions spécifiques au client (marque)",
+      "clientSpecificInstructionsDescription": "Générées à partir de l’onboarding et des données de marque. Utilisez ce bloc pour la voix de marque, les règles visuelles et les contraintes du compte — pas pour des essais de style éditorial.",
+      "clientSpecificInstructionsEmptyHint": "Utilisez « Créer les instructions » ci-dessus pour générer ce bloc à partir des données de marque. Vous pouvez déjà ajouter un renforcement éditorial optionnel ci-dessous avant qu’il existe.",
+      "saveClientInstructions": "Enregistrer les instructions client",
+      "instructionReinforcementTitle": "Renforcement éditorial (optionnel)",
+      "instructionReinforcementDescription": "Ce n’est pas l’identité de marque. Ajoutez des consignes optionnelles sur le ton, la narration, la structure et le public (humain d’abord, avis, rythme lisible, langage simple). Ce texte est ajouté après les instructions spécifiques ci-dessus à chaque génération.",
+      "reinforcementPlaceholder": "Exemple : commencer par la douleur du lecteur ; paragraphes courts ; une idée claire par section ; éviter le ton corporate froid ; exemples parlants plutôt que jargon…",
+      "saveReinforcement": "Enregistrer le renforcement éditorial",
       "configAssets": {
         "brandingTitle": "Fichiers de marque (optionnel)",
         "brandingHint": "Téléversez un logo ou des directives de marque, ou utilisez les champs URL ci-dessus.",
@@ -358,6 +371,15 @@
         "uploadSaved": "Téléversement enregistré.",
         "removeSaved": "Supprimé.",
         "guidelinesUploadSaved": "Directives enregistrées. Le texte extrait s’affiche ci-dessus lorsqu’il est disponible."
+      },
+      "blogAuthors": {
+        "authorSectionTitle": "Auteurs du blog",
+        "authorSectionIntro": "Ces noms servent de signature sur les articles. À chaque nouvel article, un auteur est tiré au hasard dans cette liste. Enregistrez la configuration en bas de page pour appliquer les modifications de la première ligne.",
+        "authorListHeading": "Auteurs ({count})",
+        "addAuthor": "Ajouter un auteur",
+        "noExtraAuthors": "Ajoutez d’autres lignes pour faire tourner plusieurs signatures.",
+        "profileSaveHint": "Enregistrez la configuration en bas de page pour appliquer les changements à cet auteur.",
+        "confirmDelete": "Retirer l’auteur « {name} » ? Les articles publiés conservent leur signature actuelle."
       },
       "createForm": {
         "eyebrow": "Nouveau compte",
@@ -385,10 +407,12 @@
       "sectionPosts": "Articles du blog",
       "sectionSettings": "Paramètres",
       "sectionNewPost": "Nouvel article",
-      "sectionDefault": "Espace de travail"
+      "sectionDefault": "Espace de travail",
+      "nextPostLabel": "Prochain article",
+      "nextPostDueNow": "Maintenant"
     },
     "postsPageSubtitle": "Consultez et gérez vos articles, ou rédigez-en un manuellement.",
-    "settingsPageSubtitle": "Domaine, marque, webhooks, fréquence de publication et profil.",
+    "settingsPageSubtitle": "Domaine, marque, webhooks, fréquence de publication, profil et auteurs supplémentaires pour le blog.",
     "overviewSubtitle": "Votre activité récente et un aperçu du contenu.",
     "overviewPostsCta": "Ouvrir la liste et l'éditeur",
     "overviewSettingsCta": "Domaine, marque et intégrations",
@@ -440,6 +464,33 @@
       "slug": "Slug",
       "updated": "Mis à jour",
       "unknownAuthor": "Inconnu"
+    },
+    "blogAuthors": {
+      "eyebrow": "Contenu",
+      "title": "Auteurs du blog",
+      "subtitle": "Personas utilisées comme signature sur les articles générés.",
+      "intro": "Les auteurs ci-dessous servent de signature. À chaque article planifié, un auteur est choisi au hasard. Votre profil apparaît en première ligne ; modifiez-le dans Paramètres.",
+      "addNew": "Ajouter un auteur",
+      "yourAuthors": "Vos auteurs",
+      "authorListHeading": "Auteurs ({count})",
+      "displayName": "Nom affiché",
+      "jobTitle": "Rôle / titre",
+      "bio": "Bio",
+      "avatarUrl": "URL de l'avatar",
+      "avatarUrlOrUpload": "Collez une URL ou importez une image (JPEG, PNG, WebP ou GIF, max 4 Mo).",
+      "uploadAvatarImage": "Importer une image",
+      "removeAvatarImage": "Retirer l'image",
+      "uploadFailed": "Échec de l’import",
+      "noBio": "Pas de bio.",
+      "unnamedAuthor": "Auteur sans nom",
+      "editInSettings": "Modifier dans Paramètres",
+      "noExtraAuthors": "Ajoutez des auteurs ici pour faire tourner plusieurs signatures.",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "confirmDelete": "Retirer l'auteur « {name} » ? Les articles déjà publiés conservent leur signature actuelle."
     }
   },
   "auth": {

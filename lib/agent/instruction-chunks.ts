@@ -35,7 +35,7 @@ export const CONTENT_TYPE_PROMPT_HINT: Record<string, string> = {
 
 /** Richer line — **only** for the embedding retrieval query in `instruction-embeddings.ts` (ranks middle chunks). */
 export const CONTENT_TYPE_EMBEDDING_HINT: Record<string, string> = {
-  hero: "Long-form pillar article 1800–2500 words, comprehensive, multiple statistics, deep H2/H3 sections.",
+  hero: "Long-form pillar 1800–2500 words: highly scannable, short paragraphs, visual rhythm (lists/H3/punchlines), multiple statistics, deep H2/H3.",
   hub: "Hub article 1000–1400 words, focused sub-topic, practical and scannable.",
   hygiene: "Shorter FAQ or how-to 600–900 words, snippet-optimised, question-and-answer emphasis.",
 };
@@ -56,14 +56,20 @@ renders the "title" field as H1 automatically. Do NOT include a date line or
 cover image in content_md — the template shows the cover image and publication
 date above the body. Start content_md with the INTRO paragraph.
 
+Do NOT add an "About the author" / "Sobre o autor" / "À propos de l'auteur"
+section in content_md — the platform appends the author block after generation.
+
 1. INTRO: 2-3 sentences
    - Hook with ONE data-backed claim (e.g. "According to X (Year), Y%...") — this is the core argument AI will cite
    - Mention focus keyword, include definition: "**{Term}** is..."
 
-2-4. BODY SECTIONS: ## H2 + ### H3 + body
+2-4. BODY SECTIONS: ## H2 + ### H3 + body (must feel easy to scan on a phone)
    - At least 2 H2s phrased as questions (e.g. "What is X?", "How does Y work?") with 40-60 word direct answer immediately after
-   - Each section: 2-4 paragraphs, at least one H3
-   - Include: "According to [Source] (Year), X%" statistics, 5+ named entities, bullet/numbered lists
+   - **Short paragraphs:** prefer 2–4 sentences per paragraph; avoid uninterrupted text walls — if a block grows long, split with a new paragraph, a ### H3, or a short list
+   - **Visual rhythm:** under each H2, mix paragraphs with at least one of: bullet or numbered list, or an extra ### H3 — do not leave only one giant paragraph under an H2
+   - **Punchlines:** include 2–4 scan-friendly one-liners in the body (standalone short paragraph or line) that state a contrast, takeaway, or sharp insight — often bold the core phrase, e.g. a line that could be quoted on social
+   - Each section: 2-4 short paragraphs total, at least one H3
+   - Include: "According to [Source] (Year), X%" statistics, 5+ named entities, bullet/numbered lists where they aid scanning
    - **Bold** key claims and important terms on first use
    - All headings in content_md must be ## (H2) or ### (H3) — never #
 
@@ -147,7 +153,7 @@ GEO (90+ requirements — generative engine citation)
     id: "formatting",
     text: `
 ═══════════════════════════════════════
-FORMATTING
+FORMATTING & SCANNABILITY
 ═══════════════════════════════════════
 
 - Sentence case (European): first word + proper nouns only
@@ -155,6 +161,11 @@ FORMATTING
 - No em dashes, no horizontal rules
 - No images in content_md (the template shows the cover above the body)
 - All content in the specified locale language
+
+Scannability (non-negotiable for long posts):
+- Short paragraphs (roughly 2–5 sentences); break before a paragraph becomes a "wall of text"
+- Rhythm: alternate prose with bullets, numbered steps, or ### subheadings so the eye finds anchors down the page
+- Punchlines: sprinkle 2+ memorable one-line insights (short paragraph or bold line) that work as standalone takeaways
 `.trim(),
   },
   {
@@ -216,7 +227,7 @@ OUTPUT (JSON only, no markdown fences)
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
   "excerpt": "1-2 sentences, under 160 chars",
-  "content_md": "Markdown: intro, body (H2/H3), FAQ section (## Perguntas frequentes / Frequently asked questions with 5 Q&As from faq_blocks), conclusion. NO H1, NO date, NO cover. 3 internal links when URLs provided.",
+  "content_md": "Markdown: intro, scannable body (short paragraphs, lists/H3 for rhythm, punchline lines), FAQ (## Perguntas frequentes / Frequently asked questions + 5 Q&As from faq_blocks), conclusion. NO H1, NO date, NO cover, NO author/about-the-author section. 3 internal links when URLs provided.",
   "faq_blocks": [{ "question": "Real user query (required)", "answer": "40-60 words" }],
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }

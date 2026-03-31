@@ -4,9 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
+import type { Frequency } from "@/lib/scheduler/frequency";
 import { z } from "zod";
-
-export type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
 export type PostLocale = "en" | "pt" | "fr";
 
 const createUserSchema = z.object({
@@ -16,7 +15,7 @@ const createUserSchema = z.object({
   avatar_url: z.union([z.string().url(), z.literal("")]).optional(),
   bio: z.string().optional(),
   job_title: z.string().optional(),
-  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+  frequency: z.enum(["weekly", "biweekly", "monthly"]),
   domain: z.string().optional(),
   company_name: z.string().optional(),
   logo_url: z.union([z.string().url(), z.literal("")]).optional(),
@@ -161,7 +160,8 @@ export type ClientRow = {
   google_refresh_token: string | null;
   google_scope: string | null;
   google_connected_at: string | null;
-  frequency: Frequency;
+  /** Stored value; may include legacy e.g. daily — use {@link normalizeFrequencyForUi} for pickers. */
+  frequency: string;
   post_locale: PostLocale;
   created_at: string;
   webhook_url: string | null;
@@ -184,10 +184,11 @@ export type ClientRow = {
   font_style?: string | null;
   brand_voice?: string | null;
   custom_instructions?: string | null;
+  instruction_reinforcement?: string | null;
 };
 
 const ADMIN_CLIENT_ROW_SELECT =
-  "id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
+  "id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, instruction_reinforcement, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
 
 export async function listUsers(): Promise<ClientRow[]> {
   await requireAdmin();
@@ -233,7 +234,7 @@ export async function getClientSettings(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, domain, google_access_token, google_connected_at, frequency, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_storage_path, brand_guidelines_text")
+    .select("id, domain, google_access_token, google_connected_at, frequency, last_post_generated_at, post_locale, webhook_url, webhook_secret, auto_publish, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, config_pending_admin, last_generation_error, last_generation_error_at, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_storage_path, brand_guidelines_text")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -444,13 +445,25 @@ export async function createClientInstructions(userId: string) {
   return { success: true };
 }
 
-/** Admin: update client-specific instructions with raw edited content. */
+/** Admin: update brand/client-specific instructions (generated block — not optional editorial reinforcement). */
 export async function updateClientInstructions(userId: string, content: string) {
   await requireAdmin();
   const admin = createAdminClient();
   const { error } = await admin
     .from("clients")
     .update({ custom_instructions: content.trim() || null, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/** Admin: optional editorial reinforcement appended to client instructions at generation time. */
+export async function updateInstructionReinforcementByAdmin(userId: string, content: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clients")
+    .update({ instruction_reinforcement: content.trim() || null, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };
@@ -610,4 +623,105 @@ export async function updateBrandBook(userId: string, brandBook: BrandBook) {
     .eq("user_id", userId);
   if (error) return { error: error.message };
   return { success: true };
+}
+
+/** Row shape for admin blog author UI */
+export type AdminBlogAuthorRow = {
+  id: string;
+  user_id: string;
+  display_name: string;
+  job_title: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
+function normalizeAvatarUrlForAdmin(raw: string | null | undefined): string | null {
+  const t = (raw ?? "").trim();
+  if (!t) return null;
+  try {
+    new URL(t);
+    return t;
+  } catch {
+    return null;
+  }
+}
+
+export async function getBlogAuthorsForClientByAdmin(clientUserId: string): Promise<AdminBlogAuthorRow[]> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("blog_authors")
+    .select("id, user_id, display_name, job_title, bio, avatar_url, sort_order, created_at")
+    .eq("user_id", clientUserId)
+    .order("display_name", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data as AdminBlogAuthorRow[]) ?? [];
+}
+
+export async function adminCreateBlogAuthorForClient(clientUserId: string, formData: FormData) {
+  await requireAdmin();
+  const display_name = formData.get("display_name")?.toString().trim() ?? "";
+  if (!display_name) return { error: "Name is required" };
+  if (display_name.length > 200) return { error: "Name is too long" };
+  const job_title = formData.get("job_title")?.toString().trim() || null;
+  const bio = formData.get("bio")?.toString().trim() || null;
+  const avatar_url = normalizeAvatarUrlForAdmin(formData.get("avatar_url")?.toString());
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("blog_authors").insert({
+    user_id: clientUserId,
+    display_name,
+    job_title: job_title && job_title.length <= 200 ? job_title : null,
+    bio: bio && bio.length <= 4000 ? bio : null,
+    avatar_url,
+  });
+  if (error) return { error: error.message };
+  return { ok: true as const };
+}
+
+export async function adminUpdateBlogAuthorForClient(
+  clientUserId: string,
+  authorId: string,
+  formData: FormData
+) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("blog_authors")
+    .select("id")
+    .eq("id", authorId)
+    .eq("user_id", clientUserId)
+    .maybeSingle();
+  if (!existing) return { error: "Author not found" };
+
+  const display_name = formData.get("display_name")?.toString().trim() ?? "";
+  if (!display_name) return { error: "Name is required" };
+  if (display_name.length > 200) return { error: "Name is too long" };
+  const job_title = formData.get("job_title")?.toString().trim() || null;
+  const bio = formData.get("bio")?.toString().trim() || null;
+  const avatar_url = normalizeAvatarUrlForAdmin(formData.get("avatar_url")?.toString());
+
+  const { error } = await admin
+    .from("blog_authors")
+    .update({
+      display_name,
+      job_title: job_title && job_title.length <= 200 ? job_title : null,
+      bio: bio && bio.length <= 4000 ? bio : null,
+      avatar_url,
+    })
+    .eq("id", authorId)
+    .eq("user_id", clientUserId);
+  if (error) return { error: error.message };
+  return { ok: true as const };
+}
+
+export async function adminDeleteBlogAuthorForClient(clientUserId: string, authorId: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("blog_authors").delete().eq("id", authorId).eq("user_id", clientUserId);
+  if (error) return { error: error.message };
+  return { ok: true as const };
 }

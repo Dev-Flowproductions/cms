@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { deleteUser, type ClientRow } from "./actions";
+import { type ClientRow } from "./actions";
 import { CreateUserForm } from "./CreateUserForm";
 import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
+import { getMsUntilNextPostDue } from "@/lib/scheduler/next-post";
+import { NextPostCountdown } from "@/components/NextPostCountdown";
 
 type Props = {
   initialUsers: ClientRow[];
@@ -13,50 +15,25 @@ type Props = {
 
 export function UsersClient({ initialUsers, initialError }: Props) {
   const t = useTranslations("admin.usersPage");
-  const tCommon = useTranslations("common");
-  const [users, setUsers] = useState<ClientRow[]>(initialUsers);
   const [showForm, setShowForm] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const router = useRouter();
-
-  const FREQUENCY_INTERVAL_MS: Record<string, number> = {
-    daily: 1 * 24 * 60 * 60 * 1000,
-    weekly: 7 * 24 * 60 * 60 * 1000,
-    biweekly: 14 * 24 * 60 * 60 * 1000,
-    monthly: 30 * 24 * 60 * 60 * 1000,
-  };
 
   function isDueNow(user: ClientRow): boolean {
     if (!user.domain) return false;
-    const intervalMs = FREQUENCY_INTERVAL_MS[user.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
-    const lastRun = user.last_post_generated_at ? new Date(user.last_post_generated_at).getTime() : 0;
-    return intervalMs - (Date.now() - lastRun) <= 0;
+    return getMsUntilNextPostDue(user.last_post_generated_at, user.frequency) === 0;
   }
 
-  const dueNowCount = users.filter(isDueNow).length;
+  const dueNowCount = initialUsers.filter(isDueNow).length;
 
   function handleSuccess() {
     setShowForm(false);
     startTransition(() => { router.refresh(); });
   }
 
-  async function handleDelete(userId: string, email: string) {
-    if (!confirm(t("confirmDelete", { email }))) return;
-    setDeletingId(userId);
-    setError(null);
-    const result = await deleteUser(userId);
-    setDeletingId(null);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setUsers((prev) => prev.filter((u) => u.user_id !== userId));
-  }
-
   return (
-    <div className="w-full min-w-0 overflow-x-hidden">
+    <div className="w-full min-w-0">
       <div className="flex items-center justify-between mb-8">
         <div>
           <p
@@ -127,7 +104,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
         </div>
       )}
 
-      {users.length === 0 ? (
+      {initialUsers.length === 0 ? (
         <div
           className="admin-shell-glass flex flex-col items-center justify-center py-20 rounded-2xl text-center"
           style={{ border: "1.5px dashed var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
@@ -150,31 +127,24 @@ export function UsersClient({ initialUsers, initialError }: Props) {
         </div>
       ) : (
         <div
-          className="admin-shell-glass overflow-x-hidden rounded-2xl border"
+          className="admin-shell-glass overflow-x-auto rounded-2xl border [-webkit-overflow-scrolling:touch]"
           style={{ borderColor: "var(--adm-border-subtle)" }}
         >
-          <table className="w-full min-w-0 table-fixed text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--adm-surface-high)", borderBottom: "1px solid var(--adm-border-subtle)" }}>
                 <th
-                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest"
+                  className="min-w-0 px-4 py-3 text-left text-xs font-bold uppercase tracking-widest"
                   style={{ color: "var(--adm-on-variant)" }}
                 >
                   {t("colUser")}
                 </th>
-                <th
-                  className="px-4 py-3 text-right text-xs font-bold uppercase tracking-widest w-[1%] whitespace-nowrap"
-                  style={{ color: "var(--adm-on-variant)" }}
-                >
-                  {t("colActions")}
-                </th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u, idx) => {
+              {initialUsers.map((u, idx) => {
                 const accountName = u.company_name ?? u.brand_name ?? null;
                 const displayName = accountName?.trim() || u.email || "—";
-                const isDeleting = deletingId === u.user_id;
                 const googleConnected = !!u.google_connected_at;
 
                 return (
@@ -189,7 +159,7 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                     <td className="px-4 py-3 align-top min-w-0">
                       <Link
                         href={`/admin/users/${u.user_id}`}
-                        className="group block min-w-0 rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
+                        className="group block min-w-0 cursor-pointer rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
                       >
                         <span className="font-semibold block truncate group-hover:underline" style={{ color: "var(--adm-on-surface)" }} title={displayName}>
                           {displayName}
@@ -202,41 +172,20 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                         <span className="text-[11px] font-mono block truncate mt-1 opacity-90" style={{ color: "var(--adm-on-variant)" }} title={u.domain ?? undefined}>
                           {u.domain ?? t("onboardingPending")}
                         </span>
+                        {u.domain && (
+                          <NextPostCountdown
+                            lastPostGeneratedAt={u.last_post_generated_at}
+                            frequency={u.frequency}
+                            variant="adminInline"
+                            className="mt-1"
+                          />
+                        )}
                         {googleConnected && (
                           <span className="text-[10px] font-bold uppercase mt-1 inline-block" style={{ color: "#22d3a0" }}>
                             {t("googleConnected")}
                           </span>
                         )}
                       </Link>
-                    </td>
-                    <td className="px-4 py-3 text-right align-middle w-[140px] sm:w-[200px]">
-                      <div className="flex flex-col items-stretch justify-end gap-2">
-                        <Link
-                          href={`/admin/users/${u.user_id}`}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
-                          style={{
-                            background: "var(--adm-primary-container)",
-                            color: "#fff",
-                            boxShadow: "0 0 12px rgba(104, 57, 234, 0.3)",
-                          }}
-                        >
-                          {t("openConfiguration")}
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(u.user_id, u.email ?? u.user_id)}
-                          disabled={isDeleting || isPending}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                          style={{
-                            color: "var(--adm-error)",
-                            background: "rgba(255, 180, 171, 0.1)",
-                            border: "1px solid rgba(255, 180, 171, 0.25)",
-                          }}
-                          title={t("confirmDelete", { email: u.email ?? u.user_id })}
-                        >
-                          {isDeleting ? "…" : tCommon("delete")}
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 );

@@ -71,7 +71,8 @@ export type ScoredContent = {
   seo_title: string;
   seo_description: string;
   focus_keyword: string;
-  faq_blocks: Array<{ question: string; answer: string }>;
+  /** May be missing at runtime if the generator JSON omitted it — always guard with ?? []. */
+  faq_blocks?: Array<{ question: string; answer: string }> | null;
 };
 
 const SCORE_SYSTEM = `You are an SEO editor. Score blog posts (0-100) for SEO, AEO, and GEO.
@@ -105,7 +106,7 @@ FOCUS KEYWORD: ${content.focus_keyword}
 CONTENT (markdown):
 ${content.content_md}
 
-FAQs: ${content.faq_blocks.length} questions
+FAQs: ${(content.faq_blocks ?? []).length} questions
 
 Output ONLY this JSON, nothing else:
 { "seo": <0-100>, "aeo": <0-100>, "geo": <0-100>, "notes": "<1 sentence>" }`;

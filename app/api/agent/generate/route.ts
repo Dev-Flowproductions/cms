@@ -3,16 +3,23 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
-import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
+import {
+  combineClientInstructionsForModel,
+  resolveSystemInstructionsWithEmbeddings,
+  buildPrompt,
+  type ClientContext,
+  type PostContext,
+} from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
-import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
+import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
+import { resolveAuthorForByline } from "@/lib/data/blog-authors";
 import type { Locale } from "@/lib/types/db";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
   // Fetch post
   const { data: post } = await admin
     .from("posts")
-    .select("slug, content_type, primary_locale, author_id")
+    .select("slug, content_type, primary_locale, author_id, byline_author_id")
     .eq("id", post_id)
     .single();
   if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -60,7 +67,7 @@ export async function POST(request: Request) {
   // Fetch client context (domain, brand book, manual brand info, custom_instructions)
   const { data: clientRow } = await admin
     .from("clients")
-    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
+    .select("domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
     .eq("user_id", post.author_id)
     .maybeSingle();
 
@@ -97,6 +104,11 @@ export async function POST(request: Request) {
   const rawUrls = clientRow?.domain ? await getCandidateSiteUrls(clientRow.domain) : [];
   const internalLinkCandidates =
     rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
+  const combinedInstructions = combineClientInstructionsForModel(
+    clientRow?.custom_instructions,
+    clientRow?.instruction_reinforcement,
+  );
+
   const clientCtx: ClientContext = {
     domain: clientRow?.domain ?? null,
     brandName: clientRow?.company_name ?? clientRow?.brand_name ?? null,
@@ -143,7 +155,7 @@ export async function POST(request: Request) {
   try {
     const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
       genAI,
-      clientRow?.custom_instructions ?? null,
+      combinedInstructions,
       {
         contentType: post.content_type,
         locale,
@@ -158,7 +170,7 @@ export async function POST(request: Request) {
       systemInstruction,
     });
 
-    const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!clientRow?.custom_instructions });
+    const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
 
@@ -199,7 +211,7 @@ export async function POST(request: Request) {
 
     const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
       genAI,
-      clientRow?.custom_instructions ?? null,
+      combinedInstructions,
       {
         contentType: post.content_type,
         locale,
@@ -279,14 +291,11 @@ export async function POST(request: Request) {
       "@graph": [articleEntity, ...(faqEntity ? [faqEntity] : [])],
     };
 
-    const { data: authorProfile } = await admin
-      .from("profiles")
-      .select("display_name, job_title, bio, avatar_url")
-      .eq("id", post.author_id)
-      .maybeSingle();
-    const authorForBlock = authorProfile
-      ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
-      : null;
+    const authorForBlock = await resolveAuthorForByline(
+      admin,
+      post.author_id,
+      (post as { byline_author_id?: string | null }).byline_author_id ?? null,
+    );
 
     const contentMdOut = appendAuthorBlock(generated.content_md, locale as Locale, authorForBlock);
 
@@ -344,11 +353,11 @@ export async function POST(request: Request) {
         clientRow?.cover_reference_image_2,
         clientRow?.cover_reference_image_3,
       ]);
-      const referenceVisionBrief =
-        refParts.length > 0
-          ? await buildCoverReferenceVisionBriefWithTimeout(genAI, refParts, "[generate] ref-vision")
-          : null;
-      const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+      let referenceVisionBrief: string | null = null;
+      if (refParts.length > 0) {
+        referenceVisionBrief = await requireCoverReferenceVisionBrief(genAI, refParts, "[generate] ref-vision");
+      }
+      const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
         genAI,
         {
           focusKeywordOrTopic: generated.focus_keyword || keyword,
@@ -356,9 +365,9 @@ export async function POST(request: Request) {
           locale,
           hasInternalLinks: internalLinkCandidates.length > 0,
         },
-        clientRow?.custom_instructions ?? null,
+        combinedInstructions,
         referenceVisionBrief,
-      )) ?? "";
+      );
       const baseCoverPrompt = buildCoverPrompt(
         coverSubject,
         headlineForCover,
@@ -378,6 +387,7 @@ export async function POST(request: Request) {
         referenceImages: refParts.length ? refParts : undefined,
         referenceVisionBrief,
         guidelinesText: clientRow?.brand_guidelines_text ?? null,
+        enforcePrimaryInstructionEmbedding: true,
       });
 
       if (buffer) {

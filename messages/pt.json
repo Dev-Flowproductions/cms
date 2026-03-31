@@ -40,7 +40,6 @@
     "redirecting": "A redirecionar…",
     "signingIn": "A entrar…",
     "stats": {
-      "locales": "Idiomas",
       "assisted": "Assistido",
       "posts": "Artigos"
     }
@@ -66,8 +65,6 @@
     "connectGoogle": "Ligar Google",
     "reconnectGoogle": "Religar Google",
     "frequency": {
-      "daily": "Diário",
-      "dailySublabel": "1 artigo / dia",
       "weekly": "Semanal",
       "weeklySublabel": "1 artigo / semana",
       "biweekly": "Quinzenal",
@@ -94,6 +91,10 @@
     "brand": {
       "title": "Marca",
       "description": "Atualize o nome da empresa, logótipo, cores e voz. As alterações são usadas na geração de conteúdo."
+    },
+    "blogAuthors": {
+      "extraSectionTitle": "Autores adicionais",
+      "extraSectionHint": "Cada novo artigo escolhe um autor ao acaso entre o seu perfil predefinido acima e as pessoas listadas aqui."
     },
     "brandAssets": {
       "title": "Referências de capa e diretrizes",
@@ -255,9 +256,14 @@
       "noPosts": "Ainda sem artigos. Crie um para começar.",
       "actions": "Ações",
       "deletePost": "Eliminar",
+      "deleteSelected": "Eliminar selecionados",
+      "selectedCount": "{count} selecionado(s)",
+      "selectAllAria": "Selecionar todos os artigos",
+      "selectRowAria": "Selecionar artigo",
       "deletingPost": "A eliminar…",
       "confirmDeleteTitle": "Tem a certeza?",
       "confirmDeletePost": "Isto elimina permanentemente \"{slug}\" e todas as versões de idioma do CMS.",
+      "confirmDeleteSelected": "Isto elimina permanentemente {count} artigo(s) e todas as versões de idioma do CMS. Não pode ser anulado.",
       "confirmNo": "Não, manter",
       "confirmYes": "Sim, eliminar"
     },
@@ -285,7 +291,6 @@
       "emptyHint": "Crie a primeira conta de cliente acima.",
       "backToUsers": "Voltar às contas",
       "userDetailEyebrow": "Conta do cliente",
-      "userDetailSubtitle": "As mesmas áreas que o cliente vê em Definições — domínio, marca, webhooks, calendário e perfil.",
       "dangerZone": "Zona de risco",
       "saveAllChanges": "Guardar tudo",
       "adminActionsTitle": "Ações de administração",
@@ -337,6 +342,14 @@
       "instructionsDescription": "Este texto é combinado com as instruções gerais ao gerar artigos para este utilizador. Edite para personalizar marca, voz e orientações de capa.",
       "instructionsPlaceholder": "As instruções serão geradas a partir dos dados da marca ao clicar em Criar instruções.",
       "instructionsSaving": "A guardar…",
+      "clientSpecificInstructionsTitle": "Instruções específicas do cliente (marca)",
+      "clientSpecificInstructionsDescription": "Geradas a partir do onboarding e dados de marca. Use este bloco para voz de marca, regras visuais e restrições da conta — não para experimentos de estilo editorial.",
+      "clientSpecificInstructionsEmptyHint": "Use « Criar instruções » acima para gerar este bloco a partir dos dados de marca. Pode já acrescentar um reforço editorial opcional abaixo antes de existir.",
+      "saveClientInstructions": "Guardar instruções do cliente",
+      "instructionReinforcementTitle": "Reforço editorial (opcional)",
+      "instructionReinforcementDescription": "Isto não é identidade de marca. Acrescente orientação opcional sobre tom, narrativa, estrutura e público (humano primeiro, opinião, ritmo legível, linguagem simples). O texto é anexado às instruções específicas acima em cada geração.",
+      "reinforcementPlaceholder": "Exemplo: começar pela dor do leitor; parágrafos curtos; uma ideia por secção; evitar tom corporativo frio; exemplos do dia a dia em vez de jargão…",
+      "saveReinforcement": "Guardar reforço editorial",
       "configAssets": {
         "brandingTitle": "Envios de marca (opcional)",
         "brandingHint": "Carregue um ficheiro de logotipo ou diretrizes de marca, ou continue a usar os campos URL acima.",
@@ -358,6 +371,15 @@
         "uploadSaved": "Carregamento guardado.",
         "removeSaved": "Removido.",
         "guidelinesUploadSaved": "Diretrizes carregadas e guardadas. O texto extraído aparece acima quando disponível."
+      },
+      "blogAuthors": {
+        "authorSectionTitle": "Autores do blog",
+        "authorSectionIntro": "Estes nomes são usados como assinatura nos artigos. Em cada novo artigo, um autor é escolhido ao acaso desta lista. Guarde a configuração no fim desta página para aplicar alterações à primeira linha.",
+        "authorListHeading": "Autores ({count})",
+        "addAuthor": "Adicionar autor",
+        "noExtraAuthors": "Adicione mais linhas para alternar entre várias assinaturas.",
+        "profileSaveHint": "Guarde a configuração no fim desta página para aplicar alterações a este autor.",
+        "confirmDelete": "Remover o autor \"{name}\"? Artigos publicados mantêm a assinatura atual."
       },
       "createForm": {
         "eyebrow": "Nova conta",
@@ -385,10 +407,12 @@
       "sectionPosts": "Artigos do blog",
       "sectionSettings": "Definições",
       "sectionNewPost": "Novo artigo",
-      "sectionDefault": "Área de trabalho"
+      "sectionDefault": "Área de trabalho",
+      "nextPostLabel": "Próximo artigo",
+      "nextPostDueNow": "Agora"
     },
     "postsPageSubtitle": "Veja e gira os seus artigos ou escreva um novo manualmente.",
-    "settingsPageSubtitle": "Domínio, marca, webhooks, frequência de publicação e o seu perfil.",
+    "settingsPageSubtitle": "Domínio, marca, webhooks, frequência de publicação, perfil e autores extra do blog.",
     "overviewSubtitle": "A sua atividade recente e um resumo do conteúdo.",
     "overviewPostsCta": "Abrir a lista de artigos e o editor",
     "overviewSettingsCta": "Domínio, marca e integrações",
@@ -440,6 +464,33 @@
       "slug": "Slug",
       "updated": "Atualizado",
       "unknownAuthor": "Desconhecido"
+    },
+    "blogAuthors": {
+      "eyebrow": "Conteúdo",
+      "title": "Autores do blog",
+      "subtitle": "Personas usadas como assinatura em artigos gerados.",
+      "intro": "Os autores abaixo são usados como assinatura. Em cada artigo agendado, um é escolhido ao acaso. O seu perfil aparece na primeira linha; edite-o nas Definições.",
+      "addNew": "Adicionar autor",
+      "yourAuthors": "Os seus autores",
+      "authorListHeading": "Autores ({count})",
+      "displayName": "Nome público",
+      "jobTitle": "Cargo / função",
+      "bio": "Biografia",
+      "avatarUrl": "URL da imagem do avatar",
+      "avatarUrlOrUpload": "Cole um URL ou carregue uma imagem (JPEG, PNG, WebP ou GIF, máx. 4 MB).",
+      "uploadAvatarImage": "Carregar imagem",
+      "removeAvatarImage": "Remover imagem",
+      "uploadFailed": "Falha ao carregar",
+      "noBio": "Sem biografia.",
+      "unnamedAuthor": "Autor sem nome",
+      "editInSettings": "Editar nas Definições",
+      "noExtraAuthors": "Adicione autores aqui para alternar várias assinaturas.",
+      "add": "Adicionar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDelete": "Remover o autor \"{name}\"? Artigos já publicados mantêm a assinatura atual."
     }
   },
   "auth": {

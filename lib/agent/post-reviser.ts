@@ -56,7 +56,7 @@ CONTENT (markdown):
 ${content.content_md}
 
 FAQs:
-${content.faq_blocks.map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n\n")}
+${(content.faq_blocks ?? []).map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n\n")}
 
 Output ONLY valid JSON. Include content_md (required, full revised body). Include title, seo_title, seo_description, faq_blocks ONLY if you changed them.
 Example: { "content_md": "...", "seo_title": "..." } or { "content_md": "..." }`;

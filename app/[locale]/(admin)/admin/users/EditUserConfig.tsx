@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import {
   getClientSettingsByAdmin,
@@ -9,9 +9,12 @@ import {
   updateClientBrandByAdmin,
   updateProfileByAdmin,
   updateUserWebhookByAdmin,
+  adminDeleteBlogAuthorForClient,
   type ClientRow,
-  type Frequency,
+  type AdminBlogAuthorRow,
 } from "./actions";
+import { AdminBlogAuthorForm } from "./AdminBlogAuthorForm";
+import { type Frequency, normalizeFrequencyForUi } from "@/lib/scheduler/frequency";
 
 const BRAND_VOICES = [
   { id: "professional", label: "Professional & Authoritative" },
@@ -29,16 +32,22 @@ const inputFieldStyle = {
 const inputClass =
   "adm-input-edge w-full text-sm transition-all outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)] focus:ring-offset-0 focus:ring-offset-transparent";
 
+/** Synthetic id: profile byline is edited via the same list UI as `blog_authors` rows */
+const PROFILE_AUTHOR_ROW_ID = "__profile";
+
 type Settings = Awaited<ReturnType<typeof getClientSettingsByAdmin>>;
 
 export function EditUserConfig({
   user,
+  blogAuthors = [],
   onClose,
   onSaved,
   onAssetsUpdated,
   closeOnSave = false,
 }: {
   user: ClientRow;
+  /** Extra byline personas (random per post); empty = profile only */
+  blogAuthors?: AdminBlogAuthorRow[];
   onClose: () => void;
   onSaved?: () => void;
   onAssetsUpdated?: () => void;
@@ -46,6 +55,8 @@ export function EditUserConfig({
   closeOnSave?: boolean;
 }) {
   const t = useTranslations("admin.usersPage");
+  const tAuthBlog = useTranslations("admin.usersPage.blogAuthors");
+  const tBlogAuthors = useTranslations("dashboard.blogAuthors");
   const tSettings = useTranslations("settings.frequency");
   const tSettingsMain = useTranslations("settings");
   const tBrand = useTranslations("onboarding.brand");
@@ -56,7 +67,7 @@ export function EditUserConfig({
   const [error, setError] = useState<string | null>(null);
 
   const [domain, setDomain] = useState("");
-  const [frequency, setFrequency] = useState<Frequency>(user.frequency);
+  const [frequency, setFrequency] = useState<Frequency>(() => normalizeFrequencyForUi(user.frequency));
   const [companyName, setCompanyName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
@@ -86,6 +97,23 @@ export function EditUserConfig({
   const [assetError, setAssetError] = useState<string | null>(null);
   const [assetSuccess, setAssetSuccess] = useState<string | null>(null);
   const assetSuccessClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [extraAuthors, setExtraAuthors] = useState<AdminBlogAuthorRow[]>(blogAuthors);
+  const [showAddAuthor, setShowAddAuthor] = useState(false);
+  const [editingAuthorId, setEditingAuthorId] = useState<string | null>(null);
+  const [expandedAuthorId, setExpandedAuthorId] = useState<string | null>(null);
+  const [authorDelPending, startAuthorDel] = useTransition();
+
+  useEffect(() => {
+    setExtraAuthors(blogAuthors);
+  }, [blogAuthors]);
+
+  function afterBlogAuthorMutation() {
+    setShowAddAuthor(false);
+    setEditingAuthorId(null);
+    setExpandedAuthorId(null);
+    onSaved?.();
+  }
 
   useEffect(() => {
     return () => {
@@ -125,6 +153,7 @@ export function EditUserConfig({
       setCoverRef3(data.client.cover_reference_image_3 ?? null);
       setBrandGuidelinesText(data.client.brand_guidelines_text ?? "");
       setBrandGuidelinesPath(data.client.brand_guidelines_storage_path ?? null);
+      setFrequency(normalizeFrequencyForUi(data.client.frequency));
     }
     if (data.profile) {
       setDisplayName(data.profile.display_name ?? "");
@@ -180,7 +209,6 @@ export function EditUserConfig({
   }
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
-    { value: "daily", label: tSettings("daily"), sublabel: tSettings("dailySublabel") },
     { value: "weekly", label: tSettings("weekly"), sublabel: tSettings("weeklySublabel") },
     { value: "biweekly", label: tSettings("biweekly"), sublabel: tSettings("biweeklySublabel") },
     { value: "monthly", label: tSettings("monthly"), sublabel: tSettings("monthlySublabel") },
@@ -610,79 +638,371 @@ export function EditUserConfig({
         </div>
       )}
 
-        {/* Author (blog byline) */}
+        {/* Blog authors (profile + blog_authors rows — same list UI) */}
         <div
-          className="space-y-3 rounded-xl border p-5"
+          className="space-y-5 rounded-xl border p-5"
           style={{ background: "var(--adm-surface-highest)", borderColor: "var(--adm-border-subtle)" }}
         >
-          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
-            Author (for blog posts)
-          </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Display name</label>
-          <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${inputClass} w-full rounded-xl px-4 py-3`}
-                style={inputFieldStyle} />
-        </div>
-        <div className="space-y-2">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Avatar URL</label>
-          <input type="text" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={`${inputClass} w-full rounded-xl px-4 py-3`}
-                style={inputFieldStyle} />
-          <div className="flex flex-wrap items-center gap-2">
-            {avatarUrl?.trim() ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover border" style={{ borderColor: "var(--adm-border-subtle)" }} />
-            ) : null}
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                disabled={assetBusy}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (!file) return;
-                  const fd = new FormData();
-                  fd.append("action", "avatar");
-                  fd.append("file", file);
-                  await postAdminAsset(fd, t("configAssets.uploadSaved"));
-                }}
-              />
-              <span
-                className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
-                style={{ background: "var(--adm-surface-high)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-surface)" }}
-              >
-                {t("configAssets.uploadAvatar")}
-              </span>
-            </label>
-            {avatarUrl?.trim() && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tAuthBlog("authorSectionTitle")}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+              {tAuthBlog("authorSectionIntro")}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-end">
               <button
                 type="button"
-                disabled={assetBusy}
-                onClick={async () => {
-                  const fd = new FormData();
-                  fd.append("action", "removeAvatar");
-                  await postAdminAsset(fd, t("configAssets.removeSaved"));
+                onClick={() => {
+                  setShowAddAuthor(true);
+                  setEditingAuthorId(null);
+                  setExpandedAuthorId(null);
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+                className="inline-flex shrink-0 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+                style={{ background: "var(--adm-primary-container)", boxShadow: "var(--adm-cta-glow-shadow)" }}
               >
-                {t("configAssets.removeAvatar")}
+                {tAuthBlog("addAuthor")}
               </button>
+            </div>
+
+            {showAddAuthor && (
+              <AdminBlogAuthorForm
+                clientUserId={user.user_id}
+                onDone={afterBlogAuthorMutation}
+                onCancel={() => setShowAddAuthor(false)}
+              />
             )}
-          </div>
-        </div>
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Job title</label>
-          <input type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Content Lead" className={`${inputClass} w-full rounded-xl px-4 py-3`}
-                style={inputFieldStyle} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>Bio</label>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={2} className={`${inputClass} w-full rounded-xl px-4 py-3`}
-                style={inputFieldStyle} />
-        </div>
+
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tAuthBlog("authorListHeading", { count: 1 + extraAuthors.length })}
+            </p>
+            {extraAuthors.length === 0 && !showAddAuthor ? (
+              <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                {tAuthBlog("noExtraAuthors")}
+              </p>
+            ) : null}
+            <ul className="space-y-3">
+              <li key={PROFILE_AUTHOR_ROW_ID}>
+                {editingAuthorId === PROFILE_AUTHOR_ROW_ID ? (
+                  <div
+                    className="rounded-xl border p-4"
+                    style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+                  >
+                    <p className="mb-4 text-xs leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+                      {tAuthBlog("profileSaveHint")}
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                          {tBlogAuthors("displayName")}
+                        </label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                          style={inputFieldStyle}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                          {tBlogAuthors("avatarUrl")}
+                        </label>
+                        <input
+                          type="text"
+                          value={avatarUrl}
+                          onChange={(e) => setAvatarUrl(e.target.value)}
+                          className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                          style={inputFieldStyle}
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          {avatarUrl?.trim() ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={avatarUrl} alt="" className="h-10 w-10 rounded-full border object-cover" style={{ borderColor: "var(--adm-border-subtle)" }} />
+                          ) : null}
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              className="hidden"
+                              disabled={assetBusy}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = "";
+                                if (!file) return;
+                                const fd = new FormData();
+                                fd.append("action", "avatar");
+                                fd.append("file", file);
+                                await postAdminAsset(fd, t("configAssets.uploadSaved"));
+                              }}
+                            />
+                            <span
+                              className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
+                              style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-surface)" }}
+                            >
+                              {t("configAssets.uploadAvatar")}
+                            </span>
+                          </label>
+                          {avatarUrl?.trim() ? (
+                            <button
+                              type="button"
+                              disabled={assetBusy}
+                              onClick={async () => {
+                                const fd = new FormData();
+                                fd.append("action", "removeAvatar");
+                                await postAdminAsset(fd, t("configAssets.removeSaved"));
+                              }}
+                              className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                              style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+                            >
+                              {t("configAssets.removeAvatar")}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                          {tBlogAuthors("jobTitle")}
+                        </label>
+                        <input
+                          type="text"
+                          value={jobTitle}
+                          onChange={(e) => setJobTitle(e.target.value)}
+                          className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                          style={inputFieldStyle}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                          {tBlogAuthors("bio")}
+                        </label>
+                        <textarea
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          rows={4}
+                          className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                          style={inputFieldStyle}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setEditingAuthorId(null)}
+                        className="rounded-xl border px-5 py-2.5 text-sm font-semibold"
+                        style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-on-variant)" }}
+                      >
+                        {tBlogAuthors("cancel")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="overflow-hidden rounded-xl border"
+                    style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--adm-interactive-hover)]"
+                      aria-expanded={expandedAuthorId === PROFILE_AUTHOR_ROW_ID}
+                      onClick={() =>
+                        setExpandedAuthorId((id) =>
+                          id === PROFILE_AUTHOR_ROW_ID ? null : PROFILE_AUTHOR_ROW_ID
+                        )
+                      }
+                    >
+                      <span className="min-w-0 font-semibold" style={{ color: "var(--adm-on-surface)" }}>
+                        {displayName.trim() || tBlogAuthors("unnamedAuthor")}
+                      </span>
+                      <svg
+                        className={`h-4 w-4 shrink-0 transition-transform ${expandedAuthorId === PROFILE_AUTHOR_ROW_ID ? "rotate-180" : ""}`}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                        style={{ color: "var(--adm-on-variant)" }}
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    {expandedAuthorId === PROFILE_AUTHOR_ROW_ID && (
+                      <div
+                        className="space-y-3 border-t px-4 py-4"
+                        style={{ borderColor: "var(--adm-border-subtle)" }}
+                      >
+                        <div className="flex flex-wrap items-start gap-3">
+                          {avatarUrl?.trim() ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={avatarUrl}
+                              alt=""
+                              className="h-14 w-14 shrink-0 rounded-full border object-cover"
+                              style={{ borderColor: "var(--adm-border-subtle)" }}
+                            />
+                          ) : null}
+                          <div className="min-w-0 flex-1 space-y-2">
+                            {jobTitle.trim() ? (
+                              <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                                {jobTitle}
+                              </p>
+                            ) : null}
+                            {avatarUrl?.trim() ? (
+                              <p className="break-all font-mono text-[11px]" style={{ color: "var(--adm-on-variant)" }}>
+                                {avatarUrl}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        {bio.trim() ? (
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "var(--adm-on-surface)" }}>
+                            {bio}
+                          </p>
+                        ) : (
+                          <p className="text-sm italic" style={{ color: "var(--adm-on-variant)" }}>
+                            {tBlogAuthors("noBio")}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAuthorId(PROFILE_AUTHOR_ROW_ID);
+                              setExpandedAuthorId(null);
+                              setShowAddAuthor(false);
+                            }}
+                            className="rounded-xl border px-4 py-2 text-xs font-semibold"
+                            style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-primary)" }}
+                          >
+                            {tBlogAuthors("edit")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </li>
+              {extraAuthors.map((a) => (
+                <li key={a.id}>
+                  {editingAuthorId === a.id ? (
+                    <AdminBlogAuthorForm
+                      clientUserId={user.user_id}
+                      author={a}
+                      onDone={afterBlogAuthorMutation}
+                      onCancel={() => setEditingAuthorId(null)}
+                    />
+                  ) : (
+                    <div
+                      className="overflow-hidden rounded-xl border"
+                      style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+                    >
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--adm-interactive-hover)]"
+                        aria-expanded={expandedAuthorId === a.id}
+                        onClick={() =>
+                          setExpandedAuthorId((id) => (id === a.id ? null : a.id))
+                        }
+                      >
+                        <span className="min-w-0 font-semibold" style={{ color: "var(--adm-on-surface)" }}>
+                          {a.display_name}
+                        </span>
+                        <svg
+                          className={`h-4 w-4 shrink-0 transition-transform ${expandedAuthorId === a.id ? "rotate-180" : ""}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                          style={{ color: "var(--adm-on-variant)" }}
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+                      {expandedAuthorId === a.id && (
+                        <div
+                          className="space-y-3 border-t px-4 py-4"
+                          style={{ borderColor: "var(--adm-border-subtle)" }}
+                        >
+                          <div className="flex flex-wrap items-start gap-3">
+                            {a.avatar_url?.trim() ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={a.avatar_url}
+                                alt=""
+                                className="h-14 w-14 shrink-0 rounded-full object-cover border"
+                                style={{ borderColor: "var(--adm-border-subtle)" }}
+                              />
+                            ) : null}
+                            <div className="min-w-0 flex-1 space-y-2">
+                              {a.job_title?.trim() ? (
+                                <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                                  {a.job_title}
+                                </p>
+                              ) : null}
+                              {a.avatar_url?.trim() ? (
+                                <p className="break-all font-mono text-[11px]" style={{ color: "var(--adm-on-variant)" }}>
+                                  {a.avatar_url}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                          {a.bio?.trim() ? (
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "var(--adm-on-surface)" }}>
+                              {a.bio}
+                            </p>
+                          ) : (
+                            <p className="text-sm italic" style={{ color: "var(--adm-on-variant)" }}>
+                              {tBlogAuthors("noBio")}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingAuthorId(a.id);
+                                setShowAddAuthor(false);
+                                setExpandedAuthorId(null);
+                              }}
+                              className="rounded-xl border px-4 py-2 text-xs font-semibold"
+                              style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-primary)" }}
+                            >
+                              {tBlogAuthors("edit")}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={authorDelPending}
+                              onClick={() => {
+                                if (!confirm(tAuthBlog("confirmDelete", { name: a.display_name }))) return;
+                                startAuthorDel(async () => {
+                                  const res = await adminDeleteBlogAuthorForClient(user.user_id, a.id);
+                                  if ("error" in res && res.error) alert(res.error);
+                                  else afterBlogAuthorMutation();
+                                });
+                              }}
+                              className="rounded-xl border px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                              style={{
+                                borderColor: "rgba(255, 180, 171, 0.35)",
+                                color: "var(--adm-error)",
+                              }}
+                            >
+                              {tBlogAuthors("delete")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 

@@ -223,6 +223,75 @@ export async function POST(
     return NextResponse.json({ success: true, avatarUrl });
   }
 
+  if (actionKey === "blogauthoravatar") {
+    const blogAuthorIdRaw = (await getMultipartSmallTextField(formData, "blogAuthorId", 64)).trim();
+    const blogAuthorId = blogAuthorIdRaw || "new";
+    const replaceAvatarUrl = (await getMultipartSmallTextField(formData, "replaceAvatarUrl", 2048)).trim() || null;
+
+    const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(blogAuthorId);
+    if (blogAuthorId !== "new" && !uuidOk) {
+      return NextResponse.json({ error: "Invalid author id" }, { status: 400 });
+    }
+
+    let prevUrl: string | null = replaceAvatarUrl;
+    if (blogAuthorId !== "new") {
+      const { data: ba, error: baErr } = await admin
+        .from("blog_authors")
+        .select("avatar_url")
+        .eq("id", blogAuthorId)
+        .eq("user_id", targetId)
+        .maybeSingle();
+      if (baErr || !ba) {
+        return NextResponse.json({ error: "Blog author not found" }, { status: 404 });
+      }
+      if (!prevUrl) prevUrl = ba.avatar_url;
+    }
+
+    const prevPath = logosPathFromPublicUrl(prevUrl);
+    if (prevPath?.startsWith(`${targetId}/`)) {
+      await removeStoragePath(LOGOS_BUCKET, prevPath);
+    }
+
+    const file = getMultipartBlob(formData, "file");
+    if (!file) {
+      return NextResponse.json({ error: "No file" }, { status: 400 });
+    }
+    if (!isLikelyImageFile(file)) {
+      return NextResponse.json({ error: "Images only" }, { status: 400 });
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+    }
+
+    const fileName = file instanceof File ? file.name : "avatar.png";
+    const ext = fileName.split(".").pop()?.toLowerCase() || "png";
+    const safeExt = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext) ? ext : "png";
+    const path =
+      blogAuthorId === "new"
+        ? `${targetId}/blog-author-new-${Date.now()}.${safeExt}`
+        : `${targetId}/blog-author-${blogAuthorId}-${Date.now()}.${safeExt}`;
+    const uploadMime =
+      file.type && file.type.startsWith("image/")
+        ? file.type
+        : safeExt === "png"
+          ? "image/png"
+          : safeExt === "webp"
+            ? "image/webp"
+            : safeExt === "gif"
+              ? "image/gif"
+              : "image/jpeg";
+
+    const { error: upErr } = await admin.storage.from(LOGOS_BUCKET).upload(path, file as File, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: uploadMime,
+    });
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+    const { data: publicUrl } = admin.storage.from(LOGOS_BUCKET).getPublicUrl(path);
+    return NextResponse.json({ success: true, avatarUrl: publicUrl.publicUrl });
+  }
+
   if (actionKey === "removecoverref") {
     const slot = Number(await getMultipartSmallTextField(formData, "slot", 8));
     if (slot !== 1 && slot !== 2 && slot !== 3) {

@@ -18,6 +18,118 @@ export type AuthorForBlock = {
   avatarUrl: string | null;
 };
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const ABOUT_AUTHOR_HEADINGS = [...new Set(Object.values(ABOUT_AUTHOR))];
+
+/** Injected or pasted HTML author cards (with or without id). */
+const AUTHOR_DIV_RE =
+  /<div[^>]*(?:\bid\s*=\s*["']author-block["']|\sclass\s*=\s*["'][^"']*author-block[^"']*["'])[^>]*>[\s\S]*?<\/div>/gi;
+
+/** Match CMS-appended author card without using the global AUTHOR_DIV_RE (avoids lastIndex side effects). */
+const EMBEDDED_AUTHOR_BLOCK_SNIPPET =
+  /id\s*=\s*["']author-block["']|\bclass\s*=\s*["'][^"']*\bauthor-block\b[^"']*["']/i;
+
+/** True when body markdown already includes the rich author block (webhook should omit `post.author` to avoid duplicate UI). */
+export function contentMdHasEmbeddedAuthorBlock(contentMd: string): boolean {
+  return Boolean(contentMd && EMBEDDED_AUTHOR_BLOCK_SNIPPET.test(contentMd));
+}
+
+function decodeBasicHtmlEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
+function stripOuterMarkdownBold(s: string): string {
+  return s.replace(/^\*\*([\s\S]*)\*\*$/m, "$1").trim();
+}
+
+/**
+ * Reads name / job / bio from the author section the translator put in `content_md`
+ * (before `appendAuthorBlock` strips it). Used so we re-append the canonical HTML card with translated copy.
+ */
+export function extractAuthorFieldsFromContentMd(contentMd: string): Partial<AuthorForBlock> {
+  const out: Partial<AuthorForBlock> = {};
+  for (const heading of ABOUT_AUTHOR_HEADINGS) {
+    const escaped = escapeRegExp(heading);
+    const re = new RegExp(
+      `(?:^|\\n)#{1,3}\\s*(?:\\*\\*)?\\s*${escaped}\\s*(?:\\*\\*)?\\s*\\n([\\s\\S]*?)(?=\\n#{1,3}\\s|$)`,
+      "i",
+    );
+    const m = contentMd.match(re);
+    if (!m?.[1]) continue;
+    const body = m[1].trim();
+    if (!body) continue;
+
+    const divInner = body.match(/<div[^>]*author-block[^>]*>([\s\S]*?)<\/div>/i);
+    const htmlBlob = divInner ? divInner[1] : /author-name|author-job|author-bio/i.test(body) ? body : null;
+    if (htmlBlob) {
+      const nm = htmlBlob.match(/class\s*=\s*["']author-name["'][^>]*>([^<]*)/i);
+      const jm = htmlBlob.match(/class\s*=\s*["']author-job["'][^>]*>([^<]*)/i);
+      const bm = htmlBlob.match(/class\s*=\s*["']author-bio["'][^>]*>([\s\S]*?)<\/p>/i);
+      if (nm?.[1]?.trim()) out.displayName = decodeBasicHtmlEntities(nm[1].trim());
+      if (jm?.[1]?.trim()) out.jobTitle = decodeBasicHtmlEntities(jm[1].trim());
+      if (bm?.[1]?.trim()) {
+        const raw = bm[1].replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").trim();
+        out.bio = decodeBasicHtmlEntities(raw);
+      }
+      if (out.bio !== undefined || out.jobTitle !== undefined || out.displayName !== undefined) {
+        return out;
+      }
+    }
+
+    const textOnly = body.replace(/<div\b[\s\S]*?<\/div>/gi, "").trim();
+    const paras = textOnly.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+    if (paras.length >= 1) {
+      const name = stripOuterMarkdownBold(paras[0].replace(/\*\*/g, "").trim());
+      if (name && name.length < 200) out.displayName = name;
+    }
+    if (paras.length >= 3) {
+      out.jobTitle = paras[1].replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+      out.bio = paras.slice(2).join("\n\n").replace(/\*\*/g, "").trim();
+    } else if (paras.length === 2) {
+      const second = paras[1].replace(/\*\*/g, "").trim();
+      if (second.length > 140 || !/[|•]/.test(second)) {
+        out.bio = second;
+      } else {
+        out.jobTitle = second;
+      }
+    }
+    return out;
+  }
+  return out;
+}
+
+/**
+ * Removes injected author HTML and model-written author headings so we only append one block.
+ * Runs until stable — models sometimes emit two identical "## Sobre o autor" sections.
+ */
+export function stripAuthorBlocksFromContentMd(contentMd: string): string {
+  let s = contentMd;
+  let prev = "";
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(AUTHOR_DIV_RE, "");
+    for (const heading of ABOUT_AUTHOR_HEADINGS) {
+      const escaped = escapeRegExp(heading);
+      // H1–H3 (models sometimes use # for "Sobre o autor"); stop at next markdown heading of any level.
+      const re = new RegExp(
+        `(?:^|\\n)#{1,3}\\s*(?:\\*\\*)?\\s*${escaped}\\s*(?:\\*\\*)?\\s*\\n[\\s\\S]*?(?=\\n#{1,3}\\s|$)`,
+        "gi",
+      );
+      s = s.replace(re, "");
+    }
+  }
+  return s.replace(/\n{3,}/g, "\n\n").trimEnd();
+}
+
 /** Markdown links [text](url) in content — http(s) and relative paths. */
 const MARKDOWN_HTTP_LINK_RE = /\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/gi;
 const MARKDOWN_ANY_LINK_RE = /\[([^\]]*)\]\(([^)\s]+)\)/g;
@@ -133,7 +245,7 @@ export function convertInternalLinksToRelative(contentMd: string, domain: string
 /**
  * Appends a "Sobre o autor" / "About the author" section at the end of content_md
  * so the author always appears at the bottom of the post, in the content itself.
- * Centered layout: avatar, name, job title, bio in a compact block.
+ * Layout: avatar left, name + role stacked on the right; bio full width below (see globals.css).
  */
 export function appendAuthorBlock(
   contentMd: string,
@@ -148,14 +260,16 @@ export function appendAuthorBlock(
   const avatarUrl = author.avatarUrl?.trim();
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const initial = name.charAt(0).toUpperCase();
-  const avatarHtml = avatarUrl
-    ? `<p class="author-avatar"><img src="${esc(avatarUrl)}" alt="${esc(name)}" width="48" height="48" /></p>`
-    : `<p class="author-avatar"><span class="author-initial" aria-hidden>${esc(initial)}</span></p>`;
+  const avatarInner = avatarUrl
+    ? `<img src="${esc(avatarUrl)}" alt="${esc(name)}" width="56" height="56" />`
+    : `<span class="author-initial" aria-hidden="true">${esc(initial)}</span>`;
+  const avatarHtml = `<div class="author-avatar">${avatarInner}</div>`;
   const nameHtml = `<p class="author-name">${esc(name)}</p>`;
   const jobHtml = job ? `<p class="author-job">${esc(job)}</p>` : "";
+  const titlesHtml = `<div class="author-block-titles">${nameHtml}${jobHtml}</div>`;
+  const headerHtml = `<div class="author-block-header">${avatarHtml}${titlesHtml}</div>`;
   const bioHtml = bio ? `<p class="author-bio">${esc(bio)}</p>` : "";
-  const block = `\n\n## ${heading}\n\n<div id="author-block" class="author-block">${avatarHtml}${nameHtml}${jobHtml}${bioHtml}</div>`;
-  const trimmed = contentMd.trimEnd();
-  if (trimmed.includes(`## ${heading}`)) return contentMd;
-  return `${trimmed}${block}`;
+  const block = `\n\n## ${heading}\n\n<div id="author-block" class="author-block">${headerHtml}${bioHtml}</div>`;
+  const stripped = stripAuthorBlocksFromContentMd(contentMd);
+  return `${stripped.trimEnd()}${block}`;
 }

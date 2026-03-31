@@ -1,0 +1,110 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getMultipartBlob, getMultipartSmallTextField } from "@/lib/http/form-data";
+
+const LOGOS_BUCKET = "logos";
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+function isLikelyImageFile(blob: Blob): boolean {
+  if (blob.type.startsWith("image/")) return true;
+  const n = blob instanceof File ? blob.name.toLowerCase() : "";
+  return /\.(jpe?g|png|webp|gif)$/i.test(n);
+}
+
+function logosPathFromPublicUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  const marker = `/storage/v1/object/public/${LOGOS_BUCKET}/`;
+  const i = url.indexOf(marker);
+  if (i === -1) return null;
+  try {
+    return decodeURIComponent(url.slice(i + marker.length).split("?")[0] ?? "");
+  } catch {
+    return null;
+  }
+}
+
+export async function POST(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+  }
+
+  const blogAuthorIdRaw = (await getMultipartSmallTextField(formData, "blogAuthorId", 64)).trim();
+  const blogAuthorId = blogAuthorIdRaw || "new";
+  const replaceAvatarUrl = (await getMultipartSmallTextField(formData, "replaceAvatarUrl", 2048)).trim() || null;
+
+  const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(blogAuthorId);
+  if (blogAuthorId !== "new" && !uuidOk) {
+    return NextResponse.json({ error: "Invalid author id" }, { status: 400 });
+  }
+
+  let prevUrl: string | null = replaceAvatarUrl;
+  if (blogAuthorId !== "new") {
+    const { data: ba, error: baErr } = await supabase
+      .from("blog_authors")
+      .select("avatar_url")
+      .eq("id", blogAuthorId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (baErr || !ba) {
+      return NextResponse.json({ error: "Blog author not found" }, { status: 404 });
+    }
+    if (!prevUrl) prevUrl = ba.avatar_url;
+  }
+
+  const prevPath = logosPathFromPublicUrl(prevUrl);
+  if (prevPath?.startsWith(`${user.id}/`)) {
+    await supabase.storage.from(LOGOS_BUCKET).remove([prevPath]);
+  }
+
+  const file = getMultipartBlob(formData, "file");
+  if (!file) {
+    return NextResponse.json({ error: "No file" }, { status: 400 });
+  }
+  if (!isLikelyImageFile(file)) {
+    return NextResponse.json({ error: "Images only" }, { status: 400 });
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return NextResponse.json({ error: "Image too large (max 4MB)" }, { status: 400 });
+  }
+
+  const fileName = file instanceof File ? file.name : "avatar.png";
+  const ext = fileName.split(".").pop()?.toLowerCase() || "png";
+  const safeExt = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext) ? ext : "png";
+  const path =
+    blogAuthorId === "new"
+      ? `${user.id}/blog-author-new-${Date.now()}.${safeExt}`
+      : `${user.id}/blog-author-${blogAuthorId}-${Date.now()}.${safeExt}`;
+  const uploadMime =
+    file.type && file.type.startsWith("image/")
+      ? file.type
+      : safeExt === "png"
+        ? "image/png"
+        : safeExt === "webp"
+          ? "image/webp"
+          : safeExt === "gif"
+            ? "image/gif"
+            : "image/jpeg";
+
+  const { error: upErr } = await supabase.storage.from(LOGOS_BUCKET).upload(path, file as File, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: uploadMime,
+  });
+  if (upErr) {
+    return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+
+  const { data: publicUrl } = supabase.storage.from(LOGOS_BUCKET).getPublicUrl(path);
+  return NextResponse.json({ success: true, avatarUrl: publicUrl.publicUrl });
+}

@@ -1,15 +1,19 @@
 import { getTranslations } from "next-intl/server";
 import { getAuthUserWithRoles } from "@/lib/auth";
 import { getClientSettings, getMyProfile } from "@/app/[locale]/(admin)/admin/users/actions";
+import { listMyBlogAuthors } from "../blog-authors/actions";
 import { AccountSettingsCard } from "../AccountSettingsCard";
 
 export default async function DashboardSettingsPage() {
   const { user } = await getAuthUserWithRoles();
   const t = await getTranslations("dashboard");
-  const [clientSettings, profile] = await Promise.all([
+  const [clientSettings, profile, authorsResult] = await Promise.all([
     getClientSettings(user.id).catch(() => null),
     getMyProfile().catch(() => null),
+    listMyBlogAuthors(),
   ]);
+  const extraBlogAuthors = authorsResult.authors ?? [];
+  const authorsLoadError = authorsResult.error;
 
   if (!clientSettings) {
     return (
@@ -37,9 +41,19 @@ export default async function DashboardSettingsPage() {
         <p className="mt-2 max-w-xl text-base leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
           {t("settingsPageSubtitle")}
         </p>
+        {authorsLoadError ? (
+          <p className="mt-3 text-sm" style={{ color: "var(--adm-error)" }}>
+            {authorsLoadError}
+          </p>
+        ) : null}
       </header>
 
-      <AccountSettingsCard userId={user.id} settings={clientSettings} profile={profile} />
+      <AccountSettingsCard
+        userId={user.id}
+        settings={clientSettings}
+        profile={profile}
+        extraBlogAuthors={extraBlogAuthors}
+      />
     </div>
   );
 }

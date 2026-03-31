@@ -14,6 +14,17 @@ export type ContentType = "hero" | "hub" | "hygiene";
 
 export type Locale = "pt" | "en" | "fr";
 
+export interface BlogAuthor {
+  id: string;
+  user_id: string;
+  display_name: string;
+  job_title: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Post {
   id: string;
   slug: string;
@@ -21,6 +32,8 @@ export interface Post {
   content_type: ContentType;
   primary_locale: Locale;
   author_id: string;
+  /** Persona for byline HTML; null = use account profile. */
+  byline_author_id?: string | null;
   cover_image_path: string | null;
   published_at: string | null;
   scheduled_for: string | null;

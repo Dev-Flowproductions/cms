@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getClientRowByUserId } from "../actions";
+import { getBlogAuthorsForClientByAdmin, getClientRowByUserId } from "../actions";
 import { UserDetailClient } from "../UserDetailClient";
 
 export default async function AdminUserDetailPage({
@@ -11,5 +11,7 @@ export default async function AdminUserDetailPage({
   const user = await getClientRowByUserId(userId);
   if (!user) notFound();
 
-  return <UserDetailClient user={user} />;
+  const blogAuthors = await getBlogAuthorsForClientByAdmin(userId);
+
+  return <UserDetailClient user={user} blogAuthors={blogAuthors} />;
 }

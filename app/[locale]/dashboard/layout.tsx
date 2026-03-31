@@ -21,7 +21,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const initial = (user.email ?? "?")[0].toUpperCase();
 
   return (
-    <DashboardShell userEmail={user.email ?? ""} userInitial={initial}>
+    <DashboardShell
+      userEmail={user.email ?? ""}
+      userInitial={initial}
+      nextPostSchedule={
+        clientSettings
+          ? {
+              lastPostGeneratedAt: clientSettings.last_post_generated_at ?? null,
+              frequency: clientSettings.frequency ?? "weekly",
+            }
+          : null
+      }
+    >
       {children}
     </DashboardShell>
   );

@@ -17,8 +17,8 @@ export default async function AdminPostsPage({
   if (!userId) {
     const users = await getUsersWithPostCount();
     return (
-      <div className="max-w-6xl">
-        <div className="mb-8">
+    <div className="min-w-0 max-w-6xl">
+      <div className="mb-8">
           <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--adm-on-surface)" }}>
             {t("posts")}
           </h1>
@@ -38,7 +38,7 @@ export default async function AdminPostsPage({
     clientByAuthor[userId]?.company_name ?? clientByAuthor[userId]?.brand_name ?? "—";
 
   return (
-    <div className="max-w-6xl">
+    <div className="min-w-0 max-w-6xl">
       <div className="mb-8 flex flex-wrap items-center gap-4">
         <Link
           href="/admin/posts"

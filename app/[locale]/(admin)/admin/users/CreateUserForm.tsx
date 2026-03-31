@@ -3,8 +3,7 @@
 import { useState, useRef } from "react";
 import { createUser } from "./actions";
 import { useTranslations } from "next-intl";
-
-type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
+import type { Frequency } from "@/lib/scheduler/frequency";
 
 const inputBase: React.CSSProperties = {
   background: "var(--adm-surface-highest)",
@@ -82,7 +81,6 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
   const [autoPublish, setAutoPublish] = useState(false);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
-    { value: "daily",    label: tSettings("frequency.daily") },
     { value: "weekly",   label: tSettings("frequency.weekly") },
     { value: "biweekly", label: tSettings("frequency.biweekly") },
     { value: "monthly",  label: tSettings("frequency.monthly") },

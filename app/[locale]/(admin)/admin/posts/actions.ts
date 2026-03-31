@@ -35,6 +35,12 @@ export async function createPost(formData: FormData) {
   const { data: existing } = await supabase.from("posts").select("id").eq("slug", slug).maybeSingle();
   if (existing) return { error: "Slug already in use" };
 
+  const { data: bylineRows } = await supabase.from("blog_authors").select("id").eq("user_id", user.id);
+  const byline_author_id =
+    bylineRows && bylineRows.length > 0
+      ? (bylineRows[Math.floor(Math.random() * bylineRows.length)] as { id: string }).id
+      : null;
+
   const { data: post, error: postError } = await supabase
     .from("posts")
     .insert({
@@ -43,6 +49,7 @@ export async function createPost(formData: FormData) {
       content_type,
       status,
       author_id: user.id,
+      byline_author_id,
     })
     .select("id")
     .single();
@@ -92,6 +99,12 @@ export async function createManualPost(formData: FormData) {
     slug = `${rawSlug}-${Math.random().toString(36).slice(2, 7)}`;
   }
 
+  const { data: bylineRows } = await supabase.from("blog_authors").select("id").eq("user_id", user.id);
+  const byline_author_id =
+    bylineRows && bylineRows.length > 0
+      ? (bylineRows[Math.floor(Math.random() * bylineRows.length)] as { id: string }).id
+      : null;
+
   const { data: post, error: postError } = await supabase
     .from("posts")
     .insert({
@@ -100,6 +113,7 @@ export async function createManualPost(formData: FormData) {
       content_type: "hero",
       status: "draft",
       author_id: user.id,
+      byline_author_id,
     })
     .select("id")
     .single();

@@ -49,7 +49,7 @@ SCORER NOTES: ${currentScore.notes}
 CONTENT (markdown):
 ${content.content_md}
 
-FAQs: ${content.faq_blocks.length} questions
+FAQs: ${(content.faq_blocks ?? []).length} questions
 
 List SPECIFIC improvements so the rounded average of the three scores reaches 90+. The dimension scoring LOWEST needs the most fixes — prioritize those first. Each item must be copy-paste actionable: exact text to add, exact location, exact replacement.
 

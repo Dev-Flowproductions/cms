@@ -28,6 +28,49 @@ export function getSystemInstructions(clientSpecificInstructions: string | null)
 }
 
 /**
+ * Brand/domain-specific block lives in `clients.custom_instructions`.
+ * Optional editorial reinforcement (admin) lives in `clients.instruction_reinforcement` and is **appended** for the model only — not brand identity.
+ */
+export function combineClientInstructionsForModel(
+  customInstructions: string | null | undefined,
+  instructionReinforcement: string | null | undefined,
+): string | null {
+  const base = customInstructions?.trim() ?? "";
+  const extra = instructionReinforcement?.trim() ?? "";
+  if (!base && !extra) return null;
+  if (!extra) return base || null;
+  if (!base) {
+    return `═══════════════════════════════════════\nOPTIONAL EDITORIAL REINFORCEMENT (admin)\n═══════════════════════════════════════\n\n${extra}`;
+  }
+  return `${base}\n\n═══════════════════════════════════════\nOPTIONAL EDITORIAL REINFORCEMENT (admin — appended to client-specific instructions above; editorial voice & structure, not brand)\n═══════════════════════════════════════\n\n${extra}`;
+}
+
+/**
+ * Splits {@link combineClientInstructionsForModel} output so optional editorial reinforcement is never
+ * reordered with embedding-ranked BRAND/WEBSITE chunks — it always stays at the end of the system prompt.
+ */
+function splitCombinedClientInstructionsForEmbedding(
+  combined: string | null | undefined,
+): { baseForEmbedding: string | null; reinforcementTail: string | null } {
+  const t = combined?.trim();
+  if (!t) return { baseForEmbedding: null, reinforcementTail: null };
+
+  const sep = "\n\n═══════════════════════════════════════\nOPTIONAL EDITORIAL REINFORCEMENT";
+  const i = t.indexOf(sep);
+  if (i >= 0) {
+    const base = t.slice(0, i).trim();
+    const tail = t.slice(i).trim();
+    return { baseForEmbedding: base || null, reinforcementTail: tail };
+  }
+
+  if (t.startsWith("═══════════════════════════════════════\nOPTIONAL EDITORIAL REINFORCEMENT")) {
+    return { baseForEmbedding: null, reinforcementTail: t };
+  }
+
+  return { baseForEmbedding: t, reinforcementTail: null };
+}
+
+/**
  * General middle sections + client-specific sections are each ordered with Gemini Embedding 2 for the
  * current task (`ctx.taskKind`). Prefix/suffix of general rules stay fixed. Falls back to
  * {@link getSystemInstructions} if general embedding fails.
@@ -39,23 +82,31 @@ export async function resolveSystemInstructionsWithEmbeddings(
 ): Promise<string> {
   try {
     const general = await buildGeneralInstructionsWithEmbeddingOrder(genAI, ctx);
-    if (!clientSpecificInstructions?.trim()) return general;
+    const { baseForEmbedding, reinforcementTail } = splitCombinedClientInstructionsForEmbedding(clientSpecificInstructions);
 
-    const chunks = parseClientInstructionsIntoChunks(clientSpecificInstructions);
-    const q = buildInstructionRetrievalQuery(ctx);
-    let clientBlock: string;
-    try {
-      if (chunks.length <= 1) {
-        clientBlock = chunks[0]?.text ?? clientSpecificInstructions.trim();
-      } else {
-        clientBlock = await buildClientInstructionsWithEmbeddingOrder(genAI, chunks, q);
+    if (!baseForEmbedding?.trim() && !reinforcementTail?.trim()) return general;
+
+    let clientBlock = "";
+    if (baseForEmbedding?.trim()) {
+      const chunks = parseClientInstructionsIntoChunks(baseForEmbedding);
+      const q = buildInstructionRetrievalQuery(ctx);
+      try {
+        if (chunks.length <= 1) {
+          clientBlock = chunks[0]?.text ?? baseForEmbedding.trim();
+        } else {
+          clientBlock = await buildClientInstructionsWithEmbeddingOrder(genAI, chunks, q);
+        }
+      } catch (ce) {
+        console.warn("[instructions] Client embedding order failed, using canonical section order:", ce);
+        clientBlock = chunks.length ? joinClientInstructionChunksCanonical(chunks) : baseForEmbedding.trim();
       }
-    } catch (ce) {
-      console.warn("[instructions] Client embedding order failed, using canonical section order:", ce);
-      clientBlock = chunks.length ? joinClientInstructionChunksCanonical(chunks) : clientSpecificInstructions.trim();
     }
 
-    return `${general}\n\n${clientBlock}`;
+    const tail = reinforcementTail?.trim() ? `\n\n${reinforcementTail.trim()}` : "";
+    if (!clientBlock.trim()) {
+      return `${general}${tail}`;
+    }
+    return `${general}\n\n${clientBlock}${tail}`;
   } catch (e) {
     console.warn("[instructions] Embedding ordering failed, using canonical general instructions:", e);
     return getSystemInstructions(clientSpecificInstructions);
@@ -253,6 +304,7 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
+  lines.push("CRITICAL: Scannable layout — short paragraphs, visual rhythm (lists / ### under H2), punchline takeaways; no long unbroken text blocks.");
   if (linkCandidates.length > 0) {
     lines.push("CRITICAL: 3 internal links. Semantic match: anchor phrase → page whose title best fits. Real search phrases, not generic.");
   } else {

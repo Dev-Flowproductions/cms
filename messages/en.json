@@ -40,7 +40,6 @@
     "redirecting": "Redirecting…",
     "signingIn": "Signing in…",
     "stats": {
-      "locales": "Locales",
       "assisted": "Assisted",
       "posts": "Posts"
     }
@@ -66,8 +65,6 @@
     "connectGoogle": "Connect Google",
     "reconnectGoogle": "Reconnect Google",
     "frequency": {
-      "daily": "Daily",
-      "dailySublabel": "1 post / day",
       "weekly": "Weekly",
       "weeklySublabel": "1 post / week",
       "biweekly": "Bi-weekly",
@@ -94,6 +91,10 @@
     "brand": {
       "title": "Brand",
       "description": "Update your company name, logo, colours and voice. Changes are used when generating content."
+    },
+    "blogAuthors": {
+      "extraSectionTitle": "Additional authors",
+      "extraSectionHint": "Each new post picks one author at random from your default profile above plus anyone listed here."
     },
     "brandAssets": {
       "title": "Cover references & guidelines",
@@ -256,9 +257,14 @@
       "noPosts": "No posts yet. Create one to get started.",
       "actions": "Actions",
       "deletePost": "Delete",
+      "deleteSelected": "Delete selected",
+      "selectedCount": "{count} selected",
+      "selectAllAria": "Select all posts",
+      "selectRowAria": "Select post",
       "deletingPost": "Deleting…",
       "confirmDeleteTitle": "Are you sure?",
       "confirmDeletePost": "This will permanently delete \"{slug}\" and all locale versions from the CMS.",
+      "confirmDeleteSelected": "This will permanently delete {count} post(s) and all locale versions from the CMS. This cannot be undone.",
       "confirmNo": "No, keep it",
       "confirmYes": "Yes, delete"
     },
@@ -286,7 +292,6 @@
       "emptyHint": "Create the first client account above.",
       "backToUsers": "Back to accounts",
       "userDetailEyebrow": "Client account",
-      "userDetailSubtitle": "Same areas as the client Settings page — domain, brand, webhooks, schedule, and profile.",
       "dangerZone": "Danger zone",
       "saveAllChanges": "Save all changes",
       "adminActionsTitle": "Admin actions",
@@ -338,6 +343,14 @@
       "instructionsDescription": "This text is combined with the general instructions when generating posts for this user. Edit to customize brand, voice, and cover guidelines.",
       "instructionsPlaceholder": "Instructions will be generated from brand data when you click Create instructions.",
       "instructionsSaving": "Saving…",
+      "clientSpecificInstructionsTitle": "Client-specific instructions (brand)",
+      "clientSpecificInstructionsDescription": "Generated from onboarding and brand data. Use this block for brand voice, visual rules, and account constraints — not for editorial style experiments.",
+      "clientSpecificInstructionsEmptyHint": "Use “Create instructions” above to generate this block from brand data. You can still add optional editorial reinforcement below before this exists.",
+      "saveClientInstructions": "Save client instructions",
+      "instructionReinforcementTitle": "Optional editorial reinforcement",
+      "instructionReinforcementDescription": "This is not brand identity. Add optional guidance on tone, narrative, structure, and audience (human-first, opinion-led, scannable rhythm, plain language). It is appended to the client-specific instructions above on every generation.",
+      "reinforcementPlaceholder": "Example: Open with the reader’s pain; short paragraphs; one takeaway per section; avoid cold corporate tone; prefer relatable examples over jargon; punchy subheads…",
+      "saveReinforcement": "Save editorial reinforcement",
       "configAssets": {
         "brandingTitle": "Branding uploads (optional)",
         "brandingHint": "Upload a logo file or brand guidelines document, or keep using the URL fields above.",
@@ -359,6 +372,15 @@
         "uploadSaved": "Upload saved.",
         "removeSaved": "Removed.",
         "guidelinesUploadSaved": "Guidelines uploaded and saved. Extracted text appears above when available."
+      },
+      "blogAuthors": {
+        "authorSectionTitle": "Blog authors",
+        "authorSectionIntro": "These names are used as bylines on posts. When a post is created, one author is picked at random from this list. Save configuration at the bottom of this page to apply edits to the first row.",
+        "authorListHeading": "Authors ({count})",
+        "addAuthor": "Add author",
+        "noExtraAuthors": "Add more rows to rotate between several bylines.",
+        "profileSaveHint": "Save configuration at the bottom of this page to apply changes to this author.",
+        "confirmDelete": "Remove author \"{name}\"? Published posts keep their current byline."
       },
       "createForm": {
         "eyebrow": "New account",
@@ -386,10 +408,12 @@
       "sectionPosts": "Blog posts",
       "sectionSettings": "Settings",
       "sectionNewPost": "New post",
-      "sectionDefault": "Workspace"
+      "sectionDefault": "Workspace",
+      "nextPostLabel": "Next post",
+      "nextPostDueNow": "Due now"
     },
     "postsPageSubtitle": "View and manage your posts, or write a new one manually.",
-    "settingsPageSubtitle": "Domain, brand, webhooks, posting schedule, and your profile.",
+    "settingsPageSubtitle": "Domain, brand, webhooks, posting schedule, your profile, and extra blog authors.",
     "overviewSubtitle": "Your latest activity and a snapshot of your content.",
     "overviewPostsCta": "Open your posts list and editor",
     "overviewSettingsCta": "Domain, brand, and integrations",
@@ -441,6 +465,33 @@
       "slug": "Slug",
       "updated": "Updated",
       "unknownAuthor": "Unknown"
+    },
+    "blogAuthors": {
+      "eyebrow": "Content",
+      "title": "Blog authors",
+      "subtitle": "Personas used as bylines on generated posts.",
+      "intro": "Authors in the list below are used as bylines. Each time the scheduler creates a post, one is chosen at random. Your profile appears as the first row; edit it in Settings.",
+      "addNew": "Add author",
+      "yourAuthors": "Your authors",
+      "authorListHeading": "Authors ({count})",
+      "displayName": "Display name",
+      "jobTitle": "Role / title",
+      "bio": "Bio",
+      "avatarUrl": "Avatar image URL",
+      "avatarUrlOrUpload": "Paste a URL or upload an image (JPEG, PNG, WebP, or GIF, max 4MB).",
+      "uploadAvatarImage": "Upload image",
+      "removeAvatarImage": "Remove image",
+      "uploadFailed": "Upload failed",
+      "noBio": "No bio.",
+      "unnamedAuthor": "Unnamed author",
+      "editInSettings": "Edit in Settings",
+      "noExtraAuthors": "Add authors here to rotate between several bylines.",
+      "add": "Add",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Remove author \"{name}\"? Published posts keep their existing byline."
     }
   },
   "auth": {

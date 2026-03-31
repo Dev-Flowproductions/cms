@@ -38,7 +38,7 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
   const supabase = await createClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
-    .select("id, slug, primary_locale, author_id, cover_image_path, published_at, profiles(display_name, avatar_url, bio, job_title)")
+    .select("id, slug, primary_locale, author_id, byline_author_id, cover_image_path, published_at, profiles(display_name, avatar_url, bio, job_title)")
     .eq("slug", slug)
     .eq("status", "published")
     .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
@@ -47,8 +47,28 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
 
   // If embed didn't return profile (e.g. RLS or relation name), fetch profile by author_id so author block always has data
   type ProfileRow = { display_name: string | null; avatar_url: string | null; bio: string | null; job_title: string | null };
-  type PostWithProfile = typeof post & { profiles?: ProfileRow | ProfileRow[] | null };
+  type PostWithProfile = typeof post & { profiles?: ProfileRow | ProfileRow[] | null; byline_author_id?: string | null };
   let postWithProfile: PostWithProfile = post;
+  const bylineId = postWithProfile.byline_author_id ?? null;
+  if (bylineId) {
+    const { data: ba } = await supabase
+      .from("blog_authors")
+      .select("display_name, avatar_url, bio, job_title")
+      .eq("id", bylineId)
+      .maybeSingle();
+    if (ba?.display_name?.trim()) {
+      const bylineProfile: ProfileRow = {
+        display_name: ba.display_name,
+        avatar_url: ba.avatar_url,
+        bio: ba.bio,
+        job_title: ba.job_title,
+      };
+      postWithProfile = {
+        ...postWithProfile,
+        profiles: bylineProfile,
+      } as PostWithProfile;
+    }
+  }
   if (post.author_id) {
     const hasProfile = postWithProfile.profiles != null && typeof postWithProfile.profiles === "object" && !Array.isArray(postWithProfile.profiles);
     const hasProfileArray = Array.isArray(postWithProfile.profiles) && postWithProfile.profiles.length > 0;
@@ -59,7 +79,7 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
         .eq("id", post.author_id)
         .maybeSingle();
       if (profile) {
-        postWithProfile = { ...post, profiles: profile } as PostWithProfile;
+        postWithProfile = { ...postWithProfile, profiles: profile } as PostWithProfile;
       }
     }
   }

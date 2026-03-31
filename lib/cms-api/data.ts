@@ -33,6 +33,35 @@ function mapAuthor(profile: {
   };
 }
 
+function mapBlogAuthor(row: {
+  id: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  job_title?: string | null;
+} | null): ApiAuthor | null {
+  if (!row?.display_name?.trim()) return null;
+  const name = row.display_name.trim();
+  const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return {
+    id: row.id,
+    name,
+    slug: slug || "author",
+    jobTitle: row.job_title ?? null,
+    bio: row.bio ?? null,
+    avatarUrl: row.avatar_url ?? null,
+  };
+}
+
+function resolveListAuthor(p: {
+  blog_authors?: unknown;
+  profiles?: unknown;
+}): ApiAuthor | null {
+  const byline = Array.isArray(p.blog_authors) ? p.blog_authors[0] : p.blog_authors;
+  const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+  return mapBlogAuthor(byline as Parameters<typeof mapBlogAuthor>[0]) ?? mapAuthor(profile as Parameters<typeof mapAuthor>[0]);
+}
+
 /**
  * List published posts for a site (client). Scoped by author_id = client's user_id.
  */
@@ -49,9 +78,10 @@ export async function getPublishedPosts(
     .from("posts")
     .select(
       `
-      id, slug, cover_image_path, published_at, updated_at,
+      id, slug, cover_image_path, published_at, updated_at, byline_author_id,
       post_localizations ( locale, title, excerpt, seo_title ),
-      profiles ( id, display_name, avatar_url, bio, job_title )
+      profiles ( id, display_name, avatar_url, bio, job_title ),
+      blog_authors ( id, display_name, avatar_url, bio, job_title )
     `
     )
     .eq("author_id", userId)
@@ -70,7 +100,6 @@ export async function getPublishedPosts(
   const list: ApiPostListItem[] = (posts ?? []).map((p: any) => {
     const locs = p.post_localizations ?? [];
     const primary = locs.find((l: any) => l.locale === "pt") ?? locs.find((l: any) => l.locale === "en") ?? locs[0];
-    const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
     return {
       id: p.id,
       title: primary?.title ?? "",
@@ -80,7 +109,7 @@ export async function getPublishedPosts(
       coverImageAlt: "Cover image",
       publishedAt: p.published_at,
       updatedAt: p.updated_at,
-      author: mapAuthor(profile),
+      author: resolveListAuthor(p),
       categories: [],
       seoTitle: primary?.seo_title ?? null,
     };
@@ -101,9 +130,10 @@ export async function getPublishedPostBySlug(
     .from("posts")
     .select(
       `
-      id, slug, cover_image_path, published_at, updated_at,
+      id, slug, cover_image_path, published_at, updated_at, byline_author_id,
       post_localizations ( locale, title, excerpt, content_md, seo_title, seo_description, jsonld ),
-      profiles ( id, display_name, avatar_url, bio, job_title )
+      profiles ( id, display_name, avatar_url, bio, job_title ),
+      blog_authors ( id, display_name, avatar_url, bio, job_title )
     `
     )
     .eq("author_id", userId)
@@ -118,7 +148,6 @@ export async function getPublishedPostBySlug(
     locs.find((l: any) => l.locale === "pt") ??
     locs.find((l: any) => l.locale === "en") ??
     locs[0];
-  const profile = Array.isArray((post as any).profiles) ? (post as any).profiles[0] : (post as any).profiles;
   const coverUrl = getCoverUrl(admin, (post as any).cover_image_path);
 
   const translations: ApiPost["translations"] = {};
@@ -141,7 +170,7 @@ export async function getPublishedPostBySlug(
     coverImageAlt: "Cover image",
     publishedAt: (post as any).published_at,
     updatedAt: (post as any).updated_at,
-    author: mapAuthor(profile),
+    author: resolveListAuthor(post as { blog_authors?: unknown; profiles?: unknown }),
     categories: [],
     seoTitle: primary?.seo_title ?? null,
     content: primary?.content_md ?? "",
@@ -158,26 +187,24 @@ export async function getPublishedPostBySlug(
  * Get authors that have published posts for this site.
  */
 export async function getAuthors(admin: AdminClient, userId: string): Promise<ApiAuthor[]> {
-  const { data, error } = await admin
-    .from("posts")
-    .select("profiles ( id, display_name, avatar_url, bio, job_title )")
-    .eq("author_id", userId)
-    .eq("status", "published");
+  const { data: personas, error: baError } = await admin
+    .from("blog_authors")
+    .select("id, display_name, avatar_url, bio, job_title")
+    .eq("user_id", userId)
+    .order("display_name", { ascending: true })
+    .order("created_at", { ascending: true });
 
-  if (error) return [];
-
-  const seen = new Set<string>();
-  const authors: ApiAuthor[] = [];
-  for (const row of data ?? []) {
-    const p = (row as any).profiles;
-    const profile = Array.isArray(p) ? p[0] : p;
-    if (profile && !seen.has(profile.id)) {
-      seen.add(profile.id);
-      const a = mapAuthor(profile);
-      if (a) authors.push(a);
-    }
+  if (!baError && personas?.length) {
+    return personas.map((row) => mapBlogAuthor(row)).filter((a): a is ApiAuthor => a != null);
   }
-  return authors;
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id, display_name, avatar_url, bio, job_title")
+    .eq("id", userId)
+    .maybeSingle();
+  const a = mapAuthor(profile);
+  return a ? [a] : [];
 }
 
 /**

@@ -3,32 +3,36 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
-import { resolveSystemInstructionsWithEmbeddings, buildPrompt, type ClientContext, type PostContext } from "@/lib/agent/instructions";
+import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
+import {
+  combineClientInstructionsForModel,
+  resolveSystemInstructionsWithEmbeddings,
+  buildPrompt,
+  type ClientContext,
+  type PostContext,
+} from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
-import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
+import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
-import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
+import {
+  appendAuthorBlock,
+  contentMdHasEmbeddedAuthorBlock,
+  extractAuthorFieldsFromContentMd,
+  sanitizeInternalMarkdownLinks,
+  convertInternalLinksToRelative,
+} from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import type { Locale } from "@/lib/types/db";
+import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
+import { pickRandomBylineAuthorId, resolveAuthorForByline } from "@/lib/data/blog-authors";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
-
-/**
- * Frequency â†’ minimum interval in milliseconds before a new post should be generated.
- */
-const FREQUENCY_INTERVAL_MS: Record<string, number> = {
-  daily:    1  * 24 * 60 * 60 * 1000,
-  weekly:   7  * 24 * 60 * 60 * 1000,
-  biweekly: 14 * 24 * 60 * 60 * 1000,
-  monthly:  30 * 24 * 60 * 60 * 1000,
-};
 
 /**
  * POST /api/scheduler/run
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
     .from("clients")
-    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, webhook_event_format, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
+    .select("id, user_id, domain, frequency, last_post_generated_at, google_access_token, google_scope, auto_publish, webhook_url, webhook_event_format, post_locale, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text")
     .not("domain", "is", null);
 
   if (clientsError) {
@@ -222,6 +226,7 @@ type SchedulerClient = {
   font_style?: string | null;
   brand_voice?: string | null;
   custom_instructions?: string | null;
+  instruction_reinforcement?: string | null;
   cover_reference_image_1?: string | null;
   cover_reference_image_2?: string | null;
   cover_reference_image_3?: string | null;
@@ -238,6 +243,10 @@ async function generatePostForClient(
   // Always generate in all three locales; primary is Portuguese (main site language)
   const primaryLocale: SupportedLocale = "pt";
   const previousLastPost = client.last_post_generated_at ?? null;
+  const combinedInstructions = combineClientInstructionsForModel(
+    client.custom_instructions,
+    client.instruction_reinforcement,
+  );
 
   // Atomic claim so concurrent scheduler runs (Inngest + traffic trigger, overlapping cron, etc.)
   // cannot both pass the due check. Matches due logic: last_run <= now - interval (see FREQUENCY_INTERVAL_MS).
@@ -280,6 +289,8 @@ async function generatePostForClient(
   // Use a temporary placeholder slug â€” will be replaced with the title-derived slug after PT generation
   const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
 
+  const bylineAuthorId = await pickRandomBylineAuthorId(admin, client.user_id);
+
   // Create the post row with a temp slug
   const { data: post, error: postError } = await admin
     .from("posts")
@@ -289,6 +300,7 @@ async function generatePostForClient(
       content_type: "hero",
       status: "draft",
       author_id: client.user_id,
+      byline_author_id: bylineAuthorId,
     })
     .select("id")
     .single();
@@ -359,7 +371,7 @@ async function generatePostForClient(
 
   const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
-    client.custom_instructions ?? null,
+    combinedInstructions,
     {
       contentType: "hero",
       locale: primaryLocale,
@@ -402,7 +414,7 @@ async function generatePostForClient(
     .single();
   const primaryRunId = primaryRun?.id;
 
-  const primaryPrompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!client.custom_instructions });
+  const primaryPrompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
   const MAX_RETRIES = 3;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -438,7 +450,7 @@ async function generatePostForClient(
 
   const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
-    client.custom_instructions ?? null,
+    combinedInstructions,
     {
       contentType: "hero",
       locale: primaryLocale,
@@ -512,15 +524,7 @@ async function generatePostForClient(
   slug = candidate;
   await admin.from("posts").update({ slug }).eq("id", post.id);
 
-  // Fetch author profile so we can append "Sobre o autor" (with avatar) into the post content
-  const { data: authorProfile } = await admin
-    .from("profiles")
-    .select("display_name, job_title, bio, avatar_url")
-    .eq("id", client.user_id)
-    .maybeSingle();
-  const authorForBlock = authorProfile
-    ? { displayName: authorProfile.display_name ?? null, jobTitle: authorProfile.job_title ?? null, bio: authorProfile.bio ?? null, avatarUrl: authorProfile.avatar_url ?? null }
-    : null;
+  const authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
 
   const ptContentMd = appendAuthorBlock(primaryContent.content_md, "pt", authorForBlock);
   const ptSeoTitle = clampSeoTitle(primaryContent.seo_title);
@@ -579,7 +583,7 @@ async function generatePostForClient(
   // ── STEP 2: Translate to other locales (EN, FR) ─────────────────────────────
   const translationSystemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
-    client.custom_instructions ?? null,
+    combinedInstructions,
     {
       contentType: "hero",
       locale: "English and French (translate from Portuguese)",
@@ -617,7 +621,8 @@ async function generatePostForClient(
 RULES:
 - Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
-- Translate the title, excerpt, SEO title, SEO description, all FAQ questions/answers, and the author block at the end (heading "Sobre o autor" / "About the author" and the bio text).
+- Translate the title, excerpt, SEO title, SEO description, all FAQ questions/answers, and the single author block at the end (heading "Sobre o autor" / "About the author" / "À propos de l'auteur" and the name, job title, and bio). Do NOT duplicate the author section — output it exactly once.
+- If the author block uses HTML, preserve the layout: <div class="author-block-header"> with <div class="author-avatar"> (unchanged) and <div class="author-block-titles"> containing <p class="author-name"> and <p class="author-job">; optional <p class="author-bio"> below. Translate only the text inside those <p> tags.
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
 - In content_md: for every markdown link [anchor](url), keep the url EXACTLY unchanged (character-for-character); translate only the anchor text inside the brackets to natural ${langName}. Do not add, remove, or reorder links.
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
@@ -685,7 +690,21 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       internalLinkCandidates.map((c) => c.url)
     );
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
-    // Author block is already in translated content_md (we passed ptContentMd which includes it)
+    // Re-append canonical author HTML using translated copy (appendAuthorBlock strips the model section first).
+    const extractedAuthor = extractAuthorFieldsFromContentMd(translated.content_md);
+    const authorForTranslatedLocale = authorForBlock
+      ? {
+          ...authorForBlock,
+          displayName: extractedAuthor.displayName?.trim() || authorForBlock.displayName,
+          jobTitle: extractedAuthor.jobTitle?.trim() || authorForBlock.jobTitle,
+          bio: extractedAuthor.bio?.trim() || authorForBlock.bio,
+        }
+      : null;
+    translated.content_md = appendAuthorBlock(
+      translated.content_md,
+      locale as Locale,
+      authorForTranslatedLocale,
+    );
     const translatedMd = translated.content_md;
     const locSeoTitle = clampSeoTitle(translated.seo_title);
     const locSeoDesc = clampMetaDescription(translated.seo_description);
@@ -762,15 +781,15 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       client.cover_reference_image_2,
       client.cover_reference_image_3,
     ]);
-    const referenceVisionBrief =
-      refParts.length > 0
-        ? await buildCoverReferenceVisionBriefWithTimeout(
-            genAI,
-            refParts,
-            `[scheduler] ref-vision ${client.domain}`,
-          )
-        : null;
-    const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+    let referenceVisionBrief: string | null = null;
+    if (refParts.length > 0) {
+      referenceVisionBrief = await requireCoverReferenceVisionBrief(
+        genAI,
+        refParts,
+        `[scheduler] ref-vision ${client.domain}`,
+      );
+    }
+    const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
       genAI,
       {
         focusKeywordOrTopic: primaryContent.focus_keyword || titleForCoverPrompt,
@@ -778,9 +797,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         locale: primaryLocale,
         hasInternalLinks: internalLinkCandidates.length > 0,
       },
-      client.custom_instructions ?? null,
+      combinedInstructions,
       referenceVisionBrief,
-    )) ?? "";
+    );
     const baseCoverPrompt = buildCoverPrompt(
       coverSubject,
       headlineForCover,
@@ -799,6 +818,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       referenceImages: refParts.length ? refParts : undefined,
       referenceVisionBrief,
       guidelinesText: client.brand_guidelines_text ?? null,
+      enforcePrimaryInstructionEmbedding: true,
     });
 
     if (buffer) {
@@ -846,7 +866,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     try {
       const { data: freshPost } = await admin
         .from("posts")
-        .select("cover_image_path, slug, post_localizations(locale, title, excerpt, content_md, seo_title, seo_description, jsonld)")
+        .select(
+          "cover_image_path, slug, author_id, byline_author_id, post_localizations(locale, title, excerpt, content_md, seo_title, seo_description, jsonld)",
+        )
         .eq("id", post.id)
         .single();
 
@@ -887,19 +909,15 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         .eq("user_id", client.user_id)
         .maybeSingle();
 
-      // Fetch author profile to include in the webhook payload
-      const { data: authorProfile } = await admin
-        .from("profiles")
-        .select("display_name, avatar_url, bio, job_title")
-        .eq("id", client.user_id)
-        .maybeSingle();
-
-      const webhookAuthor = authorProfile
+      const authorOwnerId = (freshPost as { author_id?: string }).author_id ?? client.user_id;
+      const bylineId = (freshPost as { byline_author_id?: string | null }).byline_author_id ?? null;
+      const bylineResolved = await resolveAuthorForByline(admin, authorOwnerId, bylineId);
+      const webhookAuthor = bylineResolved
         ? {
-            name: authorProfile.display_name ?? null,
-            jobTitle: authorProfile.job_title ?? null,
-            bio: authorProfile.bio ?? null,
-            avatarUrl: authorProfile.avatar_url ?? null,
+            name: bylineResolved.displayName,
+            jobTitle: bylineResolved.jobTitle,
+            bio: bylineResolved.bio,
+            avatarUrl: bylineResolved.avatarUrl,
           }
         : null;
 
@@ -910,12 +928,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         status: "published",
         updatedAt: new Date().toISOString(),
       });
+      const authorPayload = contentMdHasEmbeddedAuthorBlock(primary.content_md ?? "")
+        ? undefined
+        : webhookAuthor;
+
       const webhookPayload = {
         ...revalidation,
         post: {
           ...revalidation.post,
           cover_image_url: coverImageUrl,
-          author: webhookAuthor,
+          ...(authorPayload !== undefined ? { author: authorPayload } : {}),
           title: primary.title,
           excerpt: primary.excerpt,
           content_md: primary.content_md,

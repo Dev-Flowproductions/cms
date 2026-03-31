@@ -192,19 +192,21 @@ export async function buildGeneralInstructionsWithEmbeddingOrder(
   return joinGeneralInstructionsInOrder(order);
 }
 
-/**
- * Text prepended to the raster cover prompt:
- * 1) Optional **client** sections (`custom_instructions`), embedding-ranked for `taskKind: cover`.
- * 2) General **cover** + **formatting** chunks from `instruction-chunks.ts`, embedding-ranked.
- * The rendered brief still comes mostly from `buildCoverPrompt`.
- */
-export async function buildCoverInstructionEmbeddingPrefix(
+/** Metadata for observability — Gemini Embedding 2 ranking for cover raster prompts. */
+export type CoverInstructionPrefixMeta = {
+  fullRankOrder: string[];
+  pickedGeneralChunkIds: string[];
+  clientSectionsRanked: boolean;
+  clientInstructionChunkCount: number;
+};
+
+async function buildCoverInstructionEmbeddingPrefixCore(
   genAI: GoogleGenerativeAI,
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
-): Promise<string | null> {
+): Promise<{ prefix: string; meta: CoverInstructionPrefixMeta }> {
   const ctx: InstructionSelectionContext = {
     contentType: partial.contentType ?? "hero",
     locale: partial.locale ?? "en",
@@ -215,37 +217,96 @@ export async function buildCoverInstructionEmbeddingPrefix(
   };
 
   const segments: string[] = [];
-
   const retrievalQuery = buildInstructionRetrievalQuery(ctx);
+  let clientSectionsRanked = false;
+  let clientInstructionChunkCount = 0;
 
   if (clientInstructionsRaw?.trim()) {
-    try {
-      const cChunks = parseClientInstructionsIntoChunks(clientInstructionsRaw);
-      if (cChunks.length > 0) {
+    const cChunks = parseClientInstructionsIntoChunks(clientInstructionsRaw);
+    clientInstructionChunkCount = cChunks.length;
+    if (cChunks.length > 0) {
+      try {
         const ranked =
           cChunks.length === 1
             ? cChunks[0]!.text
             : await buildClientInstructionsWithEmbeddingOrder(genAI, cChunks, retrievalQuery);
-        if (ranked) segments.push(`BRAND CONTEXT (embedding-ranked for cover task):\n${ranked}`);
+        clientSectionsRanked = cChunks.length > 1;
+        if (ranked?.trim()) segments.push(`BRAND CONTEXT (embedding-ranked for cover task):\n${ranked}`);
+      } catch (e) {
+        console.warn("[instruction-embeddings] Client cover prefix embedding failed, using raw text:", e);
+        segments.push(`BRAND CONTEXT:\n${clientInstructionsRaw.trim()}`);
       }
-    } catch (e) {
-      console.warn("[instruction-embeddings] Client cover prefix embedding failed, using raw text:", e);
-      segments.push(`BRAND CONTEXT:\n${clientInstructionsRaw.trim()}`);
     }
   }
 
+  const fullRankOrder = await rankGeneralInstructionChunkIds(genAI, ctx);
+  const pickedGeneralChunkIds = fullRankOrder.filter((id) => id === "cover" || id === "formatting");
+  const text = joinRankedInstructionChunksInOrder(pickedGeneralChunkIds);
+  if (!text?.trim()) {
+    throw new Error("Cover instruction embedding: no cover/formatting chunk text after ranking");
+  }
+  segments.push(`EDITORIAL IMAGE RULES (CMS — follow exactly):\n${text}`);
+
+  const prefix = `${segments.join("\n\n")}\n\n`;
+  const meta: CoverInstructionPrefixMeta = {
+    fullRankOrder,
+    pickedGeneralChunkIds,
+    clientSectionsRanked,
+    clientInstructionChunkCount,
+  };
+
+  console.info(
+    "[cover] gemini-embedding-2 instruction selection",
+    JSON.stringify({
+      embeddingModel: getGeminiEmbedding2ModelName(),
+      task: "cover_raster",
+      focusKeywordOrTopic: ctx.focusKeywordOrTopic,
+      hasReferenceVisionBrief: Boolean(ctx.referenceVisionBrief?.trim()),
+      ...meta,
+    }),
+  );
+
+  return { prefix, meta };
+}
+
+/**
+ * Strict cover prefix + ranking metadata. Throws if Embedding 2 cannot produce general cover/formatting rules.
+ */
+export async function buildCoverInstructionEmbeddingPrefixWithMeta(
+  genAI: GoogleGenerativeAI,
+  partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
+    Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
+  clientInstructionsRaw?: string | null,
+  referenceVisionBrief?: string | null,
+): Promise<{ prefix: string; meta: CoverInstructionPrefixMeta }> {
   try {
-    const order = await rankGeneralInstructionChunkIds(genAI, ctx);
-    const pick = order.filter((id) => id === "cover" || id === "formatting");
-    const text = joinRankedInstructionChunksInOrder(pick);
-    if (text) {
-      segments.push(`EDITORIAL IMAGE RULES (CMS — follow exactly):\n${text}`);
-    }
-    if (segments.length === 0) return null;
-    return `${segments.join("\n\n")}\n\n`;
+    return await buildCoverInstructionEmbeddingPrefixCore(genAI, partial, clientInstructionsRaw, referenceVisionBrief);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Cover instruction embedding failed: ${msg}`);
+  }
+}
+
+/**
+ * Text prepended to the raster cover prompt:
+ * 1) Optional **client** sections (`custom_instructions`), embedding-ranked for `taskKind: cover`.
+ * 2) General **cover** + **formatting** chunks from `instruction-chunks.ts`, embedding-ranked.
+ * The rendered brief still comes mostly from `buildCoverPrompt`.
+ *
+ * On failure returns `null` (legacy / lenient callers).
+ */
+export async function buildCoverInstructionEmbeddingPrefix(
+  genAI: GoogleGenerativeAI,
+  partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
+    Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
+  clientInstructionsRaw?: string | null,
+  referenceVisionBrief?: string | null,
+): Promise<string | null> {
+  try {
+    const { prefix } = await buildCoverInstructionEmbeddingPrefixCore(genAI, partial, clientInstructionsRaw, referenceVisionBrief);
+    return prefix;
   } catch (e) {
     console.warn("[instruction-embeddings] Cover instruction embedding failed:", e);
-    if (segments.length > 0) return `${segments.join("\n\n")}\n\n`;
     return null;
   }
 }

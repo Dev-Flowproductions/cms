@@ -42,7 +42,7 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus; userId?:
   let query = admin
     .from("posts")
     .select(`
-      id, slug, status, primary_locale, author_id, updated_at, webhook_status,
+      id, slug, status, primary_locale, author_id, updated_at,
       profiles(display_name),
       post_localizations(locale, seo_title, focus_keyword, faq_blocks,
         jsonld, seo_score)

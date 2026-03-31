@@ -5,6 +5,7 @@ import { usePathname } from "@/lib/navigation";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "./UserMenu";
+import { NextPostCountdown } from "@/components/NextPostCountdown";
 
 type ShellSection = "overview" | "posts" | "settings" | "newPost" | "default";
 
@@ -25,7 +26,15 @@ function shellSection(pathname: string): ShellSection {
   return "default";
 }
 
-export function DashboardTopBar({ userEmail, userInitial }: { userEmail: string; userInitial: string }) {
+export function DashboardTopBar({
+  userEmail,
+  userInitial,
+  nextPostSchedule,
+}: {
+  userEmail: string;
+  userInitial: string;
+  nextPostSchedule: { lastPostGeneratedAt: string | null; frequency: string } | null;
+}) {
   const pathname = usePathname();
   const t = useTranslations("dashboard.shell");
   const section = shellSection(pathname);
@@ -35,11 +44,11 @@ export function DashboardTopBar({ userEmail, userInitial }: { userEmail: string;
     <header
       className="fixed right-0 top-0 z-40 flex h-14 w-full min-w-0 items-center justify-between overflow-x-hidden border-b px-4 backdrop-blur-xl sm:px-8 lg:left-64 lg:h-16 lg:w-[calc(100%-16rem)]"
       style={{
-        background: "rgba(11, 19, 38, 0.82)",
+        background: "var(--adm-topbar-bg)",
         borderColor: "var(--adm-border-subtle)",
       }}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
         <span
           className="truncate border-b-2 pb-1 text-[10px] font-bold uppercase tracking-widest"
           style={{
@@ -49,6 +58,13 @@ export function DashboardTopBar({ userEmail, userInitial }: { userEmail: string;
         >
           {label}
         </span>
+        {nextPostSchedule && (
+          <NextPostCountdown
+            lastPostGeneratedAt={nextPostSchedule.lastPostGeneratedAt}
+            frequency={nextPostSchedule.frequency}
+            variant="editorial"
+          />
+        )}
       </div>
       <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
         <LocaleSwitcher variant="editorial" />

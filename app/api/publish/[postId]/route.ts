@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
+import { contentMdHasEmbeddedAuthorBlock } from "@/lib/agent/internal-link";
+import { resolveAuthorForByline } from "@/lib/data/blog-authors";
 
 export async function POST(
   _req: NextRequest,
@@ -38,7 +40,7 @@ export async function POST(
   const { data: post, error: postError } = await admin
     .from("posts")
     .select(`
-      id, slug, author_id, status, updated_at, webhook_status, primary_locale,
+      id, slug, author_id, byline_author_id, status, updated_at, webhook_status, primary_locale,
       post_localizations (
         locale, title, excerpt, content_md, seo_title, seo_description, jsonld, seo_score
       ),
@@ -69,19 +71,17 @@ export async function POST(
     );
   }
 
-  // Fetch author profile to include in payload
-  const { data: authorProfile } = await admin
-    .from("profiles")
-    .select("display_name, avatar_url, bio, job_title")
-    .eq("id", post.author_id)
-    .maybeSingle();
-
-  const author = authorProfile
+  const bylineResolved = await resolveAuthorForByline(
+    admin,
+    post.author_id,
+    (post as { byline_author_id?: string | null }).byline_author_id ?? null,
+  );
+  const author = bylineResolved
     ? {
-        name: authorProfile.display_name ?? null,
-        jobTitle: authorProfile.job_title ?? null,
-        bio: authorProfile.bio ?? null,
-        avatarUrl: authorProfile.avatar_url ?? null,
+        name: bylineResolved.displayName,
+        jobTitle: bylineResolved.jobTitle,
+        bio: bylineResolved.bio,
+        avatarUrl: bylineResolved.avatarUrl,
       }
     : null;
 
@@ -133,6 +133,10 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
+  /** Avoid duplicate "Sobre o autor" on sites that render `post.author` and markdown body — body already has the rich block. */
+  const authorPayload =
+    contentMdHasEmbeddedAuthorBlock(primary.content_md ?? "") ? undefined : author;
+
   const isUpdate = (post as { webhook_status?: string }).webhook_status === "success";
   const format = (client as { webhook_event_format?: "spec" | "legacy" | null }).webhook_event_format ?? "spec";
   const event = resolveWebhookEvent(format, isUpdate);
@@ -149,7 +153,7 @@ export async function POST(
     post: {
       ...revalidation.post,
       cover_image_url: coverImageUrl,
-      author,
+      ...(authorPayload !== undefined ? { author: authorPayload } : {}),
       title: primary.title,
       excerpt: primary.excerpt,
       content_md: primary.content_md,

@@ -7,13 +7,21 @@ import {
   deleteUser,
   createClientInstructions,
   updateClientInstructions,
+  updateInstructionReinforcementByAdmin,
   type ClientRow,
 } from "./actions";
 import { EditUserConfig } from "./EditUserConfig";
+import { NextPostCountdown } from "@/components/NextPostCountdown";
+import type { AdminBlogAuthorRow } from "./actions";
 
-export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
+export function UserDetailClient({
+  user: initialUser,
+  blogAuthors: initialBlogAuthors,
+}: {
+  user: ClientRow;
+  blogAuthors: AdminBlogAuthorRow[];
+}) {
   const t = useTranslations("admin.usersPage");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = useState(initialUser);
@@ -22,14 +30,17 @@ export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
   useEffect(() => {
     setUser(initialUser);
     setInstructionsEdit(initialUser.custom_instructions ?? "");
+    setReinforcementEdit(initialUser.instruction_reinforcement ?? "");
   }, [initialUser]);
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [instructionsCreating, setInstructionsCreating] = useState(false);
   const [instructionsSaving, setInstructionsSaving] = useState(false);
   const [instructionsEdit, setInstructionsEdit] = useState(user.custom_instructions ?? "");
   const [instructionsError, setInstructionsError] = useState<string | null>(null);
+  const [reinforcementEdit, setReinforcementEdit] = useState(user.instruction_reinforcement ?? "");
+  const [reinforcementSaving, setReinforcementSaving] = useState(false);
+  const [reinforcementError, setReinforcementError] = useState<string | null>(null);
 
   const accountName = user.company_name ?? user.brand_name ?? null;
   const displayTitle = accountName?.trim() || user.email || "—";
@@ -103,9 +114,15 @@ export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
             {user.email}
           </p>
         )}
-        <p className="mt-2 max-w-xl text-base leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
-          {t("userDetailSubtitle")}
-        </p>
+        {!onboardingPending && (
+          <div className="mt-4">
+            <NextPostCountdown
+              lastPostGeneratedAt={user.last_post_generated_at}
+              frequency={user.frequency}
+              variant="adminDetail"
+            />
+          </div>
+        )}
       </header>
 
       {error && (
@@ -134,9 +151,9 @@ export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
           </svg>
-          <p className="text-sm font-medium" title={user.last_generation_error}>
-            {t("lastRunFailed")}: {user.last_generation_error.slice(0, 200)}
-            {user.last_generation_error.length > 200 ? "…" : ""}
+          <p className="text-sm font-medium" title={String(user.last_generation_error)}>
+            {t("lastRunFailed")}: {String(user.last_generation_error).slice(0, 200)}
+            {String(user.last_generation_error).length > 200 ? "…" : ""}
           </p>
         </div>
       )}
@@ -188,24 +205,7 @@ export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
               >
                 {instructionsCreating ? t("instructionsCreating") : t("createInstructions")}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setInstructionsOpen((o) => !o);
-                  setInstructionsEdit(user.custom_instructions ?? "");
-                  setInstructionsError(null);
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all"
-                style={{
-                  background: instructionsOpen ? "var(--adm-surface-highest)" : "rgba(245,158,11,0.12)",
-                  color: instructionsOpen ? "var(--adm-primary)" : "#f59e0b",
-                  borderColor: "rgba(245,158,11,0.35)",
-                }}
-              >
-                {instructionsOpen ? t("instructionsHide") : t("editInstructions")}
-              </button>
-            )}
+            ) : null}
           </div>
 
           {instructionsError && !user.custom_instructions?.trim() && (
@@ -214,63 +214,114 @@ export function UserDetailClient({ user: initialUser }: { user: ClientRow }) {
             </p>
           )}
 
-          {instructionsOpen && !!user.custom_instructions?.trim() && (
-            <div className="space-y-4 border-t pt-6" style={{ borderColor: "var(--adm-border-subtle)" }}>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-primary)" }}>
-                  {t("instructionsTitle")}
-                </p>
-                <p className="mt-1 text-sm" style={{ color: "var(--adm-on-variant)" }}>
-                  {t("instructionsDescription")}
-                </p>
-              </div>
-              <textarea
-                value={instructionsEdit}
-                onChange={(e) => setInstructionsEdit(e.target.value)}
-                rows={12}
-                className="adm-input-edge min-h-[180px] w-full resize-y rounded-xl px-4 py-3 font-mono text-sm outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
-                style={{
-                  background: "var(--adm-surface-highest)",
-                  color: "var(--adm-on-surface)",
-                }}
-                placeholder={t("instructionsPlaceholder")}
-              />
-              {instructionsError && (
-                <p className="text-xs" style={{ color: "var(--adm-error)" }}>
-                  {instructionsError}
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={instructionsSaving}
-                onClick={async () => {
-                  setInstructionsSaving(true);
-                  setInstructionsError(null);
-                  const result = await updateClientInstructions(user.user_id, instructionsEdit);
-                  setInstructionsSaving(false);
-                  if (result.error) setInstructionsError(result.error);
-                  else {
-                    refreshUser();
-                    setInstructionsOpen(false);
-                  }
-                }}
-                className="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
-                style={{
-                  background: "var(--adm-primary-container)",
-                  color: "#fff",
-                  boxShadow: "var(--adm-cta-glow-shadow)",
-                }}
-              >
-                {instructionsSaving ? t("instructionsSaving") : tCommon("save")}
-              </button>
+          <div className="space-y-4 border-t pt-6" style={{ borderColor: "var(--adm-border-subtle)" }}>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-primary)" }}>
+                {t("clientSpecificInstructionsTitle")}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                {t("clientSpecificInstructionsDescription")}
+              </p>
             </div>
-          )}
+            {user.custom_instructions?.trim() ? (
+              <>
+                <textarea
+                  value={instructionsEdit}
+                  onChange={(e) => setInstructionsEdit(e.target.value)}
+                  rows={12}
+                  className="adm-input-edge min-h-[180px] w-full resize-y rounded-xl px-4 py-3 font-mono text-sm outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+                  style={{
+                    background: "var(--adm-surface-highest)",
+                    color: "var(--adm-on-surface)",
+                  }}
+                  placeholder={t("instructionsPlaceholder")}
+                />
+                {instructionsError && (
+                  <p className="text-xs" style={{ color: "var(--adm-error)" }}>
+                    {instructionsError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={instructionsSaving}
+                  onClick={async () => {
+                    setInstructionsSaving(true);
+                    setInstructionsError(null);
+                    const result = await updateClientInstructions(user.user_id, instructionsEdit);
+                    setInstructionsSaving(false);
+                    if (result.error) setInstructionsError(result.error);
+                    else refreshUser();
+                  }}
+                  className="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{
+                    background: "var(--adm-primary-container)",
+                    color: "#fff",
+                    boxShadow: "var(--adm-cta-glow-shadow)",
+                  }}
+                >
+                  {instructionsSaving ? t("instructionsSaving") : t("saveClientInstructions")}
+                </button>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                {t("clientSpecificInstructionsEmptyHint")}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-4 border-t pt-6" style={{ borderColor: "var(--adm-border-subtle)" }}>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-primary)" }}>
+                {t("instructionReinforcementTitle")}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                {t("instructionReinforcementDescription")}
+              </p>
+            </div>
+            <textarea
+              value={reinforcementEdit}
+              onChange={(e) => setReinforcementEdit(e.target.value)}
+              rows={10}
+              className="adm-input-edge min-h-[160px] w-full resize-y rounded-xl px-4 py-3 font-mono text-sm outline-none focus:ring-2 focus:ring-[var(--adm-primary-container)]"
+              style={{
+                background: "var(--adm-surface-highest)",
+                color: "var(--adm-on-surface)",
+              }}
+              placeholder={t("reinforcementPlaceholder")}
+            />
+            {reinforcementError && (
+              <p className="text-xs" style={{ color: "var(--adm-error)" }}>
+                {reinforcementError}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={reinforcementSaving}
+              onClick={async () => {
+                setReinforcementSaving(true);
+                setReinforcementError(null);
+                const result = await updateInstructionReinforcementByAdmin(user.user_id, reinforcementEdit);
+                setReinforcementSaving(false);
+                if (result.error) setReinforcementError(result.error);
+                else refreshUser();
+              }}
+              className="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
+              style={{
+                background: "var(--adm-primary-container)",
+                color: "#fff",
+                boxShadow: "var(--adm-cta-glow-shadow)",
+              }}
+            >
+              {reinforcementSaving ? t("instructionsSaving") : t("saveReinforcement")}
+            </button>
+          </div>
         </div>
       ) : null}
 
       <div className={!onboardingPending ? "pt-2" : ""}>
         <EditUserConfig
           user={user}
+          blogAuthors={initialBlogAuthors}
           onClose={() => router.push("/admin/users")}
           onSaved={() => {
             refreshUser();

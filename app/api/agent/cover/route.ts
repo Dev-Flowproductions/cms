@@ -3,11 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
-import { buildCoverInstructionEmbeddingPrefixWithTimeout } from "@/lib/agent/instruction-embeddings";
+import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
+import { combineClientInstructionsForModel } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
-import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
+import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -53,12 +54,15 @@ export async function POST(request: Request) {
     const { data: clientRow } = await admin
       .from("clients")
       .select(
-        "domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book, custom_instructions, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
+        "domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
       )
       .eq("user_id", postRow.author_id)
       .maybeSingle();
     if (clientRow) {
-      customInstructions = clientRow.custom_instructions ?? null;
+      customInstructions = combineClientInstructionsForModel(
+        clientRow.custom_instructions,
+        clientRow.instruction_reinforcement,
+      );
       brandGuidelinesText = clientRow.brand_guidelines_text ?? null;
       coverRefPaths = [
         clientRow.cover_reference_image_1,
@@ -99,21 +103,33 @@ export async function POST(request: Request) {
   );
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
+  const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
+  let referenceVisionBrief: string | null = null;
+  let coverEmbedPrefix: string;
   try {
-    const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
-    const referenceVisionBrief =
-      refParts.length > 0
-        ? await buildCoverReferenceVisionBriefWithTimeout(genAIEmbed, refParts, "[cover] ref-vision")
-        : null;
-    const coverEmbedPrefix = (await buildCoverInstructionEmbeddingPrefixWithTimeout(
+    if (refParts.length > 0) {
+      referenceVisionBrief = await requireCoverReferenceVisionBrief(genAIEmbed, refParts, "[cover] ref-vision");
+    }
+    const { prefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
       genAIEmbed,
       { focusKeywordOrTopic: query },
       customInstructions,
       referenceVisionBrief,
-    )) ?? "";
-    const basePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity, {
-      headlineMayBeNonEnglish: true,
-    });
+    );
+    coverEmbedPrefix = prefix;
+  } catch (prepErr) {
+    const m = prepErr instanceof Error ? prepErr.message : String(prepErr);
+    return NextResponse.json(
+      { error: m },
+      { status: 503 },
+    );
+  }
+
+  const basePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity, {
+    headlineMayBeNonEnglish: true,
+  });
+
+  try {
     const buf = await generateCoverImageBufferWithEmbedFallback(genai, {
       embedPrefix: coverEmbedPrefix,
       basePrompt,
@@ -121,6 +137,7 @@ export async function POST(request: Request) {
       referenceImages: refParts.length ? refParts : undefined,
       referenceVisionBrief,
       guidelinesText: brandGuidelinesText,
+      enforcePrimaryInstructionEmbedding: true,
     });
     if (!buf) throw new Error("No image returned from Gemini");
     imageBuffer = buf;

@@ -9,7 +9,13 @@ import type { CoverReferenceImagePart } from "./gemini-cover-image";
 const VISION_MODEL =
   process.env.GEMINI_COVER_VISION_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
 const MAX_BRIEF_CHARS = 1200;
-export const COVER_REFERENCE_VISION_TIMEOUT_MS = 12_000;
+
+/** Optional cap for {@link buildCoverReferenceVisionBriefWithTimeout} only (not used by {@link requireCoverReferenceVisionBrief}). */
+export const COVER_REFERENCE_VISION_TIMEOUT_MS = (() => {
+  const raw = process.env.GEMINI_COVER_VISION_TIMEOUT_MS?.trim();
+  const n = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : 60_000;
+})();
 
 const VISION_PROMPT = `You help keep blog header banners on-brand. The attached image(s) are EXAMPLES this client uses (or wants to emulate).
 
@@ -66,4 +72,33 @@ export function buildCoverReferenceVisionBriefWithTimeout(
       setTimeout(() => resolve(null), COVER_REFERENCE_VISION_TIMEOUT_MS),
     ),
   ]);
+}
+
+/**
+ * When reference images are present, vision brief is required for strict cover generation
+ * (Embedding 2 query + multimodal alignment).
+ *
+ * Uses {@link buildCoverReferenceVisionBrief} **without** a short Promise.race timeout — the previous
+ * 12s cap caused false failures when Gemini multimodal responses were slow. One retry on empty/failure.
+ */
+export async function requireCoverReferenceVisionBrief(
+  genAI: GoogleGenerativeAI,
+  referenceImages: CoverReferenceImagePart[],
+  logLabel: string,
+): Promise<string> {
+  const refs = referenceImages.filter((r) => r.base64?.length);
+  if (!refs.length) {
+    throw new Error("requireCoverReferenceVisionBrief called with no usable reference images");
+  }
+  let brief = await buildCoverReferenceVisionBrief(genAI, refs, logLabel);
+  if (!brief?.trim()) {
+    console.warn(`[${logLabel}] cover-reference-vision empty or failed, retrying once`);
+    brief = await buildCoverReferenceVisionBrief(genAI, refs, `${logLabel} retry`);
+  }
+  if (!brief?.trim()) {
+    throw new Error(
+      "Reference banner image analysis failed after retry. Cannot generate cover without a vision brief when reference images are provided.",
+    );
+  }
+  return brief.trim();
 }

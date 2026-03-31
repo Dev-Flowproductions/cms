@@ -88,7 +88,6 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex gap-10">
           {[
-            { value: "3", label: t("login.stats.locales") },
             { value: "AI", label: t("login.stats.assisted") },
             { value: "∞", label: t("login.stats.posts") },
           ].map((stat) => (

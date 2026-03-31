@@ -30,10 +30,12 @@ export function DashboardShell({
   children,
   userEmail,
   userInitial,
+  nextPostSchedule,
 }: {
   children: React.ReactNode;
   userEmail: string;
   userInitial: string;
+  nextPostSchedule: { lastPostGeneratedAt: string | null; frequency: string } | null;
 }) {
   return (
     <div className="editorial-shell-root flex h-screen min-h-0 min-w-0 overflow-hidden bg-[var(--adm-bg)] font-sans text-[var(--adm-on-surface)] antialiased">
@@ -47,7 +49,11 @@ export function DashboardShell({
       </DashboardSidebarShell>
 
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-        <DashboardTopBar userEmail={userEmail} userInitial={userInitial} />
+        <DashboardTopBar
+          userEmail={userEmail}
+          userInitial={userInitial}
+          nextPostSchedule={nextPostSchedule}
+        />
         <main className="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto pt-14 lg:pt-16 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div
             className="pointer-events-none absolute right-0 top-0 -mr-20 -mt-20 h-1/2 w-1/2 rounded-full bg-[#6839ea]/[0.07] blur-[120px]"

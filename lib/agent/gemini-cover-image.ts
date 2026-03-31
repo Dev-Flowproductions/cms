@@ -1,6 +1,6 @@
 /**
  * Gemini image API calls for blog covers. Prompt body: `cover-prompt.ts`.
- * Optional text prefix from `buildCoverInstructionEmbeddingPrefixWithTimeout` (embedding-ranked client brand block + cover+formatting chunks).
+ * Text prefix from `buildCoverInstructionEmbeddingPrefixWithMeta` / `buildCoverInstructionEmbeddingPrefix` (embedding-ranked client brand block + cover+formatting chunks).
  */
 import type { GoogleGenAI } from "@google/genai";
 
@@ -108,7 +108,23 @@ export type CoverGenerationArgs = {
   referenceVisionBrief?: string | null;
   /** Plain text from uploaded guidelines (txt/md/PDF extract). */
   guidelinesText?: string | null;
+  /**
+   * When true: prefix Embedding 2 block is mandatory, wrapped as PRIMARY instructions before topic text;
+   * no fallback generation without the embed prefix.
+   */
+  enforcePrimaryInstructionEmbedding?: boolean;
 };
+
+const PRIMARY_INSTRUCTIONS_HEADER =
+  "═══════════════════════════════════════\n" +
+  "PRIMARY INSTRUCTIONS (Gemini Embedding 2 — obey before all topic-specific text below)\n" +
+  "═══════════════════════════════════════\n\n";
+
+function wrapEmbedPrefix(embedPrefix: string, enforce: boolean): string {
+  const e = embedPrefix.trim();
+  if (!e) return "";
+  return enforce ? `${PRIMARY_INSTRUCTIONS_HEADER}${e}` : e;
+}
 
 /**
  * Tries: multimodal (refs + full text) → text-only full prompt → text-only without embed prefix.
@@ -117,6 +133,11 @@ export async function generateCoverImageBufferWithEmbedFallback(
   imagenAI: GoogleGenAI,
   args: CoverGenerationArgs,
 ): Promise<Buffer | null> {
+  const enforce = args.enforcePrimaryInstructionEmbedding === true;
+  if (enforce && !args.embedPrefix.trim()) {
+    throw new Error("enforcePrimaryInstructionEmbedding requires a non-empty embedPrefix");
+  }
+
   const withGuide = (t: string) => appendGuidelinesToPrompt(t, args.guidelinesText);
   const refs = args.referenceImages?.filter((r) => r.base64?.length) ?? [];
   const visionBlock = args.referenceVisionBrief?.trim()
@@ -126,7 +147,8 @@ export async function generateCoverImageBufferWithEmbedFallback(
     refs.length > 0
       ? `REFERENCE IMAGES: The following ${refs.length} image(s) are examples of this company's visual style. Match their illustration language, colour mood, and layout density. Do not reproduce logos or trademarks. Generate one new 16:9 editorial banner for the article described in the text below.\n\n`
       : "";
-  const fullText = withGuide(args.embedPrefix + visionBlock + refHint + args.basePrompt);
+  const embedded = wrapEmbedPrefix(args.embedPrefix, enforce);
+  const fullText = withGuide(embedded + visionBlock + refHint + args.basePrompt);
 
   if (refs.length > 0) {
     let buf = await generateGeminiCoverImageBufferWithReferences(
@@ -143,7 +165,7 @@ export async function generateCoverImageBufferWithEmbedFallback(
     if (buf) return buf;
   }
 
-  if (args.embedPrefix.trim()) {
+  if (!enforce && args.embedPrefix.trim()) {
     return generateGeminiCoverImageBuffer(
       imagenAI,
       withGuide(args.basePrompt),

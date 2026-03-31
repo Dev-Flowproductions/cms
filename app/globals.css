@@ -148,54 +148,94 @@ tr.group:hover td { background: var(--surface-raised); }
 }
 .input-field[disabled] { opacity: 0.5; cursor: not-allowed; }
 
-/* Author block (in post content) — centered, compact */
+/* Author block (in post content) — avatar left, name + role right, bio below */
 #author-block,
 .author-block {
-  max-width: 200px;
-  margin: 0 auto;
-  text-align: center;
+  margin: 2rem 0 0 0;
+  max-width: 42rem;
+  text-align: left;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: var(--surface);
+}
+#author-block .author-block-header,
+.author-block .author-block-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+#author-block .author-block-titles,
+.author-block .author-block-titles {
+  flex: 1;
+  min-width: 0;
 }
 #author-block .author-avatar,
 .author-block .author-avatar {
-  margin: 0 0 0.5rem 0;
+  flex-shrink: 0;
+  margin: 0;
+  line-height: 0;
 }
 #author-block .author-avatar img,
 .author-block .author-avatar img {
   border-radius: 50%;
   object-fit: cover;
-  display: inline-block;
+  display: block;
+  width: 56px;
+  height: 56px;
 }
 #author-block .author-initial,
 .author-block .author-initial {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--border);
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
+  line-height: 1;
 }
 #author-block .author-name,
 .author-block .author-name {
   margin: 0;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 #author-block .author-job,
 .author-block .author-job {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.75rem;
-  opacity: 0.85;
+  margin: 0.2rem 0 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-muted);
 }
 #author-block .author-bio,
 .author-block .author-bio {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  opacity: 0.85;
+  margin: 1rem 0 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Tailwind typography (.prose) resets for author card */
+.prose #author-block p,
+.prose .author-block p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.prose #author-block .author-job,
+.prose .author-block .author-job {
+  margin-top: 0.2rem;
+}
+.prose #author-block .author-bio,
+.prose .author-block .author-bio {
+  margin-top: 1rem;
 }
 
 /* Semantic tinted backgrounds (used for banners, badges, etc.) */

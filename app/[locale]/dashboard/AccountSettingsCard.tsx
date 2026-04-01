@@ -12,6 +12,7 @@ import {
 } from "@/app/[locale]/(admin)/admin/users/actions";
 import { type Frequency, normalizeFrequencyForUi } from "@/lib/scheduler/frequency";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { coverRefUploadContentType, normalizeCoverRefFileExt } from "@/lib/brand/cover-ref-upload";
 import { BlogAuthorsClient } from "./blog-authors/BlogAuthorsClient";
 import type { BlogAuthorRow } from "./blog-authors/actions";
 
@@ -287,6 +288,71 @@ export function AccountSettingsCard({
         /* non-JSON */
       }
       if (!fin.ok) throw new Error(finData.error ?? "Could not save guidelines");
+
+      setBrandAssetsSaved(true);
+      router.refresh();
+      setTimeout(() => setBrandAssetsSaved(false), 3000);
+    } catch (e) {
+      setBrandAssetsError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBrandAssetsBusy(false);
+    }
+  }
+
+  /**
+   * Cover reference images: direct upload to Storage + finalize (small JSON), same as guidelines.
+   * Avoids platform request-body limits on large raster files through `/api/settings/brand-assets`.
+   */
+  async function uploadCoverRefFile(slot: 1 | 2 | 3, file: File) {
+    setBrandAssetsBusy(true);
+    setBrandAssetsError(null);
+    setBrandAssetsSaved(false);
+    try {
+      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".") + 1) : "jpg";
+      const pre = await fetch("/api/settings/brand-assets/prepare-cover-ref-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slot, ext, sizeBytes: file.size }),
+      });
+      let preData: { error?: string; path?: string } = {};
+      try {
+        preData = (await pre.json()) as { error?: string; path?: string };
+      } catch {
+        /* non-JSON */
+      }
+      if (!pre.ok) {
+        throw new Error(
+          preData.error ??
+            (pre.status === 413
+              ? "Upload too large. Try a smaller file or compress the image."
+              : "Could not start upload"),
+        );
+      }
+      if (!preData.path) throw new Error("Could not start upload");
+
+      const safeExt = normalizeCoverRefFileExt(ext);
+      const uploadMime = coverRefUploadContentType(safeExt, file.type);
+
+      const supabase = createBrowserSupabaseClient();
+      const { error: upErr } = await supabase.storage.from("brand-assets").upload(preData.path, file, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: uploadMime,
+      });
+      if (upErr) throw new Error(upErr.message);
+
+      const fin = await fetch("/api/settings/brand-assets/finalize-cover-ref", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: preData.path, slot }),
+      });
+      let finData: { error?: string } = {};
+      try {
+        finData = (await fin.json()) as { error?: string };
+      } catch {
+        /* non-JSON */
+      }
+      if (!fin.ok) throw new Error(finData.error ?? "Could not save reference image");
 
       setBrandAssetsSaved(true);
       router.refresh();
@@ -910,18 +976,14 @@ export function AccountSettingsCard({
                     <label className="cursor-pointer">
                       <input
                         type="file"
-                        accept="image/jpeg,image/png,image/webp"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif,image/bmp,image/tiff,.heic,.heif"
                         className="hidden"
                         disabled={brandAssetsBusy}
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           e.target.value = "";
                           if (!file) return;
-                          const fd = new FormData();
-                          fd.append("action", "coverRef");
-                          fd.append("slot", String(slot));
-                          fd.append("file", file);
-                          await postBrandAsset(fd);
+                          await uploadCoverRefFile(slot, file);
                         }}
                       />
                       <span

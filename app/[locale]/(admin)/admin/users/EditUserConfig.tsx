@@ -15,6 +15,8 @@ import {
 } from "./actions";
 import { AdminBlogAuthorForm } from "./AdminBlogAuthorForm";
 import { type Frequency, normalizeFrequencyForUi } from "@/lib/scheduler/frequency";
+import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { coverRefUploadContentType, normalizeCoverRefFileExt } from "@/lib/brand/cover-ref-upload";
 
 const BRAND_VOICES = [
   { id: "professional", label: "Professional & Authoritative" },
@@ -192,6 +194,91 @@ export function EditUserConfig({
         setAssetError(data.error ?? "Upload failed");
         return false;
       }
+      const refreshed = await getClientSettingsByAdmin(user.user_id);
+      applySettingsData(refreshed);
+      onAssetsUpdated?.();
+      if (successMessage) {
+        setAssetSuccess(successMessage);
+        scheduleAssetSuccessClear();
+      }
+      return true;
+    } catch (e) {
+      setAssetError(e instanceof Error ? e.message : "Upload failed");
+      return false;
+    } finally {
+      setAssetBusy(false);
+    }
+  }
+
+  /** Large cover reference images: signed direct upload to Storage (bypasses platform body limits). */
+  async function uploadAdminCoverRef(slot: 1 | 2 | 3, file: File, successMessage?: string) {
+    setAssetBusy(true);
+    setAssetError(null);
+    setAssetSuccess(null);
+    try {
+      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".") + 1) : "jpg";
+      const pre = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.user_id)}/assets/prepare-cover-ref`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slot, ext, sizeBytes: file.size }),
+        },
+      );
+      let preData: { error?: string; path?: string; token?: string } = {};
+      try {
+        preData = (await pre.json()) as { error?: string; path?: string; token?: string };
+      } catch {
+        /* non-JSON */
+      }
+      if (!pre.ok) {
+        setAssetError(
+          preData.error ??
+            (pre.status === 413
+              ? "Upload too large. Try a smaller file or compress the image."
+              : "Could not start upload"),
+        );
+        return false;
+      }
+      if (!preData.path || !preData.token) {
+        setAssetError("Could not start upload");
+        return false;
+      }
+
+      const safeExt = normalizeCoverRefFileExt(ext);
+      const uploadMime = coverRefUploadContentType(safeExt, file.type);
+      const supabase = createBrowserSupabaseClient();
+      const { error: upErr } = await supabase.storage
+        .from("brand-assets")
+        .uploadToSignedUrl(preData.path, preData.token, file, {
+          cacheControl: "3600",
+          contentType: uploadMime,
+          upsert: true,
+        });
+      if (upErr) {
+        setAssetError(upErr.message);
+        return false;
+      }
+
+      const fin = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.user_id)}/assets/finalize-cover-ref`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: preData.path, slot }),
+        },
+      );
+      let finData: { error?: string } = {};
+      try {
+        finData = (await fin.json()) as { error?: string };
+      } catch {
+        /* non-JSON */
+      }
+      if (!fin.ok) {
+        setAssetError(finData.error ?? "Could not save reference image");
+        return false;
+      }
+
       const refreshed = await getClientSettingsByAdmin(user.user_id);
       applySettingsData(refreshed);
       onAssetsUpdated?.();
@@ -1040,18 +1127,14 @@ export function EditUserConfig({
                   <label className="cursor-pointer">
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif,image/bmp,image/tiff,.heic,.heif"
                       className="hidden"
                       disabled={assetBusy}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         e.target.value = "";
                         if (!file) return;
-                        const fd = new FormData();
-                        fd.append("action", "coverRef");
-                        fd.append("slot", String(slot));
-                        fd.append("file", file);
-                        await postAdminAsset(fd, t("configAssets.uploadSaved"));
+                        await uploadAdminCoverRef(slot, file, t("configAssets.uploadSaved"));
                       }}
                     />
                     <span

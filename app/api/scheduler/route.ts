@@ -250,6 +250,10 @@ async function generatePostForClient(
     client.instruction_reinforcement,
   );
 
+  // Track the created post ID so the catch block can clean up
+  let createdPostId: string | null = null;
+
+  try {
   // Atomic claim so concurrent scheduler runs (Inngest + traffic trigger, overlapping cron, etc.)
   // cannot both pass the due check. Matches due logic: last_run <= now - interval (see FREQUENCY_INTERVAL_MS).
   if (!runOpts.skipDueClaim) {
@@ -310,17 +314,10 @@ async function generatePostForClient(
     .single();
 
   if (postError || !post) {
-    const errMsg = postError?.message ?? "Failed to create post row";
-    // Write the error so the admin can see it (and the scheduler retries on next run)
-    await admin.from("clients").update({
-      last_generation_error: errMsg,
-      last_generation_error_at: new Date().toISOString(),
-      ...(runOpts.skipDueClaim ? {} : { last_post_generated_at: previousLastPost }),
-    }).eq("id", client.id);
-    throw new Error(errMsg);
+    throw new Error(postError?.message ?? "Failed to create post row");
   }
+  createdPostId = post.id;
 
-  try {
   const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
   const resolvedBrandColors = resolveClientBrandColors({
     domain: client.domain,
@@ -1002,7 +999,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   return post.id;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error(`[scheduler] Generation failed for ${client.domain} (post ${post.id}):`, msg);
+    console.error(`[scheduler] Generation failed for ${client.domain} (post ${createdPostId ?? "pre-insert"}):`, msg);
     const clientPatch: Record<string, string | null> = {
       last_generation_error: msg,
       last_generation_error_at: new Date().toISOString(),
@@ -1010,8 +1007,11 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     if (!runOpts.skipDueClaim) {
       clientPatch.last_post_generated_at = previousLastPost;
     }
-    await admin.from("clients").update(clientPatch).eq("id", client.id);
-    await admin.from("posts").delete().eq("id", post.id);
+    // Best-effort: don't let a secondary DB error hide the original error
+    try { await admin.from("clients").update(clientPatch).eq("id", client.id); } catch { /* ignore */ }
+    if (createdPostId) {
+      try { await admin.from("posts").delete().eq("id", createdPostId); } catch { /* ignore */ }
+    }
     throw err;
   }
 }

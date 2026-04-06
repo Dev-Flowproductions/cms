@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cookies } from "next/headers";
+import { getGoogleOAuthRedirectUri, getOAuthAppBaseUrl } from "@/lib/google/oauth-app-url";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
 
 export async function GET(request: Request) {
+  const appBase = getOAuthAppBaseUrl();
+  const redirectUri = getGoogleOAuthRedirectUri();
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -14,19 +16,23 @@ export async function GET(request: Request) {
 
   let locale = "en";
 
+  if (!appBase) {
+    return new Response("NEXT_PUBLIC_APP_URL is not configured.", { status: 500 });
+  }
+
   if (errorParam) {
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=access_denied`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=access_denied`);
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=invalid_state`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=invalid_state`);
   }
 
   const cookieStore = await cookies();
   const storedState = cookieStore.get("google_oauth_state")?.value;
 
   if (!storedState || storedState !== state) {
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=invalid_state`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=invalid_state`);
   }
 
   let userId: string;
@@ -35,7 +41,11 @@ export async function GET(request: Request) {
     userId = parsed.userId;
     locale = parsed.locale ?? "en";
   } catch {
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=invalid_state`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=invalid_state`);
+  }
+
+  if (!redirectUri) {
+    return new Response("OAuth redirect URI could not be built.", { status: 500 });
   }
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -45,7 +55,7 @@ export async function GET(request: Request) {
       code,
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${APP_URL}/api/google/callback`,
+      redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }),
   });
@@ -53,7 +63,7 @@ export async function GET(request: Request) {
   if (!tokenRes.ok) {
     const errText = await tokenRes.text();
     console.error("Google token exchange failed:", errText);
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=token_exchange`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=token_exchange`);
   }
 
   const tokenData = await tokenRes.json();
@@ -72,12 +82,12 @@ export async function GET(request: Request) {
 
   if (dbError) {
     console.error("Failed to store Google tokens:", dbError.message);
-    return NextResponse.redirect(`${APP_URL}/${locale}/onboarding/google?error=db_error`);
+    return NextResponse.redirect(`${appBase}/${locale}/onboarding/google?error=db_error`);
   }
 
   cookieStore.delete("google_oauth_state");
 
-  const response = NextResponse.redirect(`${APP_URL}/${locale}/dashboard`);
+  const response = NextResponse.redirect(`${appBase}/${locale}/dashboard`);
   response.cookies.set("onboarding_done", "1", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

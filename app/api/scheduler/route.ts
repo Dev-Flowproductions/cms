@@ -30,6 +30,7 @@ import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import type { Locale } from "@/lib/types/db";
 import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
+import { verifyTrafficSchedulerInternalRequest } from "@/lib/scheduler/traffic-internal-auth";
 import { pickRandomBylineAuthorId, resolveAuthorForByline } from "@/lib/data/blog-authors";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
@@ -52,9 +53,10 @@ const MODEL = "gemini-3.1-flash-lite-preview";
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  const cronMatch = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const cronMatch = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);
+  const trafficInternal = verifyTrafficSchedulerInternalRequest(req);
 
-  if (!cronMatch) {
+  if (!cronMatch && !trafficInternal) {
     // Allow authenticated admin to run from the admin panel (no CRON_SECRET in browser)
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

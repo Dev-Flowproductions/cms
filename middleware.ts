@@ -66,23 +66,8 @@ export default async function middleware(request: NextRequest) {
       return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
 
-    // Onboarding gate: skip for admins, enforce for regular users
-    const onboardingDone = request.cookies.get("onboarding_done")?.value;
-    if (!onboardingDone) {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role_id")
-        .eq("user_id", user.id)
-        .eq("role_id", "admin")
-        .maybeSingle();
-      const isAdmin = !!roleData;
-
-      if (!isAdmin) {
-        const locale = dashboardMatch[1];
-        const dest = new URL(`/${locale}/onboarding/domain`, request.url);
-        return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
-      }
-    }
+    // Onboarding is enforced in dashboard layout (domain in DB), not here — avoids
+    // false redirects when onboarding_done cookie is missing but setup is complete.
   }
 
   // ── Protect onboarding routes (must be authed) ──────────────────────────────

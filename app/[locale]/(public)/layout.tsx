@@ -20,7 +20,7 @@ export default async function PublicLayout({
       >
         <nav className="max-w-5xl mx-auto px-6 py-0 flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/login" className="flex items-center gap-2.5">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "var(--accent)" }}
@@ -44,14 +44,14 @@ export default async function PublicLayout({
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
             <Link
-              href="/admin"
+              href="/login"
               className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
               style={{
                 border: "1px solid var(--border)",
                 color: "var(--text-muted)",
               }}
             >
-              {t("admin")}
+              {t("login")}
             </Link>
           </div>
         </nav>

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { getGoogleOAuthRedirectUri, getOAuthAppBaseUrl } from "@/lib/google/oauth-app-url";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
 
 const SCOPES = [
   "https://www.googleapis.com/auth/analytics.readonly",
@@ -13,7 +13,9 @@ const SCOPES = [
 ].join(" ");
 
 export async function GET(request: Request) {
-  if (!GOOGLE_CLIENT_ID || !APP_URL) {
+  const appBase = getOAuthAppBaseUrl();
+  const redirectUri = getGoogleOAuthRedirectUri();
+  if (!GOOGLE_CLIENT_ID || !appBase || !redirectUri) {
     return new Response(
       "Google OAuth is not configured. Set GOOGLE_CLIENT_ID and NEXT_PUBLIC_APP_URL in your environment variables.",
       { status: 500 }
@@ -42,8 +44,6 @@ export async function GET(request: Request) {
     path: "/",
     sameSite: "lax",
   });
-
-  const redirectUri = `${APP_URL}/api/google/callback`;
 
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID);

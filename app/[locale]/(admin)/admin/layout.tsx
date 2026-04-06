@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { requireTeamMember } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { AdminLogoutButton } from "./AdminLogoutButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AdminSidebarShell } from "./AdminSidebarShell";
 import { AppLogo } from "@/components/AppLogo";
 import { AdminNav } from "./AdminNav";
@@ -45,14 +44,6 @@ export default async function AdminLayout({
               {t("admin.sidebarSubLabel")}
             </div>
           </div>
-          <ThemeToggle
-            className="!h-9 !w-9 !rounded-lg !shrink-0"
-            style={{
-              background: "var(--adm-surface-high)",
-              border: "1px solid var(--adm-outline-variant)",
-              color: "var(--adm-on-variant)",
-            }}
-          />
         </div>
 
         <div className="flex flex-1 flex-col overflow-y-auto px-2 py-4">

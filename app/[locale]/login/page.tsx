@@ -74,6 +74,12 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <AppLogo className="h-10 w-auto object-contain opacity-95" />
+          <p
+            className="mt-4 text-xl font-semibold tracking-tight"
+            style={{ color: "var(--adm-on-surface)" }}
+          >
+            {t("common.appName")}
+          </p>
         </div>
 
         <div className="relative z-10">
@@ -107,6 +113,12 @@ export default function LoginPage() {
         <div className="editorial-shell-glass w-full max-w-sm animate-slide-up rounded-2xl border p-8 sm:p-10" style={{ borderColor: "var(--adm-border-subtle)" }}>
           <div className="mb-8 lg:hidden">
             <AppLogo className="h-9 w-auto object-contain opacity-95" />
+            <p
+              className="mt-3 text-lg font-semibold tracking-tight"
+              style={{ color: "var(--adm-on-surface)" }}
+            >
+              {t("common.appName")}
+            </p>
           </div>
 
           <h1 className="mb-1 text-2xl font-bold" style={{ color: "var(--adm-on-surface)" }}>

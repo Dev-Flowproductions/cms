@@ -4,10 +4,10 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { SchedulerTrigger } from "@/components/SchedulerTrigger";
 
 export const metadata: Metadata = {
-  title: "CMS — AI-native editorial platform",
-  description: "Citation-worthy, entity-structured content with a Human-in-the-Loop editorial pipeline.",
+  title: "CMS WitFlow — AI-native editorial platform",
+  description: "CMS WitFlow: citation-worthy, entity-structured content with a Human-in-the-Loop editorial pipeline.",
   icons: {
-    icon: "/images/Logo%20Favicon%400.5x.png",
+    icon: "/images/L_favicon.png",
   },
 };
 
@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/images/Logo%20Favicon%400.5x.png" type="image/png" />
+        <link rel="icon" href="/images/L_favicon.png" type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />

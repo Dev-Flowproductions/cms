@@ -1,6 +1,9 @@
 node_modules
 .next
 
+# TypeScript incremental cache — regenerated locally; avoid merge conflicts
+tsconfig.tsbuildinfo
+
 # Environment variables — never commit these
 .env.local
 .env.*.local

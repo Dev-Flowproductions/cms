@@ -8,6 +8,7 @@ export default async function PublicLayout({
   children: React.ReactNode;
 }) {
   const t = await getTranslations("nav");
+  const tCommon = await getTranslations("common");
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       <header
@@ -28,7 +29,9 @@ export default async function PublicLayout({
                   <path d="M1.5 3h10M1.5 6.5h6.5M1.5 10h4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </div>
-              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>CMS</span>
+              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>
+                {tCommon("appName")}
+              </span>
             </Link>
             <Link
               href="/blog"

@@ -1,8 +1,8 @@
 import { Link } from "@/lib/navigation";
 
 export const metadata = {
-  title: "Terms of Use | Flow Productions",
-  description: "Terms and conditions governing the use of the Flow Productions CMS platform.",
+  title: "Terms of Use | CMS WitFlow",
+  description: "Terms and conditions for the CMS WitFlow editorial platform.",
 };
 
 export default async function TermsOfUsePage() {
@@ -42,14 +42,14 @@ export default async function TermsOfUsePage() {
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Agreement to terms</h2>
             <p>
-              By accessing or using the Flow Productions CMS platform (&ldquo;Platform&rdquo;), you agree to be bound by these Terms of Use (&ldquo;Terms&rdquo;). If you do not agree, you must not use the Platform. These Terms apply to all users, including administrators and client accounts.
+              By accessing or using the Witflow CMS platform (&ldquo;Platform&rdquo;), you agree to be bound by these Terms of Use (&ldquo;Terms&rdquo;). If you do not agree, you must not use the Platform. These Terms apply to all users, including administrators and client accounts.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>2. The service</h2>
             <p className="mb-3">
-              Flow Productions provides a content management system that enables:
+              Witflow provides a content management system that enables:
             </p>
             <ul className="space-y-2 list-none pl-0">
               {[
@@ -65,7 +65,7 @@ export default async function TermsOfUsePage() {
               ))}
             </ul>
             <p className="mt-3">
-              Access to the Platform is granted solely by Flow Productions. Accounts are created by Flow Productions administrators on behalf of clients. Self-registration is not available.
+              Access to the Platform is granted solely by Witflow. Accounts are created by Witflow administrators on behalf of clients. Self-registration is not available.
             </p>
           </section>
 
@@ -76,7 +76,7 @@ export default async function TermsOfUsePage() {
               {[
                 "Keeping your login credentials confidential and secure.",
                 "All activity that occurs under your account.",
-                "Notifying Flow Productions immediately of any unauthorised access.",
+                "Notifying Witflow immediately of any unauthorised access.",
                 "Ensuring the domain and website information you provide is accurate and belongs to you.",
               ].map((item) => (
                 <li key={item} className="flex gap-3">
@@ -95,7 +95,7 @@ export default async function TermsOfUsePage() {
             <ul className="space-y-2 list-none pl-0">
               {[
                 "AI-generated content may contain inaccuracies and should be reviewed before publication.",
-                "Flow Productions does not guarantee the factual accuracy of AI-generated content.",
+                "Witflow does not guarantee the factual accuracy of AI-generated content.",
                 "You are solely responsible for content published to your website.",
                 "You must not use the Platform to generate content that is illegal, defamatory, or infringes third-party rights.",
                 "AI-generated images are subject to Google's Imagen usage policies.",
@@ -111,7 +111,7 @@ export default async function TermsOfUsePage() {
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>5. Google account connection</h2>
             <p>
-              When you connect your Google account during onboarding, you authorise Flow Productions to access your Google Analytics and Google Search Console data in read-only mode. This access is used exclusively to improve the quality and relevance of content generated for your website. We will never modify, delete, or post to your Google accounts. You may revoke this access at any time via your{" "}
+              When you connect your Google account during onboarding, you authorise Witflow to access your Google Analytics and Google Search Console data in read-only mode. This access is used exclusively to improve the quality and relevance of content generated for your website. We will never modify, delete, or post to your Google accounts. You may revoke this access at any time via your{" "}
               <a
                 href="https://myaccount.google.com/permissions"
                 target="_blank"
@@ -126,10 +126,10 @@ export default async function TermsOfUsePage() {
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>6. Intellectual property</h2>
             <p className="mb-3">
-              All content generated through the Platform on your behalf — including blog posts and cover images — is provided to you for use on your website. Flow Productions retains no ownership over your published content.
+              All content generated through the Platform on your behalf — including blog posts and cover images — is provided to you for use on your website. Witflow retains no ownership over your published content.
             </p>
             <p>
-              The Platform itself, including its design, code, and branding, is the exclusive intellectual property of Flow Productions and may not be copied, reverse-engineered, or redistributed without written permission.
+              The Platform itself, including its design, code, and branding, is the exclusive intellectual property of Witflow and may not be copied, reverse-engineered, or redistributed without written permission.
             </p>
           </section>
 
@@ -155,21 +155,21 @@ export default async function TermsOfUsePage() {
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>8. Availability & modifications</h2>
             <p>
-              Flow Productions will endeavour to maintain Platform availability but does not guarantee uninterrupted access. We reserve the right to modify, suspend, or discontinue any part of the Platform at any time, with or without notice. We will make reasonable efforts to notify active users of significant changes.
+              Witflow will endeavour to maintain Platform availability but does not guarantee uninterrupted access. We reserve the right to modify, suspend, or discontinue any part of the Platform at any time, with or without notice. We will make reasonable efforts to notify active users of significant changes.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>9. Limitation of liability</h2>
             <p>
-              To the maximum extent permitted by applicable law, Flow Productions shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform, including but not limited to loss of revenue, data, or business opportunities resulting from AI-generated content. Our total liability shall not exceed the amount paid by you for the service in the three months preceding the claim.
+              To the maximum extent permitted by applicable law, Witflow shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Platform, including but not limited to loss of revenue, data, or business opportunities resulting from AI-generated content. Our total liability shall not exceed the amount paid by you for the service in the three months preceding the claim.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>10. Termination</h2>
             <p>
-              Flow Productions may suspend or terminate your account at any time if you breach these Terms or if the service relationship between Flow Productions and your business ends. Upon termination, your access to the Platform will be revoked. Content already published to your website remains yours.
+              Witflow may suspend or terminate your account at any time if you breach these Terms or if the service relationship between Witflow and your business ends. Upon termination, your access to the Platform will be revoked. Content already published to your website remains yours.
             </p>
           </section>
 
@@ -184,12 +184,12 @@ export default async function TermsOfUsePage() {
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>12. Contact</h2>
             <p>
               For questions about these Terms, contact us at{" "}
-              <a href="mailto:legal@flowproductions.pt" style={{ color: "var(--accent)" }}>
-                legal@flowproductions.pt
+              <a href="mailto:legal@witflow.co" style={{ color: "var(--accent)" }}>
+                legal@witflow.co
               </a>{" "}
               or visit{" "}
-              <a href="https://flowproductions.pt" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-                flowproductions.pt
+              <a href="https://witflow.co" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+                witflow.co
               </a>.
             </p>
           </section>

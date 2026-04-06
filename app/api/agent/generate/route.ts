@@ -245,11 +245,11 @@ export async function POST(request: Request) {
     // Build rich JSON-LD (Article + FAQPage + speakable + publisher)
     const publisherEntity = {
       "@type": "Organization",
-      "name": "Flow Productions",
-      "url": clientRow?.domain ? `https://${clientRow.domain}` : "https://flowproductions.pt",
+      "name": "Witflow",
+      "url": clientRow?.domain ? `https://${clientRow.domain}` : "https://witflow.co",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://flowproductions.pt/logo.png",
+        "url": "https://witflow.co/logo.png",
       },
     };
 
@@ -271,7 +271,7 @@ export async function POST(request: Request) {
         "@type": "WebPage",
         "@id": clientRow?.domain
           ? `https://${clientRow.domain}/blog/${post.slug}`
-          : `https://flowproductions.pt/blog/${post.slug}`,
+          : `https://witflow.co/blog/${post.slug}`,
       },
     };
 

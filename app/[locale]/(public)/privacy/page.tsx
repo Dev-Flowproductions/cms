@@ -1,8 +1,8 @@
 import { Link } from "@/lib/navigation";
 
 export const metadata = {
-  title: "Privacy Policy | Flow Productions",
-  description: "How Flow Productions collects, uses, and protects your personal data.",
+  title: "Privacy Policy | CMS WitFlow",
+  description: "How CMS WitFlow collects, uses, and protects your personal data.",
 };
 
 export default async function PrivacyPolicyPage() {
@@ -42,9 +42,9 @@ export default async function PrivacyPolicyPage() {
           <section>
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>1. Who we are</h2>
             <p>
-              Flow Productions (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is a creative studio based in Lisbon, Portugal, operating the CMS platform available at this domain. We provide brand strategy, web design, content management, and digital marketing services. Our registered contact address is available at{" "}
-              <a href="https://flowproductions.pt" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-                flowproductions.pt
+              Witflow (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is a creative studio based in Lisbon, Portugal, operating the CMS platform available at this domain. We provide brand strategy, web design, content management, and digital marketing services. Our registered contact address is available at{" "}
+              <a href="https://witflow.co" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+                witflow.co
               </a>.
             </p>
           </section>
@@ -153,8 +153,8 @@ export default async function PrivacyPolicyPage() {
             </ul>
             <p className="mt-3">
               To exercise any of these rights, contact us at{" "}
-              <a href="mailto:privacy@flowproductions.pt" style={{ color: "var(--accent)" }}>
-                privacy@flowproductions.pt
+              <a href="mailto:privacy@witflow.co" style={{ color: "var(--accent)" }}>
+                privacy@witflow.co
               </a>.
             </p>
           </section>
@@ -177,12 +177,12 @@ export default async function PrivacyPolicyPage() {
             <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text)" }}>10. Contact</h2>
             <p>
               For any privacy-related questions, contact us at{" "}
-              <a href="mailto:privacy@flowproductions.pt" style={{ color: "var(--accent)" }}>
-                privacy@flowproductions.pt
+              <a href="mailto:privacy@witflow.co" style={{ color: "var(--accent)" }}>
+                privacy@witflow.co
               </a>{" "}
               or visit{" "}
-              <a href="https://flowproductions.pt" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-                flowproductions.pt
+              <a href="https://witflow.co" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+                witflow.co
               </a>.
             </p>
           </section>

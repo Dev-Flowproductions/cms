@@ -135,7 +135,7 @@ export function generateClientSpecificInstructions(client: ClientRowForInstructi
     lines.push("─────────────────────────────────────");
     lines.push(`Domain: ${client.domain.trim()}`);
     lines.push("");
-    lines.push("If no brand name is set above, derive a proper brand name from the domain (e.g. flowproductions.pt → \"Flow Productions\"). Use that name throughout the article.");
+    lines.push("If no brand name is set above, derive a proper brand name from the domain (e.g. witflow.co → \"Witflow\"). Use that name throughout the article.");
   }
 
   return lines.join("\n").trim();

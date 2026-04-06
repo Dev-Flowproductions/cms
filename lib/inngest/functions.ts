@@ -1,10 +1,11 @@
 import { inngest } from "./client";
+import { getPublicAppBaseUrlOrLocalhost } from "@/lib/public-app-url";
 
 function getAppBaseUrl(): string {
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return getPublicAppBaseUrlOrLocalhost();
 }
 
 /**

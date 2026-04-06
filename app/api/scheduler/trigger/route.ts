@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPublicAppBaseUrlOrLocalhost } from "@/lib/public-app-url";
 
 const RATE_LIMIT_MINUTES = 15;
 
@@ -40,7 +41,7 @@ export async function GET() {
   const origin =
     process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      : getPublicAppBaseUrlOrLocalhost();
   const cronSecret = process.env.CRON_SECRET;
   const url = `${origin}/api/scheduler`;
 

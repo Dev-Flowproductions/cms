@@ -291,7 +291,7 @@ async function generatePostForClient(
   // Use a temporary placeholder slug â€” will be replaced with the title-derived slug after PT generation
   const tempSlug = `draft-${client.user_id.slice(0, 8)}-${Date.now()}`;
 
-  const bylineAuthorId = await pickRandomBylineAuthorId(admin, client.user_id);
+  const bylineAuthorId = await pickRandomBylineAuthorId(admin, client.user_id).catch(() => null);
 
   // Create the post row with a temp slug
   const { data: post, error: postError } = await admin
@@ -310,13 +310,14 @@ async function generatePostForClient(
     .single();
 
   if (postError || !post) {
-    if (!runOpts.skipDueClaim) {
-      await admin
-        .from("clients")
-        .update({ last_post_generated_at: previousLastPost })
-        .eq("id", client.id);
-    }
-    throw new Error(postError?.message ?? "Failed to create post row");
+    const errMsg = postError?.message ?? "Failed to create post row";
+    // Write the error so the admin can see it (and the scheduler retries on next run)
+    await admin.from("clients").update({
+      last_generation_error: errMsg,
+      last_generation_error_at: new Date().toISOString(),
+      ...(runOpts.skipDueClaim ? {} : { last_post_generated_at: previousLastPost }),
+    }).eq("id", client.id);
+    throw new Error(errMsg);
   }
 
   try {

@@ -613,7 +613,7 @@ export function EditUserConfig({
               <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.noneYet")}</p>
             )}
             <div className="flex flex-wrap gap-2">
-              <label className="cursor-pointer">
+              <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
@@ -633,7 +633,7 @@ export function EditUserConfig({
                   className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: "var(--adm-primary-container)", color: "#fff" }}
                 >
-                  {t("configAssets.upload")}
+                  {assetBusy ? "Uploading…" : t("configAssets.upload")}
                 </span>
               </label>
               {logoUrl?.trim() && (
@@ -667,7 +667,7 @@ export function EditUserConfig({
               <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.noGuidelines")}</p>
             )}
             <div className="flex flex-wrap gap-2">
-              <label className="cursor-pointer">
+              <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                 <input
                   type="file"
                   accept=".pdf,.txt,.md,.markdown,.text,text/plain,text/markdown,application/pdf,application/x-pdf,application/octet-stream"
@@ -687,7 +687,7 @@ export function EditUserConfig({
                   className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: "var(--adm-primary-container)", color: "#fff" }}
                 >
-                  {t("configAssets.uploadGuidelines")}
+                  {assetBusy ? "Uploading…" : t("configAssets.uploadGuidelines")}
                 </span>
               </label>
               {brandGuidelinesPath && (
@@ -809,7 +809,7 @@ export function EditUserConfig({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={avatarUrl} alt="" className="h-10 w-10 rounded-full border object-cover" style={{ borderColor: "var(--adm-border-subtle)" }} />
                           ) : null}
-                          <label className="cursor-pointer">
+                          <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp,image/gif"
@@ -829,7 +829,7 @@ export function EditUserConfig({
                               className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
                               style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-surface)" }}
                             >
-                              {t("configAssets.uploadAvatar")}
+                              {assetBusy ? "Uploading…" : t("configAssets.uploadAvatar")}
                             </span>
                           </label>
                           {avatarUrl?.trim() ? (
@@ -1124,7 +1124,7 @@ export function EditUserConfig({
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <label className="cursor-pointer">
+                  <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif,image/bmp,image/tiff,.heic,.heif"
@@ -1141,7 +1141,7 @@ export function EditUserConfig({
                       className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                       style={{ background: "var(--adm-primary-container)", color: "#fff" }}
                     >
-                      {t("configAssets.upload")}
+                      {assetBusy ? "Uploading…" : t("configAssets.upload")}
                     </span>
                   </label>
                   {path && (

@@ -122,6 +122,7 @@ export function AccountSettingsCard({
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [avatarUploadBusy, setAvatarUploadBusy] = useState(false);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
     { value: "weekly",   label: t("frequency.weekly"),   sublabel: t("frequency.weeklySublabel") },
@@ -364,6 +365,27 @@ export function AccountSettingsCard({
     }
   }
 
+  async function uploadProfileAvatarFile(file: File) {
+    setAvatarUploadBusy(true);
+    setProfileError(null);
+    try {
+      const fd = new FormData();
+      if (avatarUrl.trim()) fd.append("replaceAvatarUrl", avatarUrl.trim());
+      fd.append("file", file);
+      const res = await fetch("/api/dashboard/profile-avatar", { method: "POST", body: fd });
+      const data = (await res.json()) as { error?: string; avatarUrl?: string };
+      if (!res.ok || data.error) {
+        setProfileError(data.error ?? "Upload failed");
+        return;
+      }
+      if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+    } catch {
+      setProfileError("Upload failed");
+    } finally {
+      setAvatarUploadBusy(false);
+    }
+  }
+
   return (
     <div
       className="mt-10 min-w-0 max-w-full rounded-2xl overflow-hidden"
@@ -422,6 +444,51 @@ export function AccountSettingsCard({
                 className={`${inputClass} px-4 py-3 rounded-xl`}
                 style={inputStyle}
               />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {avatarUrl?.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-10 w-10 rounded-full border object-cover"
+                    style={{ borderColor: "var(--adm-border-subtle)" }}
+                  />
+                ) : null}
+                <label className={avatarUploadBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    disabled={avatarUploadBusy}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) void uploadProfileAvatarFile(file);
+                    }}
+                  />
+                  <span
+                    className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
+                    style={{
+                      background: "var(--adm-surface-highest)",
+                      border: "1px solid var(--adm-border-subtle)",
+                      color: "var(--adm-on-surface)",
+                    }}
+                  >
+                    {avatarUploadBusy ? "Uploading…" : "Upload image"}
+                  </span>
+                </label>
+                {avatarUrl?.trim() ? (
+                  <button
+                    type="button"
+                    disabled={avatarUploadBusy}
+                    onClick={() => { setAvatarUrl(""); setProfileError(null); }}
+                    className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                    style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--adm-on-variant)" }}>Job title</label>
@@ -973,7 +1040,7 @@ export function AccountSettingsCard({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <label className="cursor-pointer">
+                    <label className={brandAssetsBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif,image/bmp,image/tiff,.heic,.heif"
@@ -990,7 +1057,7 @@ export function AccountSettingsCard({
                         className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                         style={{ background: "var(--adm-primary-container)", color: "white" }}
                       >
-                        {t("brandAssets.upload")}
+                        {brandAssetsBusy ? "Uploading…" : t("brandAssets.upload")}
                       </span>
                     </label>
                     {path && (
@@ -1031,7 +1098,7 @@ export function AccountSettingsCard({
               <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>{t("brandAssets.noGuidelines")}</p>
             )}
             <div className="flex flex-wrap gap-2">
-              <label className="cursor-pointer">
+              <label className={brandAssetsBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
                 <input
                   type="file"
                   accept=".pdf,.txt,.md,.markdown,.text,text/plain,text/markdown,application/pdf,application/x-pdf,application/octet-stream"
@@ -1048,7 +1115,7 @@ export function AccountSettingsCard({
                   className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: "var(--adm-primary-container)", color: "white" }}
                 >
-                  {t("brandAssets.uploadGuidelines")}
+                  {brandAssetsBusy ? "Uploading…" : t("brandAssets.uploadGuidelines")}
                 </span>
               </label>
               {settings.brand_guidelines_storage_path && (

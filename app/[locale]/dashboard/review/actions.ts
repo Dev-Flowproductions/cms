@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { getPublicAppBaseUrlOrLocalhost } from "@/lib/public-app-url";
 
 export async function getUserReviewPosts() {
   const user = await getUser();
@@ -39,7 +40,7 @@ export async function userApprovePost(postId: string) {
   if (!post) return { error: "Post not found" };
   if (post.author_id !== user.id) return { error: "Forbidden" };
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getPublicAppBaseUrlOrLocalhost();
   let res: Response;
   try {
     res = await fetch(`${appUrl}/api/publish/${postId}`, {

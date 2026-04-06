@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
 import type { Frequency } from "@/lib/scheduler/frequency";
 import { z } from "zod";
+import { getPublicAppBaseUrl } from "@/lib/public-app-url";
 export type PostLocale = "en" | "pt" | "fr";
 
 const createUserSchema = z.object({
@@ -595,7 +596,9 @@ export async function updateClientBrand(
 export async function regenerateBrandBook(userId: string, domain: string) {
   await requireAdmin();
   
-  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/brand-book`, {
+  const base = getPublicAppBaseUrl();
+  if (!base) return { error: "NEXT_PUBLIC_APP_URL is not configured." };
+  const response = await fetch(`${base}/api/brand-book`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, domain }),

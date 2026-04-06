@@ -1,12 +1,11 @@
+import { getPublicAppBaseUrl } from "@/lib/public-app-url";
+
 /**
- * Base public URL for OAuth redirects (no trailing slash).
- * A trailing slash in NEXT_PUBLIC_APP_URL would produce redirect_uris like
- * `https://host//api/google/callback`, which Google rejects with `invalid_request`.
+ * Base public URL for Google OAuth (no trailing slash).
+ * See {@link getPublicAppBaseUrl} for scheme / host normalization.
  */
 export function getOAuthAppBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (!raw) return "";
-  return raw.replace(/\/+$/, "");
+  return getPublicAppBaseUrl();
 }
 
 export function getGoogleOAuthRedirectUri(): string {

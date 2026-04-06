@@ -302,7 +302,9 @@ async function generatePostForClient(
       content_type: "hero",
       status: "draft",
       author_id: client.user_id,
-      byline_author_id: bylineAuthorId,
+      // Only include byline_author_id when non-null to avoid PostgREST schema-cache
+      // rejecting the column if the blog_authors migration hasn't refreshed yet.
+      ...(bylineAuthorId !== null ? { byline_author_id: bylineAuthorId } : {}),
     })
     .select("id")
     .single();

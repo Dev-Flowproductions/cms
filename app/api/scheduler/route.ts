@@ -1008,8 +1008,10 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       clientPatch.last_post_generated_at = previousLastPost;
     }
     // Best-effort: don't let a secondary DB error hide the original error
-    await admin.from("clients").update(clientPatch).eq("id", client.id).catch(() => {});
-    if (createdPostId) await admin.from("posts").delete().eq("id", createdPostId).catch(() => {});
+    try { await admin.from("clients").update(clientPatch).eq("id", client.id); } catch { /* ignore */ }
+    if (createdPostId) {
+      try { await admin.from("posts").delete().eq("id", createdPostId); } catch { /* ignore */ }
+    }
     throw err;
   }
 }

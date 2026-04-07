@@ -78,18 +78,23 @@ export async function generateGeminiCoverImageBufferWithReferences(
       inlineData: { mimeType: img.mimeType, data: img.base64 },
     })),
   ];
-  const imgResponse = await imagenAI.models.generateContent({
-    model: GEMINI_COVER_IMAGE_MODEL,
-    contents: parts,
-    config: {
-      responseModalities: ["TEXT", "IMAGE"],
-      imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
-    },
-  });
-  const buf = extractInlineImageBufferFromGeminiResponse(imgResponse);
-  if (buf) return buf;
-  logGeminiCoverImageEmptyResponse(logLabel, imgResponse);
-  return null;
+  try {
+    const imgResponse = await imagenAI.models.generateContent({
+      model: GEMINI_COVER_IMAGE_MODEL,
+      contents: parts,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: { aspectRatio: "16:9", imageSize: "2K" },
+      },
+    });
+    const buf = extractInlineImageBufferFromGeminiResponse(imgResponse);
+    if (buf) return buf;
+    logGeminiCoverImageEmptyResponse(`${logLabel} multimodal`, imgResponse);
+    return null;
+  } catch (e) {
+    console.warn(`[${logLabel}] Multimodal cover generation threw — falling back to text-only:`, e instanceof Error ? e.message : String(e));
+    return null;
+  }
 }
 
 function appendGuidelinesToPrompt(base: string, guidelinesText: string | null | undefined): string {
@@ -151,13 +156,18 @@ export async function generateCoverImageBufferWithEmbedFallback(
   const fullText = withGuide(embedded + visionBlock + refHint + args.basePrompt);
 
   if (refs.length > 0) {
+    console.info(`[${args.logLabel}] Attempting multimodal cover (${refs.length} reference image(s))`);
     let buf = await generateGeminiCoverImageBufferWithReferences(
       imagenAI,
       fullText,
       refs.slice(0, 10),
       args.logLabel,
     );
-    if (buf) return buf;
+    if (buf) {
+      console.info(`[${args.logLabel}] Cover generated successfully with reference images`);
+      return buf;
+    }
+    console.warn(`[${args.logLabel}] Multimodal cover returned no image — falling back to text-only (refs skipped)`);
     buf = await generateGeminiCoverImageBuffer(imagenAI, fullText, `${args.logLabel} retry-no-ref-images`);
     if (buf) return buf;
   } else {

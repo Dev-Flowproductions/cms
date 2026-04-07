@@ -783,6 +783,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       client.cover_reference_image_2,
       client.cover_reference_image_3,
     ]);
+    console.info(`[scheduler] cover refs for ${client.domain}: ${refParts.length} image(s) loaded (of ${[client.cover_reference_image_1, client.cover_reference_image_2, client.cover_reference_image_3].filter(Boolean).length} configured)`);
     let referenceVisionBrief: string | null = null;
     if (refParts.length > 0) {
       referenceVisionBrief = await requireCoverReferenceVisionBrief(

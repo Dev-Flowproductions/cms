@@ -24,6 +24,7 @@ import {
   contentMdHasEmbeddedAuthorBlock,
   extractAuthorFieldsFromContentMd,
   sanitizeInternalMarkdownLinks,
+  sanitizeRelativeMarkdownLinks,
   convertInternalLinksToRelative,
 } from "@/lib/agent/internal-link";
 import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
@@ -449,6 +450,7 @@ async function generatePostForClient(
     internalLinkCandidates.map((c) => c.url)
   );
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
+  primaryContent.content_md = sanitizeRelativeMarkdownLinks(primaryContent.content_md, internalLinkCandidates.map((c) => c.url));
 
   const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
@@ -692,6 +694,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       internalLinkCandidates.map((c) => c.url)
     );
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
+    translated.content_md = sanitizeRelativeMarkdownLinks(translated.content_md, internalLinkCandidates.map((c) => c.url));
     // Re-append canonical author HTML using translated copy (appendAuthorBlock strips the model section first).
     const extractedAuthor = extractAuthorFieldsFromContentMd(translated.content_md);
     const authorForTranslatedLocale = authorForBlock

@@ -18,6 +18,22 @@ import {
 const BRAND_BUCKET = "brand-assets";
 const LOGOS_BUCKET = "logos";
 
+function isValidTargetUserId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
+}
+
+function logosPathFromPublicUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  const marker = `/storage/v1/object/public/${LOGOS_BUCKET}/`;
+  const i = url.indexOf(marker);
+  if (i === -1) return null;
+  try {
+    return decodeURIComponent(url.slice(i + marker.length).split("?")[0] ?? "");
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ userId: string }> },

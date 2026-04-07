@@ -270,6 +270,8 @@ export function sanitizeRelativeMarkdownLinks(contentMd: string, allowedUrls: st
 }
 
 
+/**
+ * Appends a "Sobre o autor" / "About the author" section at the end of content_md
  * so the author always appears at the bottom of the post, in the content itself.
  * Layout: avatar left, name + role stacked on the right; bio full width below (see globals.css).
  */

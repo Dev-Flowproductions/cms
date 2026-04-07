@@ -143,15 +143,23 @@ export async function getCandidateSiteUrls(domain: string | null): Promise<strin
   add(homepage);
 
   const urls = [...seen];
-  // Exclude project/portfolio/case-study pages — we want topic pages, not individual projects
-  const isProjectLike = (path: string) =>
+  // Exclude non-content pages: project/portfolio, auth, legal, app UI
+  const isNonContent = (path: string) =>
     /\/projects?(\/|$)/i.test(path) ||
     /\/projetos?(\/|$)/i.test(path) ||
     /\/portfolio(\/|$)/i.test(path) ||
-    /\/cases?(-studies?)?(\/|$)/i.test(path);
+    /\/cases?(-studies?)?(\/|$)/i.test(path) ||
+    // Auth / account pages
+    /\/(login|logout|sign-?in|sign-?out|signup|register|auth|oauth|reset-password|forgot-password)(\/|$)/i.test(path) ||
+    // Legal / compliance pages
+    /\/(privacy|terms|cookies?|legal|policy|gdpr|disclaimer|imprint)(\/|$)/i.test(path) ||
+    // App / back-office UI
+    /\/(dashboard|admin|account|profile|settings|app|onboarding|billing|checkout|cart)(\/|$)/i.test(path) ||
+    // Technical / utility
+    /\/(api|cdn-cgi|\.well-known|sitemap|robots\.txt|404|500)(\/|$)/i.test(path);
   const filtered = urls.filter((u) => {
     try {
-      return !isProjectLike(new URL(u).pathname);
+      return !isNonContent(new URL(u).pathname);
     } catch {
       return true;
     }

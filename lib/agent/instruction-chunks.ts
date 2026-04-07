@@ -197,15 +197,15 @@ When the CONTEXT includes "INTERNAL LINKS", embed exactly 3 contextual links ins
     id: "cover",
     text: `
 ═══════════════════════════════════════
-COVER IMAGE — EDITORIAL BLOG HERO (graphic illustration)
+COVER IMAGE — EDITORIAL BLOG HERO
 ═══════════════════════════════════════
 
-The cover is a GRAPHIC ILLUSTRATION banner, not a photograph.
+The cover style follows the client's visual identity. When client reference images are provided the style is determined by those images (photography, illustration, flat design, etc.). When no reference images exist the default is an editorial graphic illustration using brand colours.
 
 - BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
-- COMPOSITION: FEW elements (1–2 accents). Thematic shapes matching the post. Do NOT fill borders. No repeating elements. Sparse placement in corners. Center stays clear.
+- COMPOSITION: FEW elements (1–2 accents). Thematic shapes or visuals matching the post. Do NOT fill borders. No repeating elements. Sparse placement in corners. Center stays clear.
 - TEXT ON IMAGE: Short headline, centered, ONE line, 2–4 words — ALWAYS IN ENGLISH (same for every locale). European style: first letter caps, rest lowercase. Use the brand font style from CLIENT-SPECIFIC INSTRUCTIONS. Bold editorial typography. No logos. Never put Portuguese, French, or other languages as visible text on the cover.
-- cover_image_description: 2–3 sentences in English describing the editorial illustration (metaphors, icons, scenes); use client brand colours from context only; solid or subtle edge treatment. Do not instruct non-English words to appear as typed text on the image.
+- cover_image_description: 2–3 sentences in English describing the visual CONCEPT tied to the article topic (subject matter, metaphors, scene elements, brand colours). Do NOT specify the visual medium or style (e.g. do not say "illustration" or "photo") — the style is determined separately by reference images or brand defaults. Do not instruct non-English words to appear as typed text on the image.
 - cover_image_headline: REQUIRED for non-English posts: 2–4 words IN ENGLISH that capture the topic for the cover (not a translation of the title word-for-word unless natural). If the post title is not English, you MUST still output an English cover headline. If omitted, derive a short English phrase from the topic — never use the localized title as cover text when it is not English.
 `.trim(),
   },
@@ -221,7 +221,7 @@ OUTPUT (JSON only, no markdown fences)
   "title": "The H1 title (rendered by website, NOT in content_md)",
   "slug": "1-3 keywords from title, lowercase, hyphens",
   "core_argument": "The ONE bold claim AI will cite",
-  "cover_image_description": "2–3 sentences in English: editorial illustration tied to the article topic; client brand colours only; no non-English words meant to appear as text on the image.",
+  "cover_image_description": "2–3 sentences in English: visual concept tied to the article topic (subject, metaphors, scene elements, brand colours). Do not specify the medium or style (no 'illustration', 'photo', etc.) — style is determined by reference images or brand defaults. No non-English words meant to appear as text on the image.",
   "cover_image_headline": "2–6 words, ALWAYS ENGLISH — the exact phrase to render on the cover image for all locales. If the article title is in pt/fr/other, still output a natural English headline for the image (never copy non-English title words here).",
   "seo_title": "50-60 chars",
   "seo_description": "145-158 chars",

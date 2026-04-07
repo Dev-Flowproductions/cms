@@ -767,7 +767,7 @@ export function EditPostForm({
               <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--adm-on-variant)" }}>
                 {labels.preview}
               </p>
-              <MarkdownPreview content={draft.content_md} coverImageUrl={coverUrl} />
+              <MarkdownPreview content={draft.content_md} coverImageUrl={coverUrl} title={draft.title} excerpt={draft.excerpt} />
             </div>
           )}
 

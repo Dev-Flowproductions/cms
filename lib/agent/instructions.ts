@@ -164,7 +164,15 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   lines.push("CONTEXT");
   lines.push("═══════════════════════════════");
   lines.push(`Today: ${currentDate}`);
-  lines.push(`Language: ${post.locale}`);
+  const localeLabel =
+    post.locale === "pt"
+      ? "European Portuguese (Portugal) — Write in pt-PT. Use Portugal-specific vocabulary and spelling: «utilizador» (not «usuário»), «ficheiro» (not «arquivo»), «ecrã» (not «tela»), «telemóvel» (not «celular»), «autocarro» (not «ônibus»), «computador portátil» (not «notebook»), «anúncio» (not «propaganda»). Avoid Brazilian Portuguese idioms, spelling variants (e.g. «atividade» → pt-PT «actividade» per old spelling; use the current post-2009 agreement only if it matches pt-PT usage). Do NOT write in Brazilian Portuguese."
+      : post.locale === "en"
+        ? "English"
+        : post.locale === "fr"
+          ? "French"
+          : post.locale;
+  lines.push(`Language: ${localeLabel}`);
   lines.push(`Content type: ${post.content_type} — ${CONTENT_TYPE_PROMPT_HINT[post.content_type] ?? "standard"}`);
   lines.push(`Publication date: ${post.publication_date}`);
 

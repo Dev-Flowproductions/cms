@@ -812,7 +812,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         aestheticStyle: visualIdentity.aestheticStyle,
         imageStyle: visualIdentity.imageStyle,
       } : null,
-      { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly }
+      { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly, hasReferenceImages: refParts.length > 0 }
     );
     const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
       embedPrefix: coverEmbedPrefix,

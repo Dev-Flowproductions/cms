@@ -59,6 +59,11 @@ export type BuildCoverPromptOptions = {
    * 2–4 words in English only on the image (do not copy non-English text).
    */
   headlineMayBeNonEnglish?: boolean;
+  /**
+   * When true, reference images are being passed to the image model — the style instruction
+   * switches from "editorial illustration" to "match the style of the reference images exactly".
+   */
+  hasReferenceImages?: boolean;
 };
 
 /** Build the Imagen prompt for editorial blog cover. */
@@ -70,6 +75,7 @@ export function buildCoverPrompt(
   options?: BuildCoverPromptOptions
 ): string {
   const needsEnglishDerivation = options?.headlineMayBeNonEnglish === true;
+  const hasRefs = options?.hasReferenceImages === true;
   // European style: first letter caps, rest lowercase (sentence case) — for known-English headlines
   const t = headline.trim();
   const headlineForImage = t.length > 0 ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t;
@@ -106,6 +112,11 @@ export function buildCoverPrompt(
   const brandStr = brandParts.length > 0 ? brandParts.join(" ") + " " : "";
   const variation = pickCompositionVariation();
 
+  // Style instruction: follow reference images when they exist; otherwise default to editorial illustration
+  const styleInstruction = hasRefs
+    ? `Precisely match the visual medium and aesthetic of the reference images (whether photography, flat design, illustration, or mixed-media). Do not default to vector/illustration if the references are photographic or use a different style — let the reference style drive all aesthetic choices. `
+    : `Polished vector or editorial illustration feel; controlled depth (shadows, layers) allowed. Clean edges, high clarity. `;
+
   /** Covers are shared across locales — visible typography must stay English. */
   const englishOnlyRule =
     "ON-IMAGE TEXT LANGUAGE: Every letter and word shown on the image MUST be English only. " +
@@ -123,7 +134,7 @@ export function buildCoverPrompt(
     `Editorial blog hero graphic: ${subject}. ` +
     `Composition: ${variation} Wide banner 16:9. ` +
     brandStr +
-    `Polished vector or editorial illustration feel; controlled depth (shadows, layers) allowed. Clean edges, high clarity. ` +
+    styleInstruction +
     headlineInstruction +
     `Text must be the TOP LAYER, centered; no shapes overlapping the text. Use the brand font/style. Bold editorial typography. No logos or brand names.`
   );

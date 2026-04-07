@@ -183,7 +183,7 @@ export function ManualPostEditor() {
               style={{ background: "var(--surface-raised)", border: "1px solid var(--border)" }}
             >
               {content ? (
-                <MarkdownPreview content={content} coverImageUrl={null} />
+                <MarkdownPreview content={content} coverImageUrl={null} title={title || null} />
               ) : (
                 <p className="text-sm" style={{ color: "var(--text-faint)" }}>Nothing to preview yet.</p>
               )}

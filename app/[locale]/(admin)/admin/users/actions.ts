@@ -490,7 +490,7 @@ export async function updateClientDomainByAdmin(userId: string, domain: string) 
     .update({ domain: normalized, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
-  await regenerateClientInstructions(admin, userId);
+  await regenerateClientInstructions(admin, userId, true);
   return { success: true };
 }
 
@@ -525,7 +525,7 @@ export async function updateClientBrandByAdmin(
     .update({ ...data, brand_name: data.company_name ?? undefined, brand_tone: data.brand_voice ?? undefined, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
-  await regenerateClientInstructions(admin, userId);
+  await regenerateClientInstructions(admin, userId, true);
   return { success: true };
 }
 

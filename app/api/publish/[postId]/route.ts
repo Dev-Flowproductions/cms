@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
-import { contentMdHasEmbeddedAuthorBlock } from "@/lib/agent/internal-link";
+import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { resolveAuthorForByline } from "@/lib/data/blog-authors";
 
 export async function POST(
@@ -109,9 +109,12 @@ export async function POST(
     seo_score: unknown;
   }) => ({
     ...l,
-    content_md: (l.content_md ?? "")
-      .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
-      .trim(),
+    // Strip cover placeholder and HTML author block — website renders author from post.author, not from embedded HTML
+    content_md: stripAuthorBlocksFromContentMd(
+      (l.content_md ?? "")
+        .replace(COVER_PLACEHOLDER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+        .trim()
+    ),
   }));
 
   const primaryLocale = (post as { primary_locale?: string }).primary_locale ?? "pt";
@@ -133,9 +136,9 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
-  /** Avoid duplicate "Sobre o autor" on sites that render `post.author` and markdown body — body already has the rich block. */
-  const authorPayload =
-    contentMdHasEmbeddedAuthorBlock(primary.content_md ?? "") ? undefined : author;
+  // Always provide the structured author object — HTML author block is stripped from content_md above.
+  // The website renders the author from post.author, not from embedded HTML in the markdown.
+  const authorPayload = author;
 
   const isUpdate = (post as { webhook_status?: string }).webhook_status === "success";
   const format = (client as { webhook_event_format?: "spec" | "legacy" | null }).webhook_event_format ?? "spec";

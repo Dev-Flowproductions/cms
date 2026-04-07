@@ -243,6 +243,34 @@ export function convertInternalLinksToRelative(contentMd: string, domain: string
 }
 
 /**
+ * Strips relative markdown links (e.g. `[text](/path)`) whose path is not in the allowed URL set.
+ * Call after {@link convertInternalLinksToRelative} to remove any AI-hallucinated relative paths.
+ */
+export function sanitizeRelativeMarkdownLinks(contentMd: string, allowedUrls: string[]): string {
+  if (!allowedUrls.length) return contentMd;
+  // Build set of known paths (without trailing slash) from the allowed absolute URLs
+  const knownPaths = new Set<string>();
+  for (const u of allowedUrls) {
+    try {
+      const path = new URL(u.trim()).pathname.replace(/\/$/, "") || "/";
+      knownPaths.add(path.toLowerCase());
+      knownPaths.add((path + "/").toLowerCase());
+    } catch {
+      // Relative path already
+      const p = u.trim().replace(/\/$/, "") || "/";
+      knownPaths.add(p.toLowerCase());
+    }
+  }
+  const RELATIVE_LINK_RE = /\[([^\]]*)\]\((\/[^)\s]*)\)/g;
+  return contentMd.replace(RELATIVE_LINK_RE, (full, anchor: string, path: string) => {
+    const p = path.trim().replace(/\/$/, "") || "/";
+    if (knownPaths.has(p.toLowerCase()) || knownPaths.has((p + "/").toLowerCase())) return full;
+    return anchor; // Remove the link, keep the anchor text
+  });
+}
+
+
+/**
  * Appends a "Sobre o autor" / "About the author" section at the end of content_md
  * so the author always appears at the bottom of the post, in the content itself.
  * Layout: avatar left, name + role stacked on the right; bio full width below (see globals.css).

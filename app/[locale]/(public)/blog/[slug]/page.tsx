@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link as IntlLink } from "@/lib/navigation";
 import { getPublishedPostBySlug, getPublishedPostLocales } from "@/lib/data/post-detail";
 import { markdownToHtml } from "@/lib/rendering/md";
+import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { buildArticleJsonLd } from "@/lib/rendering/jsonld";
 import type { Locale } from "@/lib/types/db";
 import type { Metadata } from "next";
@@ -57,7 +58,7 @@ export default async function BlogPostPage({
   if (!data) notFound();
 
   const { post, localization } = data;
-  const html = await markdownToHtml(localization.content_md ?? "");
+  const html = await markdownToHtml(stripAuthorBlocksFromContentMd(localization.content_md ?? ""));
   type ProfileShape = { display_name?: string | null; avatar_url?: string | null; bio?: string | null; job_title?: string | null };
   const rawProfiles = post.profiles;
   const author: ProfileShape | null = rawProfiles == null
@@ -68,7 +69,10 @@ export default async function BlogPostPage({
         ? (rawProfiles as ProfileShape)
         : null;
   const authorName = author?.display_name?.trim() || (post.author_id ? "Author" : null);
-  const authorJobTitle = author?.job_title ?? null;
+  const authorJobTitle = author?.job_title?.trim() ?? null;
+  const authorBio = author?.bio?.trim() || null;
+  const authorAvatarUrl = author?.avatar_url?.trim() || null;
+  const authorInitial = authorName ? authorName.charAt(0).toUpperCase() : null;
 
   const imageUrl = post.cover_image_path && process.env.NEXT_PUBLIC_SUPABASE_URL
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/covers/${post.cover_image_path}`
@@ -107,7 +111,39 @@ export default async function BlogPostPage({
           style={{ color: "var(--text)" }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
-        <footer className="mt-10 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+        <footer className="mt-10 pt-6 space-y-6" style={{ borderTop: "1px solid var(--border)" }}>
+          {/* Author card — only when name is available */}
+          {authorName && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                {/* Avatar */}
+                <div
+                  className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-base font-bold"
+                  style={{ background: "var(--accent-soft, var(--border))", color: "var(--accent)" }}
+                >
+                  {authorAvatarUrl ? (
+                    <img src={authorAvatarUrl} alt={authorName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{authorInitial}</span>
+                  )}
+                </div>
+                {/* Name + title */}
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{authorName}</p>
+                  {authorJobTitle && (
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{authorJobTitle}</p>
+                  )}
+                </div>
+              </div>
+              {/* Bio — only when available */}
+              {authorBio && (
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  {authorBio}
+                </p>
+              )}
+            </div>
+          )}
+
           <IntlLink
             href="/blog"
             className="text-xs font-semibold hover:underline"

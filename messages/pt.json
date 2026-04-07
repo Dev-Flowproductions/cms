@@ -334,6 +334,7 @@
       "webhookEdit": "Editar",
       "webhookClose": "Fechar",
       "createInstructions": "Criar instruções",
+      "regenerateInstructions": "Regenerar instruções",
       "instructionsCreating": "A criar…",
       "editInstructions": "Editar instruções",
       "instructionsHide": "Ocultar instruções",

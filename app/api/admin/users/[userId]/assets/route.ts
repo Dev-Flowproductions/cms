@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser, getUserRoles, hasAdminRole } from "@/lib/auth";
-import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
 import { extractBrandGuidelinesText } from "@/lib/agent/extract-guidelines-text";
 import { normalizeAdminAssetAction, resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
 import {
@@ -33,25 +32,6 @@ function logosPathFromPublicUrl(url: string | null | undefined): string | null {
   } catch {
     return null;
   }
-}
-
-async function syncCustomInstructions(admin: ReturnType<typeof createAdminClient>, targetUserId: string) {
-  const { data: client, error: fetchError } = await admin
-    .from("clients")
-    .select(
-      "domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, logo_url",
-    )
-    .eq("user_id", targetUserId)
-    .maybeSingle();
-  if (fetchError || !client) return;
-  const customInstructions = generateClientSpecificInstructions(client);
-  await admin
-    .from("clients")
-    .update({
-      custom_instructions: customInstructions.trim() || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", targetUserId);
 }
 
 export async function POST(
@@ -119,7 +99,6 @@ export async function POST(
       .update({ logo_url: null, updated_at: new Date().toISOString() })
       .eq("user_id", targetId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    await syncCustomInstructions(admin, targetId);
     return NextResponse.json({ success: true });
   }
 
@@ -179,7 +158,6 @@ export async function POST(
       .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
       .eq("user_id", targetId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    await syncCustomInstructions(admin, targetId);
     return NextResponse.json({ success: true, logoUrl });
   }
 

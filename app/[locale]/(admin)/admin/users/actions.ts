@@ -416,18 +416,25 @@ export async function updateUserWebhookByAdmin(
   return { success: true };
 }
 
-/** Regenerates and saves clients.custom_instructions for the given user (e.g. after admin updates brand/domain). */
+/** Regenerates and saves clients.custom_instructions for the given user.
+ * @param forceRegenerate - if true, always overwrites; if false (default), only writes when instructions are currently null/empty.
+ */
 async function regenerateClientInstructions(
   admin: ReturnType<typeof createAdminClient>,
-  userId: string
+  userId: string,
+  forceRegenerate = false,
 ): Promise<{ error?: string }> {
   const { data: client, error: fetchError } = await admin
     .from("clients")
-    .select("domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, logo_url")
+    .select("domain, company_name, brand_name, brand_tone, brand_book, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, logo_url, custom_instructions")
     .eq("user_id", userId)
     .maybeSingle();
   if (fetchError) return { error: fetchError.message };
   if (!client) return { error: "Client not found" };
+  // Don't overwrite manually-edited instructions unless explicitly requested
+  if (!forceRegenerate && (client as { custom_instructions?: string | null }).custom_instructions?.trim()) {
+    return {};
+  }
   const customInstructions = generateClientSpecificInstructions(client);
   const { error: updateError } = await admin
     .from("clients")
@@ -437,11 +444,11 @@ async function regenerateClientInstructions(
   return {};
 }
 
-/** Admin: generate client-specific instructions from current brand/client data and save. Use when instructions don't exist yet. */
+/** Admin: generate (or force-regenerate) client-specific instructions from current brand/client data. */
 export async function createClientInstructions(userId: string) {
   await requireAdmin();
   const admin = createAdminClient();
-  const result = await regenerateClientInstructions(admin, userId);
+  const result = await regenerateClientInstructions(admin, userId, true);
   if (result.error) return { error: result.error };
   return { success: true };
 }
@@ -483,7 +490,7 @@ export async function updateClientDomainByAdmin(userId: string, domain: string) 
     .update({ domain: normalized, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
-  await regenerateClientInstructions(admin, userId);
+  await regenerateClientInstructions(admin, userId, true);
   return { success: true };
 }
 
@@ -518,7 +525,7 @@ export async function updateClientBrandByAdmin(
     .update({ ...data, brand_name: data.company_name ?? undefined, brand_tone: data.brand_voice ?? undefined, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
   if (error) return { error: error.message };
-  await regenerateClientInstructions(admin, userId);
+  await regenerateClientInstructions(admin, userId, true);
   return { success: true };
 }
 

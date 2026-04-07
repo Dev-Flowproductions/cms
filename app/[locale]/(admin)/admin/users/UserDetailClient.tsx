@@ -184,31 +184,33 @@ export function UserDetailClient({
             >
               {generating ? t("generatePostGenerating") : t("generatePost")}
             </button>
-            {!user.custom_instructions?.trim() ? (
-              <button
-                type="button"
-                disabled={instructionsCreating}
-                onClick={async () => {
-                  setInstructionsCreating(true);
-                  setInstructionsError(null);
-                  const result = await createClientInstructions(user.user_id);
-                  setInstructionsCreating(false);
-                  if (result.error) setInstructionsError(result.error);
-                  else refreshUser();
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
-                style={{
-                  background: instructionsCreating ? "var(--adm-surface-highest)" : "var(--adm-primary-soft-bg)",
-                  color: instructionsCreating ? "var(--adm-on-variant)" : "var(--adm-primary)",
-                  borderColor: "var(--adm-outline-variant)",
-                }}
-              >
-                {instructionsCreating ? t("instructionsCreating") : t("createInstructions")}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              disabled={instructionsCreating}
+              onClick={async () => {
+                setInstructionsCreating(true);
+                setInstructionsError(null);
+                const result = await createClientInstructions(user.user_id);
+                setInstructionsCreating(false);
+                if (result.error) setInstructionsError(result.error);
+                else refreshUser();
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
+              style={{
+                background: instructionsCreating ? "var(--adm-surface-highest)" : "var(--adm-primary-soft-bg)",
+                color: instructionsCreating ? "var(--adm-on-variant)" : "var(--adm-primary)",
+                borderColor: "var(--adm-outline-variant)",
+              }}
+            >
+              {instructionsCreating
+                ? t("instructionsCreating")
+                : user.custom_instructions?.trim()
+                  ? t("regenerateInstructions")
+                  : t("createInstructions")}
+            </button>
           </div>
 
-          {instructionsError && !user.custom_instructions?.trim() && (
+          {instructionsError && (
             <p className="text-xs" style={{ color: "var(--adm-error)" }}>
               {instructionsError}
             </p>

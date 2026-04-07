@@ -150,7 +150,7 @@ export async function generateCoverImageBufferWithEmbedFallback(
     : "";
   const refHint =
     refs.length > 0
-      ? `REFERENCE IMAGES: The following ${refs.length} image(s) are examples of this company's visual style. Match their illustration language, colour mood, and layout density. Do not reproduce logos or trademarks. Generate one new 16:9 editorial banner for the article described in the text below.\n\n`
+      ? `REFERENCE IMAGES: The following ${refs.length} image(s) are examples of this company's visual style. Precisely match their visual medium, style (photography, flat design, illustration, or other), colour mood, and layout density. Do not default to illustration if the references use a different medium. Do not reproduce logos or trademarks. Generate one new 16:9 editorial banner for the article described in the text below.\n\n`
       : "";
   const embedded = wrapEmbedPrefix(args.embedPrefix, enforce);
   const fullText = withGuide(embedded + visionBlock + refHint + args.basePrompt);

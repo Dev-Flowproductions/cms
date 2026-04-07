@@ -3,16 +3,6 @@
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 
-const AUTHOR_DIV_RE =
-  /<div[^>]*(?:\bid\s*=\s*["']author-block["']|\sclass\s*=\s*["'][^"']*author-block[^"']*["'])[^>]*>[\s\S]*?<\/div>/gi;
-
-const ABOUT_AUTHOR_SECTION_RE =
-  /\n{0,2}#{1,3}\s*(?:Sobre o autor|About the author|À propos de l'auteur)\s*\n[\s\S]*$/i;
-
-function stripAuthorHtml(md: string): string {
-  return md.replace(AUTHOR_DIV_RE, "").replace(ABOUT_AUTHOR_SECTION_RE, "").trim();
-}
-
 export function MarkdownPreview({
   content,
   coverImageUrl,
@@ -24,8 +14,6 @@ export function MarkdownPreview({
   title?: string | null;
   excerpt?: string | null;
 }) {
-  const cleanContent = stripAuthorHtml(content);
-
   return (
     <div
       className="markdown-preview"
@@ -87,7 +75,7 @@ export function MarkdownPreview({
         )}
 
         {/* Divider between header and body when both title and content exist */}
-        {(title || excerpt) && cleanContent && (
+        {(title || excerpt) && content && (
           <hr style={{ borderColor: "var(--border)", margin: "0 0 1rem 0" }} />
         )}
 
@@ -196,7 +184,7 @@ export function MarkdownPreview({
             hr: () => <hr style={{ borderColor: "var(--border)", margin: "1rem 0" }} />,
           }}
         >
-          {cleanContent || "*No content yet*"}
+          {content || "*No content yet*"}
         </ReactMarkdown>
       </div>
     </div>

@@ -261,14 +261,14 @@ async function generatePostForClient(
     const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
     const thresholdIso = new Date(runOpts.now - intervalMs).toISOString();
     const claimIso = new Date(runOpts.now).toISOString();
-    const { data: claimed, error: claimError } = await admin
-      .from("clients")
-      .update({ last_post_generated_at: claimIso })
-      .eq("id", client.id)
-      .or(`last_post_generated_at.is.null,last_post_generated_at.lte."${thresholdIso}"`)
-      .select("id");
+    // Use an RPC function for the atomic claim so it bypasses PostgREST's
+    // schema-cache validation (avoids "column does not exist" errors on fresh deploys).
+    const { data: claimedId, error: claimError } = await admin.rpc(
+      "claim_client_for_generation",
+      { p_client_id: client.id, p_claim_iso: claimIso, p_threshold_iso: thresholdIso },
+    );
     if (claimError) throw new Error(claimError.message);
-    if (!claimed?.length) return null;
+    if (!claimedId) return null;
   }
 
   const publicationDate = new Intl.DateTimeFormat("en-US", {

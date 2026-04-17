@@ -3,9 +3,8 @@ import { getPublicAppBaseUrlOrLocalhost } from "@/lib/public-app-url";
 import { buildTrafficSchedulerInternalHeaders } from "@/lib/scheduler/traffic-internal-auth";
 
 function getAppBaseUrl(): string {
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
+  // Prefer the stable custom domain over the deployment-specific VERCEL_URL,
+  // which changes on every deploy and can cause Inngest to call stale URLs.
   return getPublicAppBaseUrlOrLocalhost();
 }
 

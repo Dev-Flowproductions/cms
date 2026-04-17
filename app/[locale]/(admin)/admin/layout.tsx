@@ -6,6 +6,7 @@ import { AdminSidebarShell } from "./AdminSidebarShell";
 import { AppLogo } from "@/components/AppLogo";
 import { AdminNav } from "./AdminNav";
 import { AdminTopBar } from "./AdminTopBar";
+import { SchedulerPing } from "./SchedulerPing";
 import "./admin-shell.css";
 
 function AdminTopBarFallback() {
@@ -67,6 +68,7 @@ export default async function AdminLayout({
           <div className="relative z-[1] mx-auto min-w-0 max-w-6xl px-6 py-8 lg:px-12 lg:py-12">{children}</div>
         </main>
       </div>
+      <SchedulerPing />
     </div>
   );
 }

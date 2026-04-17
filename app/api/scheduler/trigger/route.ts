@@ -41,10 +41,9 @@ export async function GET() {
     return NextResponse.json({ ok: true, triggered: false, rate_limited: true });
   }
 
-  const origin =
-    process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : getPublicAppBaseUrlOrLocalhost();
+  // Prefer the stable custom domain (NEXT_PUBLIC_APP_URL) so the call always
+  // reaches the correct production endpoint, not a deployment-specific URL.
+  const origin = getPublicAppBaseUrlOrLocalhost();
   const cronSecret = process.env.CRON_SECRET;
   const url = `${origin}/api/scheduler`;
 

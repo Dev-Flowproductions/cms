@@ -7,6 +7,7 @@ import { z } from "zod";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import type { Locale } from "@/lib/types/db";
+import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 
 const createPostSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, hyphens only"),
@@ -189,6 +190,9 @@ export async function updatePost(postId: string, formData: FormData) {
 
   const { error } = await supabase.from("posts").update(updates).eq("id", postId);
   if (error) return { error: error.message };
+  if (updates.status !== undefined) {
+    void notifyDgArticleStatusIfLinked(postId);
+  }
   return { success: true };
 }
 

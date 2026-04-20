@@ -2,12 +2,13 @@ import type { NextRequest } from "next/server";
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
 import { runScheduler } from "@/lib/inngest/functions";
+import { deliverDgStatusWebhook } from "@/lib/inngest/dg-status-webhook";
 
 export const maxDuration = 300;
 
 const handler = serve({
   client: inngest,
-  functions: [runScheduler],
+  functions: [runScheduler, deliverDgStatusWebhook],
 });
 
 type RouteContext = { params: Promise<Record<string, string>> };

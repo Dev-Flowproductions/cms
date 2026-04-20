@@ -19,11 +19,14 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Hamburger — fixed top-left on mobile, hidden on desktop */}
+      {/* Hamburger — must sit above AdminTopBar (z-40); top bar is full-width and paints after us in DOM */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-40 flex h-9 w-9 items-center justify-center rounded-xl transition-all"
+        className={[
+          "lg:hidden fixed z-[60] flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-opacity left-[max(0.75rem,env(safe-area-inset-left))] top-[max(0.75rem,env(safe-area-inset-top))]",
+          open ? "pointer-events-none opacity-0" : "opacity-100",
+        ].join(" ")}
         style={{
           background: "var(--adm-surface-high)",
           border: "1px solid var(--adm-outline-variant)",
@@ -40,9 +43,10 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
       {/* Overlay backdrop — mobile only */}
       {open && (
         <div
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-[55] lg:hidden"
           style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}
           onClick={() => setOpen(false)}
+          aria-hidden
         />
       )}
 
@@ -53,7 +57,7 @@ export function AdminSidebarShell({ children }: { children: React.ReactNode }) {
           // Desktop: static sidebar (16rem — matches editorial shell)
           "hidden lg:flex lg:sticky lg:top-0 lg:w-64 lg:flex-shrink-0",
           // Mobile: fixed full-height drawer
-          open ? "!flex fixed top-0 left-0 z-50 w-72" : "",
+          open ? "!fixed left-0 top-0 z-[60] !flex w-72 max-w-[85vw]" : "",
         ].join(" ")}
         style={{
           background: "var(--adm-sidebar)",

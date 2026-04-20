@@ -26,6 +26,10 @@ In the **admin** UI, each client shows **Site ID** (with a copy control) on **Ad
 
 **After a successful brief:** the CMS enqueues **`cms/dg-brief.run-generation`** on Inngest, which runs the same Gemini pipeline as **Generate** in the post editor, then sets the post to **`draft`** and sends a DG status webhook (canonical **`drafting`**). If Inngest enqueue fails, generation is attempted inline as a fallback (best-effort). Ensure Inngest is connected in production.
 
+**Slugs:** new posts from DG use an SEO slug derived from **`title`** (lowercase, hyphens, diacritics stripped), with **`-2`, `-3`, …** if the slug is already taken.
+
+**Stuck brief (`idea` but generation never ran):** `POST /api/admin/integrations/dg/trigger-brief-generation` with JSON `{ "request_id": "<uuid>" }` or `{ "post_id": "<uuid>" }`. Requires an **admin** session (cookie). Response includes `"mode": "inngest"` or `"inline_fallback"` if Inngest was unavailable.
+
 ## Environment variables
 
 | Variable | Purpose |

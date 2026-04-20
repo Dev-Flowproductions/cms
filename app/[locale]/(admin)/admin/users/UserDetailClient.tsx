@@ -11,6 +11,7 @@ import {
   type ClientRow,
 } from "./actions";
 import { EditUserConfig } from "./EditUserConfig";
+import { AdminSiteIdPanel } from "./AdminSiteIdCopy";
 import { NextPostCountdown } from "@/components/NextPostCountdown";
 import type { AdminBlogAuthorRow } from "./actions";
 
@@ -114,6 +115,7 @@ export function UserDetailClient({
             {user.email}
           </p>
         )}
+        <AdminSiteIdPanel siteId={user.id} />
         {!onboardingPending && (
           <div className="mt-4">
             <NextPostCountdown

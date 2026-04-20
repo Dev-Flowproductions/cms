@@ -8,6 +8,8 @@ Leandro
 
 Implement the AI CMS side of the DG integration.
 
+**Implementation entrypoint in this repo:** [`DG_INTEGRATION.md`](./DG_INTEGRATION.md) (env vars, `cms_site_id` mapping, and pointers to the shared contract).
+
 AI CMS must be able to:
 
 - receive a structured article brief from DG

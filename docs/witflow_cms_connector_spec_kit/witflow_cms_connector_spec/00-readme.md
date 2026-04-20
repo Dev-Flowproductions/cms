@@ -23,6 +23,10 @@ The current CMS already has:
 
 The connector layer must reuse those primitives.
 
+## Not the same as DG ↔ AI CMS
+
+The **Demand Generation (DG) ↔ AI CMS** integration is a separate contract: server-to-server brief intake and status webhooks between DG and this CMS. It is documented in [`../../00_shared_integration_contract_dg_ai_cms.md`](../../00_shared_integration_contract_dg_ai_cms.md) and the implementation notes in [`../../DG_INTEGRATION.md`](../../DG_INTEGRATION.md). This connector kit targets **customer websites** consuming published content via the CMS API and webhooks, not DG orchestration.
+
 ## Target outcome
 
 For the most common case, a Next.js website developer should be able to copy generated files into the site, set a few environment variables, deploy, and connect the site in minutes rather than hours.

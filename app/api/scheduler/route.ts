@@ -40,6 +40,7 @@ import type { Locale } from "@/lib/types/db";
 import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
 import { verifyTrafficSchedulerInternalRequest } from "@/lib/scheduler/traffic-internal-auth";
 import { pickRandomBylineAuthorId, resolveAuthorForByline } from "@/lib/data/blog-authors";
+import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -912,6 +913,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       webhook_error: null,
     }).eq("id", post.id);
   }
+
+  void notifyDgArticleStatusIfLinked(post.id);
 
   if (canAutoPublish && client.webhook_url) {
     try {

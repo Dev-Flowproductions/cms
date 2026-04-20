@@ -5,6 +5,7 @@ import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } fr
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { resolveAuthorForByline } from "@/lib/data/blog-authors";
+import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 
 export async function POST(
   _req: NextRequest,
@@ -231,6 +232,7 @@ export async function POST(
       })
       .eq("id", postId);
 
+    void notifyDgArticleStatusIfLinked(postId);
     return NextResponse.json({ success: true, deliveredAt: new Date().toISOString() });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";

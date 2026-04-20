@@ -9,6 +9,7 @@ import { buildDgArticleAdminUrl } from "@/lib/integrations/dg/urls";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { inngest } from "@/lib/inngest/client";
 import { executeAgentGeneratePost } from "@/lib/agent/execute-generate-post";
+import { buildSeoSlugFromTitle, pickUniquePostSlug } from "@/lib/integrations/dg/slug-from-title";
 
 export const maxDuration = 60;
 
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
   const title = body.title?.trim() || "Untitled";
   const bylineAuthorId = await pickRandomBylineAuthorId(admin, client.user_id).catch(() => null);
 
-  const slug = `dg-${body.request_id.replace(/-/g, "").slice(0, 16)}-${Date.now().toString(36)}`;
+  const slug = await pickUniquePostSlug(admin, buildSeoSlugFromTitle(title));
 
   const { data: post, error: postErr } = await admin
     .from("posts")

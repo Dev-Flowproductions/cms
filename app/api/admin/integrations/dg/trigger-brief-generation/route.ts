@@ -39,30 +39,46 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  const dgRes = requestId
-    ? await admin
-        .from("dg_integration_records")
-        .select("post_id, primary_keyword, language")
-        .eq("request_id", requestId)
-        .maybeSingle()
-    : await admin
-        .from("dg_integration_records")
-        .select("post_id, primary_keyword, language")
-        .eq("post_id", postIdIn as string)
-        .maybeSingle();
-  const { data: dgRow, error: dgErr } = dgRes;
+  let postId: string;
+  let focusKeyword: string | undefined;
 
-  if (dgErr) {
-    return NextResponse.json({ error: dgErr.message }, { status: 500 });
-  }
-  if (!dgRow?.post_id) {
-    return NextResponse.json(
-      { error: "No dg_integration_records row found for this id" },
-      { status: 404 },
-    );
-  }
+  if (requestId) {
+    const { data: dgRow, error: dgErr } = await admin
+      .from("dg_integration_records")
+      .select("post_id, primary_keyword, language")
+      .eq("request_id", requestId)
+      .maybeSingle();
 
-  const postId = dgRow.post_id as string;
+    if (dgErr) {
+      return NextResponse.json({ error: dgErr.message }, { status: 500 });
+    }
+    if (!dgRow?.post_id) {
+      return NextResponse.json(
+        {
+          error: "No dg_integration_records row found for this request_id",
+          hint:
+            "Confirm the UUID in Supabase → public.dg_integration_records.request_id (production). If the post exists but the DG row is missing or the id differs, call again with { post_id: \"<posts.id>\" } instead.",
+          searched: { request_id: requestId },
+        },
+        { status: 404 },
+      );
+    }
+    postId = dgRow.post_id as string;
+    focusKeyword =
+      typeof dgRow.primary_keyword === "string" && dgRow.primary_keyword.trim()
+        ? dgRow.primary_keyword.trim()
+        : undefined;
+  } else {
+    postId = postIdIn as string;
+    const { data: dgRow } = await admin
+      .from("dg_integration_records")
+      .select("primary_keyword")
+      .eq("post_id", postId)
+      .maybeSingle();
+    if (typeof dgRow?.primary_keyword === "string" && dgRow.primary_keyword.trim()) {
+      focusKeyword = dgRow.primary_keyword.trim();
+    }
+  }
 
   const { data: post, error: postErr } = await admin
     .from("posts")
@@ -71,14 +87,29 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (postErr || !post) {
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: "Post not found",
+        hint: "Check that post_id is a valid public.posts.id.",
+        searched: { post_id: postId },
+      },
+      { status: 404 },
+    );
   }
 
   const locale = (post.primary_locale ?? "en") as Locale;
-  const focusKeyword =
-    typeof dgRow.primary_keyword === "string" && dgRow.primary_keyword.trim()
-      ? dgRow.primary_keyword.trim()
-      : undefined;
+
+  if (focusKeyword === undefined) {
+    const { data: loc } = await admin
+      .from("post_localizations")
+      .select("focus_keyword")
+      .eq("post_id", postId)
+      .eq("locale", locale)
+      .maybeSingle();
+    if (typeof loc?.focus_keyword === "string" && loc.focus_keyword.trim()) {
+      focusKeyword = loc.focus_keyword.trim();
+    }
+  }
 
   try {
     await inngest.send({

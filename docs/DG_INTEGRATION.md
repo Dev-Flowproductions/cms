@@ -22,6 +22,10 @@ DG stores this value on the project mapping; briefs are rejected with `SITE_NOT_
 
 In the **admin** UI, each client shows **Site ID** (with a copy control) on **Admin → User accounts** — both the account list and the per-user detail page — so operators can paste it into DG without opening Supabase.
 
+**Payload quirks:** DG may send JSON `null` for optional string fields (e.g. `target_persona`, `brand_tone`, `country`, `search_intent`, `cta_goal`). The intake schema treats those as omitted.
+
+**After a successful brief:** the CMS enqueues **`cms/dg-brief.run-generation`** on Inngest, which runs the same Gemini pipeline as **Generate** in the post editor, then sets the post to **`draft`** and sends a DG status webhook (canonical **`drafting`**). If Inngest enqueue fails, generation is attempted inline as a fallback (best-effort). Ensure Inngest is connected in production.
+
 ## Environment variables
 
 | Variable | Purpose |

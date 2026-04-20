@@ -3,12 +3,13 @@ import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
 import { runScheduler } from "@/lib/inngest/functions";
 import { deliverDgStatusWebhook } from "@/lib/inngest/dg-status-webhook";
+import { dgBriefRunGeneration } from "@/lib/inngest/dg-brief-generate";
 
 export const maxDuration = 300;
 
 const handler = serve({
   client: inngest,
-  functions: [runScheduler, deliverDgStatusWebhook],
+  functions: [runScheduler, deliverDgStatusWebhook, dgBriefRunGeneration],
 });
 
 type RouteContext = { params: Promise<Record<string, string>> };

@@ -7,6 +7,8 @@ import {
 } from "@/lib/integrations/dg/article-brief-schema";
 import { buildDgArticleAdminUrl } from "@/lib/integrations/dg/urls";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
+import { inngest } from "@/lib/inngest/client";
+import { executeAgentGeneratePost } from "@/lib/agent/execute-generate-post";
 
 export const maxDuration = 60;
 
@@ -177,6 +179,27 @@ export async function POST(req: NextRequest) {
   }
 
   void notifyDgArticleStatusIfLinked(post.id);
+
+  try {
+    await inngest.send({
+      name: "cms/dg-brief.run-generation",
+      data: {
+        postId: post.id,
+        locale: primaryLocale,
+        focusKeyword: body.primary_keyword ?? undefined,
+      },
+    });
+  } catch (inngestErr) {
+    console.error("[dg] Inngest enqueue for generation failed:", inngestErr);
+    void executeAgentGeneratePost({
+      postId: post.id,
+      locale: primaryLocale,
+      focusKeyword: body.primary_keyword ?? undefined,
+      dgBrief: true,
+    }).catch((genErr) => {
+      console.error("[dg] Fallback inline generation failed:", genErr);
+    });
+  }
 
   return NextResponse.json({
     success: true,

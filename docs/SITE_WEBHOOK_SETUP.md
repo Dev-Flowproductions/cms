@@ -45,6 +45,12 @@ This endpoint will be called whenever a post is **published**, **updated**, or *
     "meta_description": "...",
     "json_ld": { ... },
     "locale": "pt",
+    "author": {
+      "name": "...",
+      "jobTitle": "...",
+      "bio": "...",
+      "avatarUrl": "https://..."
+    },
     "translations": {
       "en": { "title": "...", "excerpt": "...", "content_md": "...", ... },
       "fr": { ... }
@@ -56,6 +62,11 @@ This endpoint will be called whenever a post is **published**, **updated**, or *
 ```
 
 For `post.deleted`, the payload is minimal (event, siteId, post id/slug, timestamp).
+
+### Author byline vs profile
+
+- **`post.author`** is the structured byline (name, job title, bio, avatar). **Prefer rendering the article author from this object**, not from HTML inside `content_md` — the CMS strips embedded author blocks from `content_md` in webhook payloads so your site always shows current data.
+- **Source of truth:** If the account uses **Blog authors** (byline personas), values come from that persona. Otherwise they come from the **account profile**. Editing only the profile does **not** update posts that use a specific blog-author persona; update the persona under **Dashboard → Blog authors** (or adjust which author is selected for new generated posts).
 
 ---
 

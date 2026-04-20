@@ -2,6 +2,8 @@
  * Discover public URLs on a client domain for internal linking (sitemap → homepage links → homepage only).
  */
 
+import type { Locale } from "@/lib/types/db";
+
 const MAX_URLS = 80;
 const MAX_COLLECT = 500; // Collect more, then sort + slice to get best URLs
 const FETCH_TIMEOUT_MS = 12_000;
@@ -217,3 +219,147 @@ export async function enrichWithTitles(
 }
 
 export type EnrichedUrl = { url: string; title: string | null };
+
+/** First path segment is a CMS-supported locale prefix (en, en-GB, pt, pt-BR, fr, …). */
+const LOCALE_PATH_PREFIX = /^(en|fr|pt)(-[a-z]{2})?$/i;
+
+/**
+ * If the URL path starts with a locale segment, returns that segment and the path **after** it (may be "").
+ * Paths like /insights/foo (no locale) return null — treat as language-neutral for expansion.
+ */
+export function parseLocalizedPathPrefix(pathname: string): { localeSeg: string; rest: string } | null {
+  const path = pathname || "/";
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length === 0) return null;
+  const first = parts[0] ?? "";
+  if (!LOCALE_PATH_PREFIX.test(first)) return null;
+  const rest = parts.length > 1 ? `/${parts.slice(1).join("/")}` : "";
+  return { localeSeg: first, rest };
+}
+
+function normalizeEnrichedUrlKey(urlStr: string): string {
+  try {
+    const u = new URL(urlStr.trim());
+    u.hash = "";
+    let p = u.pathname.replace(/\/+$/, "") || "/";
+    u.pathname = p;
+    return u.href.replace(/\/$/, "");
+  } catch {
+    return urlStr.trim();
+  }
+}
+
+/**
+ * For each URL whose first segment is a locale (e.g. /en-GB/insights/a), adds sibling URLs for
+ * pt, en, and fr so internal linking can prefer /pt/..., /fr/..., etc. Preserves subtags when
+ * swapping only the language family (e.g. en-GB → pt, not en).
+ */
+export function expandEnrichedUrlsWithLocaleSiblings(enriched: EnrichedUrl[]): EnrichedUrl[] {
+  if (enriched.length === 0) return enriched;
+  const byKey = new Map<string, EnrichedUrl>();
+
+  const add = (url: string, title: string | null) => {
+    const key = normalizeEnrichedUrlKey(url);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { url: key, title });
+    } else if (title && !existing.title) {
+      existing.title = title;
+    }
+  };
+
+  for (const e of enriched) {
+    add(e.url, e.title);
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(e.url.trim());
+    } catch {
+      continue;
+    }
+
+    const loc = parseLocalizedPathPrefix(parsedUrl.pathname);
+    if (!loc) continue;
+
+    const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    const targets: Locale[] = ["pt", "en", "fr"];
+    for (const target of targets) {
+      const newSeg = localePrefixForTarget(target, loc.localeSeg);
+      const newPath = `/${newSeg}${loc.rest}`;
+      let built: string;
+      try {
+        built = new URL(newPath, origin).href;
+      } catch {
+        continue;
+      }
+      add(built, e.title);
+    }
+  }
+
+  return [...byKey.values()];
+}
+
+/**
+ * Rewrites relative markdown links whose first path segment is a locale prefix (e.g. /en-GB/foo → /pt/foo)
+ * so translated posts point at the correct language path. Leaves non-locale paths (e.g. /insights/foo) unchanged.
+ */
+export function rewriteMarkdownRelativePathsToLocale(contentMd: string, targetLocale: Locale): string {
+  return contentMd.replace(
+    /\]\((\/(?:en|fr|pt)(?:-[a-zA-Z]{2,})?)((?:\/[^)\s#]*)?)\)/gi,
+    (_full, segWithSlash: string, pathRest: string) => {
+      const localeSeg = segWithSlash.replace(/^\//, "");
+      const rest = pathRest ?? "";
+      const newSeg = localePrefixForTarget(targetLocale, localeSeg);
+      return `](/${newSeg}${rest})`;
+    },
+  );
+}
+
+/** Pick standard path segment for pt / en / fr, preserving en-GB / pt-BR style when reference matches family. */
+function localePrefixForTarget(target: Locale, referenceLocaleSeg: string): string {
+  const ref = referenceLocaleSeg.toLowerCase();
+  if (target === "en" && ref.startsWith("en")) return referenceLocaleSeg;
+  if (target === "pt" && ref.startsWith("pt")) return referenceLocaleSeg;
+  if (target === "fr" && ref.startsWith("fr")) return referenceLocaleSeg;
+  if (target === "en") return "en";
+  if (target === "pt") return "pt";
+  return "fr";
+}
+
+/**
+ * After {@link expandEnrichedUrlsWithLocaleSiblings}, keep only URLs that match `locale` (or neutral paths).
+ * If that would remove every URL, returns the full expanded list so the model still has candidates.
+ */
+export function narrowInternalLinksForLocale(expanded: EnrichedUrl[], locale: Locale): EnrichedUrl[] {
+  if (expanded.length === 0) return expanded;
+  const filtered = filterEnrichedUrlsForLocale(expanded, locale);
+  return filtered.length > 0 ? filtered : expanded;
+}
+
+/** First path segment suggests a site language variant; "neutral" = no locale prefix (e.g. /insights/...). */
+function guessPathLocaleFromUrl(urlStr: string): "en" | "pt" | "fr" | "neutral" {
+  try {
+    const pathname = new URL(urlStr.trim()).pathname || "/";
+    const seg = pathname.split("/").filter(Boolean)[0]?.toLowerCase() ?? "";
+    if (!seg) return "neutral";
+    if (seg === "en" || seg.startsWith("en-")) return "en";
+    if (seg === "pt" || seg.startsWith("pt-")) return "pt";
+    if (seg === "fr" || seg.startsWith("fr-")) return "fr";
+    return "neutral";
+  } catch {
+    return "neutral";
+  }
+}
+
+/**
+ * Keeps internal-link candidates that match the content locale: drops obvious cross-language paths
+ * (e.g. /pt/... when generating English). Paths without a locale prefix are kept for all locales.
+ */
+export function filterEnrichedUrlsForLocale(urls: EnrichedUrl[], locale: Locale): EnrichedUrl[] {
+  if (urls.length === 0) return urls;
+  return urls.filter((e) => {
+    const guess = guessPathLocaleFromUrl(e.url);
+    if (guess === "neutral") return true;
+    return guess === locale;
+  });
+}

@@ -18,7 +18,12 @@ import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-co
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
-import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
+import {
+  getCandidateSiteUrls,
+  enrichWithTitles,
+  expandEnrichedUrlsWithLocaleSiblings,
+  narrowInternalLinksForLocale,
+} from "@/lib/agent/site-urls";
 import { resolveAuthorForByline } from "@/lib/data/blog-authors";
 import type { Locale } from "@/lib/types/db";
 
@@ -43,6 +48,10 @@ export async function POST(request: Request) {
   if (!post_id || !locale) {
     return NextResponse.json({ error: "post_id and locale are required" }, { status: 400 });
   }
+  if (locale !== "pt" && locale !== "en" && locale !== "fr") {
+    return NextResponse.json({ error: "locale must be pt, en, or fr" }, { status: 400 });
+  }
+  const localeTyped = locale as Locale;
 
   const admin = createAdminClient();
 
@@ -102,8 +111,11 @@ export async function POST(request: Request) {
     : null;
 
   const rawUrls = clientRow?.domain ? await getCandidateSiteUrls(clientRow.domain) : [];
-  const internalLinkCandidates =
-    rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
+  const enrichedBase = rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
+  const internalLinkCandidates = narrowInternalLinksForLocale(
+    expandEnrichedUrlsWithLocaleSiblings(enrichedBase),
+    localeTyped,
+  );
   const combinedInstructions = combineClientInstructionsForModel(
     clientRow?.custom_instructions,
     clientRow?.instruction_reinforcement,
@@ -131,7 +143,7 @@ export async function POST(request: Request) {
   const postCtx: PostContext = {
     slug: post.slug,
     content_type: post.content_type,
-    locale,
+    locale: localeTyped,
     focus_keyword: keyword,
     publication_date: publicationDate,
     existing_title: existing?.title || null,

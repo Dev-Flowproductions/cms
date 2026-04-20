@@ -173,6 +173,9 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
           ? "French"
           : post.locale;
   lines.push(`Language: ${localeLabel}`);
+  lines.push(
+    "Industry acronyms (SEO, AEO, GEO, AI, CRM, etc.) must appear in ALL CAPS when used as abbreviations.",
+  );
   lines.push(`Content type: ${post.content_type} — ${CONTENT_TYPE_PROMPT_HINT[post.content_type] ?? "standard"}`);
   lines.push(`Publication date: ${post.publication_date}`);
 

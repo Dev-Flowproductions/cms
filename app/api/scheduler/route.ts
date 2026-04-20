@@ -21,13 +21,20 @@ import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
 import {
   appendAuthorBlock,
-  contentMdHasEmbeddedAuthorBlock,
   extractAuthorFieldsFromContentMd,
   sanitizeInternalMarkdownLinks,
   sanitizeRelativeMarkdownLinks,
   convertInternalLinksToRelative,
+  stripAuthorBlocksFromContentMd,
 } from "@/lib/agent/internal-link";
-import { getCandidateSiteUrls, enrichWithTitles } from "@/lib/agent/site-urls";
+import {
+  getCandidateSiteUrls,
+  enrichWithTitles,
+  expandEnrichedUrlsWithLocaleSiblings,
+  narrowInternalLinksForLocale,
+  rewriteMarkdownRelativePathsToLocale,
+  type EnrichedUrl,
+} from "@/lib/agent/site-urls";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import type { Locale } from "@/lib/types/db";
 import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
@@ -184,6 +191,24 @@ export async function GET(req: NextRequest) {
 const ALL_LOCALES = ["pt", "en", "fr"] as const;
 type SupportedLocale = (typeof ALL_LOCALES)[number];
 
+function normalizeSchedulerPrimaryLocale(postLocale: string | null | undefined): SupportedLocale {
+  if (postLocale === "en" || postLocale === "pt" || postLocale === "fr") return postLocale;
+  return "pt";
+}
+
+function localeToEnglishName(locale: SupportedLocale): string {
+  switch (locale) {
+    case "pt":
+      return "Portuguese";
+    case "en":
+      return "English";
+    case "fr":
+      return "French";
+    default:
+      return locale;
+  }
+}
+
 type GeneratedContent = {
   title: string;
   slug?: string;
@@ -243,8 +268,8 @@ async function generatePostForClient(
   imagenAI: GoogleGenAI,
   runOpts: SchedulerRunOpts,
 ): Promise<string | null> {
-  // Always generate in all three locales; primary is Portuguese (main site language)
-  const primaryLocale: SupportedLocale = "pt";
+  // Always generate in all three locales; primary matches clients.post_locale (default pt)
+  const primaryLocale = normalizeSchedulerPrimaryLocale(client.post_locale);
   const previousLastPost = client.last_post_generated_at ?? null;
   const combinedInstructions = combineClientInstructionsForModel(
     client.custom_instructions,
@@ -285,8 +310,8 @@ async function generatePostForClient(
   const recentPostTitles = (recentPosts ?? [])
     .map((p) => {
       const locs = (p as { post_localizations?: Array<{ locale: string; title: string | null }> }).post_localizations ?? [];
-      const pt = locs.find((l) => l.locale === "pt");
-      return pt?.title?.trim() ?? null;
+      const pick = locs.find((l) => l.locale === primaryLocale);
+      return pick?.title?.trim() ?? locs[0]?.title?.trim() ?? null;
     })
     .filter((t): t is string => !!t);
 
@@ -347,8 +372,12 @@ async function generatePostForClient(
     : null;
 
   const rawUrls = await getCandidateSiteUrls(client.domain);
-  const internalLinkCandidates =
+  const enrichedBase: EnrichedUrl[] =
     rawUrls.length > 0 ? await enrichWithTitles(rawUrls, 35) : [];
+  const allEnriched = expandEnrichedUrlsWithLocaleSiblings(enrichedBase);
+  /** Every known same-site URL (all locale variants) — required when validating translated markdown that still uses primary-language paths until rewritten */
+  const allExpandedUrls = allEnriched.map((c) => c.url);
+  const primaryLinkEnriched = narrowInternalLinksForLocale(allEnriched, primaryLocale);
   const clientCtx: ClientContext = {
     domain: client.domain,
     brandName: client.company_name ?? client.brand_name ?? null,
@@ -361,7 +390,7 @@ async function generatePostForClient(
     gaTopKeywords: null,
     searchConsoleQueries: null,
     recentPostTitles: recentPostTitles.length > 0 ? recentPostTitles : null,
-    internalLinkCandidates: internalLinkCandidates.length > 0 ? internalLinkCandidates : null,
+    internalLinkCandidates: primaryLinkEnriched.length > 0 ? primaryLinkEnriched : null,
   };
 
   const brandName = (brandBook as { brandName?: string } | null)?.brandName ?? client.brand_name ?? client.domain;
@@ -379,7 +408,7 @@ async function generatePostForClient(
       contentType: "hero",
       locale: primaryLocale,
       focusKeywordOrTopic: topicHint,
-      hasInternalLinks: internalLinkCandidates.length > 0,
+      hasInternalLinks: primaryLinkEnriched.length > 0,
       taskKind: "post_generation",
     },
   );
@@ -394,7 +423,7 @@ async function generatePostForClient(
     },
   });
 
-  // ── STEP 1: Generate primary content in PT ──────────────────────────────────
+  // ── STEP 1: Generate primary content in clients.post_locale ─────────────────
   let slug = tempSlug;
   let titleForCoverPrompt = topicHint;
   let coverImageDescription: string | null = null;
@@ -433,7 +462,7 @@ async function generatePostForClient(
       break;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for PT (${client.domain}): ${msg}`);
+      console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for ${primaryLocale} (${client.domain}): ${msg}`);
       if (attempt < MAX_RETRIES) {
         await new Promise((r) => setTimeout(r, 5_000 * attempt));
       }
@@ -445,12 +474,13 @@ async function generatePostForClient(
     throw new Error(`Primary content generation failed for ${client.domain}`);
   }
 
+  const primaryLinkUrls = primaryLinkEnriched.map((c) => c.url);
   primaryContent.content_md = sanitizeInternalMarkdownLinks(
     primaryContent.content_md,
-    internalLinkCandidates.map((c) => c.url)
+    primaryLinkUrls
   );
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
-  primaryContent.content_md = sanitizeRelativeMarkdownLinks(primaryContent.content_md, internalLinkCandidates.map((c) => c.url));
+  primaryContent.content_md = sanitizeRelativeMarkdownLinks(primaryContent.content_md, primaryLinkUrls);
 
   const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
@@ -459,7 +489,7 @@ async function generatePostForClient(
       contentType: "hero",
       locale: primaryLocale,
       focusKeywordOrTopic: topicHint,
-      hasInternalLinks: internalLinkCandidates.length > 0,
+      hasInternalLinks: primaryLinkEnriched.length > 0,
       taskKind: "quality_loop",
     },
   );
@@ -530,24 +560,30 @@ async function generatePostForClient(
 
   const authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
 
-  const ptContentMd = appendAuthorBlock(primaryContent.content_md, "pt", authorForBlock);
-  const ptSeoTitle = clampSeoTitle(primaryContent.seo_title);
-  const ptSeoDesc = clampMetaDescription(primaryContent.seo_description);
+  const primaryContentMd = appendAuthorBlock(
+    primaryContent.content_md,
+    primaryLocale as Locale,
+    authorForBlock,
+  );
+  const primarySeoTitle = clampSeoTitle(primaryContent.seo_title);
+  const primarySeoDesc = clampMetaDescription(primaryContent.seo_description);
 
-  // Save PT localization
-  const ptJsonld = {
+  const primaryJsonld = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "BlogPosting",
         "headline": primaryContent.title,
-        "description": ptSeoDesc,
+        "description": primarySeoDesc,
         "keywords": primaryContent.focus_keyword,
         "datePublished": new Date().toISOString(),
-        "inLanguage": "pt",
+        "inLanguage": primaryLocale,
         "author": publisherEntity,
         "publisher": publisherEntity,
-        "mainEntityOfPage": { "@type": "WebPage", "@id": `https://${client.domain}/pt/blog/${slug}` },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": `https://${client.domain}/${primaryLocale}/blog/${slug}`,
+        },
       },
       ...((primaryContent.faq_blocks?.length ?? 0) > 0 ? [{
         "@type": "FAQPage",
@@ -563,15 +599,15 @@ async function generatePostForClient(
   await admin.from("post_localizations").upsert(
     {
       post_id: post.id,
-      locale: "pt",
+      locale: primaryLocale,
       title: primaryContent.title,
       excerpt: primaryContent.excerpt,
-      content_md: ptContentMd,
-      seo_title: ptSeoTitle,
-      seo_description: ptSeoDesc,
+      content_md: primaryContentMd,
+      seo_title: primarySeoTitle,
+      seo_description: primarySeoDesc,
       focus_keyword: primaryContent.focus_keyword,
       faq_blocks: primaryContent.faq_blocks ?? null,
-      jsonld: ptJsonld,
+      jsonld: primaryJsonld,
       seo_score: primaryContent.seo_score ?? null,
     },
     { onConflict: "post_id,locale" }
@@ -580,19 +616,19 @@ async function generatePostForClient(
   if (primaryRunId) {
     await admin.from("agent_runs").update({
       status: "done",
-      output: { ...primaryContent, content_md: ptContentMd },
+      output: { ...primaryContent, content_md: primaryContentMd },
     }).eq("id", primaryRunId);
   }
 
-  // ── STEP 2: Translate to other locales (EN, FR) ─────────────────────────────
+  // ── STEP 2: Translate to other locales ──────────────────────────────────────
   const translationSystemInstruction = await resolveSystemInstructionsWithEmbeddings(
     genAI,
     combinedInstructions,
     {
       contentType: "hero",
-      locale: "English and French (translate from Portuguese)",
+      locale: `Translate from ${localeToEnglishName(primaryLocale)} to the target language`,
       focusKeywordOrTopic: topicHint,
-      hasInternalLinks: internalLinkCandidates.length > 0,
+      hasInternalLinks: allEnriched.length > 0,
       taskKind: "translation",
     },
   );
@@ -613,14 +649,21 @@ async function generatePostForClient(
 
     const { data: transRun } = await admin
       .from("agent_runs")
-      .insert({ post_id: post.id, locale, status: "running", model: MODEL, input: { action: "translate", from: "pt", to: locale } })
+      .insert({
+        post_id: post.id,
+        locale,
+        status: "running",
+        model: MODEL,
+        input: { action: "translate", from: primaryLocale, to: locale },
+      })
       .select("id")
       .single();
     const transRunId = transRun?.id;
 
     const langName = locale === "en" ? "English" : locale === "fr" ? "French" : locale;
+    const sourceLangName = localeToEnglishName(primaryLocale);
 
-    const translationPrompt = `You are a professional translator. Translate the following blog post from Portuguese to ${langName}.
+    const translationPrompt = `You are a professional translator. Translate the following blog post from ${sourceLangName} to ${langName}.
 
 RULES:
 - Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
@@ -628,12 +671,13 @@ RULES:
 - Translate the title, excerpt, SEO title, SEO description, all FAQ questions/answers, and the single author block at the end (heading "Sobre o autor" / "About the author" / "À propos de l'auteur" and the name, job title, and bio). Do NOT duplicate the author section — output it exactly once.
 - If the author block uses HTML, preserve the layout: <div class="author-block-header"> with <div class="author-avatar"> (unchanged) and <div class="author-block-titles"> containing <p class="author-name"> and <p class="author-job">; optional <p class="author-bio"> below. Translate only the text inside those <p> tags.
 - Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
+- Industry acronyms (SEO, AEO, GEO, AI, CRM, etc.) must remain in ALL CAPS in ${langName}.
 - In content_md: for every markdown link [anchor](url), keep the url EXACTLY unchanged (character-for-character); translate only the anchor text inside the brackets to natural ${langName}. Do not add, remove, or reorder links.
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
 - Do NOT add, remove, or change any facts, statistics, or claims — only translate.
 - Use natural, fluent ${langName} — not word-for-word translation.
 
-ORIGINAL CONTENT (Portuguese):
+ORIGINAL CONTENT (${sourceLangName}):
 
 Title: ${primaryContent.title}
 Excerpt: ${primaryContent.excerpt}
@@ -642,7 +686,7 @@ SEO Description: ${primaryContent.seo_description}
 Focus Keyword: ${primaryContent.focus_keyword}
 
 Content (Markdown) — include the "Sobre o autor" / "About the author" section at the end; translate the heading and bio to ${langName}:
-${ptContentMd}
+${primaryContentMd}
 
 FAQ Blocks:
 ${(primaryContent.faq_blocks ?? []).map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
@@ -689,12 +733,13 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     // Carry over SEO scores from primary content
     translated.seo_score = primaryContent.seo_score;
 
-    translated.content_md = sanitizeInternalMarkdownLinks(
-      translated.content_md,
-      internalLinkCandidates.map((c) => c.url)
-    );
+    // Translation keeps primary URLs (often /en/...); locale-only allowlists stripped them. Validate against
+    // all expanded URLs first, then rewrite paths to this locale, then relative-sanitize with locale-narrowed list.
+    const localeLinkUrls = narrowInternalLinksForLocale(allEnriched, locale as Locale).map((c) => c.url);
+    translated.content_md = sanitizeInternalMarkdownLinks(translated.content_md, allExpandedUrls);
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
-    translated.content_md = sanitizeRelativeMarkdownLinks(translated.content_md, internalLinkCandidates.map((c) => c.url));
+    translated.content_md = rewriteMarkdownRelativePathsToLocale(translated.content_md, locale as Locale);
+    translated.content_md = sanitizeRelativeMarkdownLinks(translated.content_md, localeLinkUrls);
     // Re-append canonical author HTML using translated copy (appendAuthorBlock strips the model section first).
     const extractedAuthor = extractAuthorFieldsFromContentMd(translated.content_md);
     const authorForTranslatedLocale = authorForBlock
@@ -801,7 +846,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         focusKeywordOrTopic: primaryContent.focus_keyword || titleForCoverPrompt,
         contentType: "hero",
         locale: primaryLocale,
-        hasInternalLinks: internalLinkCandidates.length > 0,
+        hasInternalLinks: primaryLinkEnriched.length > 0,
       },
       combinedInstructions,
       referenceVisionBrief,
@@ -897,12 +942,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       const COVER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
       const cleaned = localizations.map((l) => ({
         ...l,
-        content_md: (l.content_md ?? "")
-          .replace(COVER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
-          .trim(),
+        // Strip embedded author HTML — consumer sites should use post.author (fresh from DB)
+        content_md: stripAuthorBlocksFromContentMd(
+          (l.content_md ?? "")
+            .replace(COVER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
+            .trim(),
+        ),
       }));
 
       const primary =
+        cleaned.find((l) => l.locale === primaryLocale) ??
         cleaned.find((l) => l.locale === "pt") ??
         cleaned.find((l) => l.locale === "en") ??
         cleaned[0];
@@ -934,9 +983,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         status: "published",
         updatedAt: new Date().toISOString(),
       });
-      const authorPayload = contentMdHasEmbeddedAuthorBlock(primary.content_md ?? "")
-        ? undefined
-        : webhookAuthor;
+      const authorPayload = webhookAuthor;
 
       const webhookPayload = {
         ...revalidation,

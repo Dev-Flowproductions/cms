@@ -24,7 +24,10 @@ export function DashboardSidebarShell({ children }: { children: React.ReactNode 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-3 top-3 z-40 flex h-9 w-9 items-center justify-center rounded-xl transition-all lg:hidden"
+        className={[
+          "fixed z-[60] flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl transition-opacity left-[max(0.75rem,env(safe-area-inset-left))] top-[max(0.75rem,env(safe-area-inset-top))] lg:hidden",
+          open ? "pointer-events-none opacity-0" : "opacity-100",
+        ].join(" ")}
         style={{
           background: "var(--adm-surface-high)",
           border: "1px solid var(--adm-outline-variant)",
@@ -40,9 +43,10 @@ export function DashboardSidebarShell({ children }: { children: React.ReactNode 
 
       {open && (
         <div
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-[55] lg:hidden"
           style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}
           onClick={() => setOpen(false)}
+          aria-hidden
         />
       )}
 
@@ -50,7 +54,7 @@ export function DashboardSidebarShell({ children }: { children: React.ReactNode 
         className={[
           "flex min-h-screen flex-col overflow-x-hidden overflow-y-hidden lg:min-h-0 lg:h-full",
           "hidden lg:sticky lg:top-0 lg:flex lg:w-64 lg:max-h-screen lg:flex-shrink-0",
-          open ? "!fixed left-0 top-0 z-50 !flex h-screen min-h-screen w-72" : "",
+          open ? "!fixed left-0 top-0 z-[60] !flex h-screen min-h-screen w-72 max-w-[85vw]" : "",
         ].join(" ")}
         style={{
           background: "var(--adm-sidebar)",

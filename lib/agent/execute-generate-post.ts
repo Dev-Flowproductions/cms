@@ -24,6 +24,7 @@ import {
 } from "@/lib/agent/site-urls";
 import { resolveAuthorForByline } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
+import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 import type { Locale } from "@/lib/types/db";
 import type { BrandBook } from "@/lib/brand-book/types";
 
@@ -59,7 +60,8 @@ export type ExecuteGenerateResult = ExecuteGenerateSuccess | ExecuteGenerateFail
 
 /**
  * Core of POST /api/agent/generate — usable from the HTTP route and from background jobs (e.g. DG briefs).
- * When {@link input.dgBrief} is true, sets post status to `draft` on success and notifies DG (`drafting` canonical).
+ * When {@link input.dgBrief} is true, sets post status to `draft` on success, notifies DG (`drafting` canonical),
+ * then attempts webhook publish if the author has a `webhook_url` (same SEO gate as manual publish).
  */
 export async function executeAgentGeneratePost(input: {
   postId: string;
@@ -94,7 +96,7 @@ export async function executeAgentGeneratePost(input: {
   const { data: clientRow } = await admin
     .from("clients")
     .select(
-      "domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
+      "domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text, webhook_url",
     )
     .eq("user_id", post.author_id)
     .maybeSingle();
@@ -462,6 +464,17 @@ export async function executeAgentGeneratePost(input: {
     if (dgBrief) {
       await admin.from("posts").update({ status: "draft" }).eq("id", postId);
       void notifyDgArticleStatusIfLinked(postId);
+
+      if (clientRow?.webhook_url?.trim()) {
+        void requestInternalPublishPost(postId).then((result) => {
+          if (!result.ok) {
+            console.warn(
+              `[generate] DG brief auto-publish failed for ${postId}:`,
+              result.error ?? `HTTP ${result.status}`,
+            );
+          }
+        });
+      }
     }
 
     return {

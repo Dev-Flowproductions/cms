@@ -222,10 +222,12 @@ export async function POST(
     }
 
     // Success — also set post status to published
+    const wasPublished = post.status === "published";
     await admin
       .from("posts")
       .update({
         status: "published",
+        ...(wasPublished ? {} : { published_at: new Date().toISOString() }),
         webhook_status: "success",
         webhook_sent_at: new Date().toISOString(),
         webhook_error: null,

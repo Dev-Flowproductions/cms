@@ -7,6 +7,7 @@ import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import { getMsUntilNextPostDue } from "@/lib/scheduler/next-post";
 import { NextPostCountdown } from "@/components/NextPostCountdown";
+import { AdminSiteIdRow } from "./AdminSiteIdCopy";
 
 type Props = {
   initialUsers: ClientRow[];
@@ -157,35 +158,38 @@ export function UsersClient({ initialUsers, initialError }: Props) {
                     }}
                   >
                     <td className="px-4 py-3 align-top min-w-0">
-                      <Link
-                        href={`/admin/users/${u.user_id}`}
-                        className="group block min-w-0 cursor-pointer rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
-                      >
-                        <span className="font-semibold block truncate group-hover:underline" style={{ color: "var(--adm-on-surface)" }} title={displayName}>
-                          {displayName}
-                        </span>
-                        {u.email && (
-                          <span className="text-xs block truncate mt-0.5" style={{ color: "var(--adm-on-variant)" }} title={u.email}>
-                            {u.email}
+                      <div className="min-w-0">
+                        <Link
+                          href={`/admin/users/${u.user_id}`}
+                          className="group block min-w-0 cursor-pointer rounded-lg -mx-1 px-1 py-0.5 -my-0.5 transition-colors hover:bg-[var(--adm-interactive-hover-strong)]"
+                        >
+                          <span className="font-semibold block truncate group-hover:underline" style={{ color: "var(--adm-on-surface)" }} title={displayName}>
+                            {displayName}
                           </span>
-                        )}
-                        <span className="text-[11px] font-mono block truncate mt-1 opacity-90" style={{ color: "var(--adm-on-variant)" }} title={u.domain ?? undefined}>
-                          {u.domain ?? t("onboardingPending")}
-                        </span>
-                        {u.domain && (
-                          <NextPostCountdown
-                            lastPostGeneratedAt={u.last_post_generated_at}
-                            frequency={u.frequency}
-                            variant="adminInline"
-                            className="mt-1"
-                          />
-                        )}
-                        {googleConnected && (
-                          <span className="text-[10px] font-bold uppercase mt-1 inline-block" style={{ color: "#22d3a0" }}>
-                            {t("googleConnected")}
+                          {u.email && (
+                            <span className="text-xs block truncate mt-0.5" style={{ color: "var(--adm-on-variant)" }} title={u.email}>
+                              {u.email}
+                            </span>
+                          )}
+                          <span className="text-[11px] font-mono block truncate mt-1 opacity-90" style={{ color: "var(--adm-on-variant)" }} title={u.domain ?? undefined}>
+                            {u.domain ?? t("onboardingPending")}
                           </span>
-                        )}
-                      </Link>
+                          {u.domain && (
+                            <NextPostCountdown
+                              lastPostGeneratedAt={u.last_post_generated_at}
+                              frequency={u.frequency}
+                              variant="adminInline"
+                              className="mt-1"
+                            />
+                          )}
+                          {googleConnected && (
+                            <span className="text-[10px] font-bold uppercase mt-1 inline-block" style={{ color: "#22d3a0" }}>
+                              {t("googleConnected")}
+                            </span>
+                          )}
+                        </Link>
+                        <AdminSiteIdRow siteId={u.id} />
+                      </div>
                     </td>
                   </tr>
                 );

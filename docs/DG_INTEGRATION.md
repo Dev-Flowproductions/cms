@@ -20,6 +20,8 @@ There is no separate `sites` table. The stable publishing destination for DG is 
 
 DG stores this value on the project mapping; briefs are rejected with `SITE_NOT_FOUND` when no matching client exists.
 
+In the **admin** UI, each client shows **Site ID** (with a copy control) on **Admin → User accounts** — both the account list and the per-user detail page — so operators can paste it into DG without opening Supabase.
+
 ## Environment variables
 
 | Variable | Purpose |

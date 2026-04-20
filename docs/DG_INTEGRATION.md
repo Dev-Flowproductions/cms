@@ -28,7 +28,7 @@ In the **admin** UI, each client shows **Site ID** (with a copy control) on **Ad
 
 **Slugs:** new posts from DG use an SEO slug derived from **`title`** (lowercase, hyphens, diacritics stripped), with **`-2`, `-3`, …** if the slug is already taken.
 
-**Stuck brief (`idea` but generation never ran):** `POST /api/admin/integrations/dg/trigger-brief-generation` with JSON `{ "request_id": "<uuid>" }` or `{ "post_id": "<uuid>" }`. Requires an **admin** session (cookie). Response includes `"mode": "inngest"` or `"inline_fallback"` if Inngest was unavailable.
+**Stuck brief (`idea` but generation never ran):** `POST /api/admin/integrations/dg/trigger-brief-generation` with JSON `{ "request_id": "<uuid>" }` or `{ "post_id": "<uuid>" }`. Requires an **admin** session (cookie). If `request_id` is not found in `dg_integration_records` (wrong env or typo), use **`post_id`** from `public.posts` — that path works even when the DG integration row is missing. Response includes `"mode": "inngest"` or `"inline_fallback"` if Inngest was unavailable.
 
 ## Environment variables
 

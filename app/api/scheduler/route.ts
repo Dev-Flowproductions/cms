@@ -41,6 +41,7 @@ import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
 import { verifyTrafficSchedulerInternalRequest } from "@/lib/scheduler/traffic-internal-auth";
 import { pickRandomBylineAuthorId, resolveAuthorForByline } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
+import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -53,11 +54,10 @@ const MODEL = "gemini-3.1-flash-lite-preview";
  *
  * For each client whose frequency interval has elapsed since last_post_generated_at,
  * this route:
- *   1. Creates a new draft post row
- *   2. Generates content with Gemini (same pipeline as manual "Generate with AI")
- *   3. Generates a cover image with Imagen 4
- *   4. Publishes the post (and optionally sends to webhook if configured)
- *   5. Updates clients.last_post_generated_at
+ *   1. Claims the client (atomic) so concurrent runs do not double-process
+ *   2. If the author has any post in `draft`, publishes the oldest draft (webhook + SEO gate via POST /api/publish)
+ *   3. Otherwise: creates a new post row, generates content (Gemini), cover (Imagen), publishes or review per SEO bar
+ *   4. Updates clients.last_post_generated_at
  */
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -141,14 +141,58 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const postId = await generatePostForClient(client, admin, genAI, imagenAI, {
-        skipDueClaim: force || singleUserForce,
-        now,
-      });
-      if (postId === null) {
+      const outerSkipClaim = force || singleUserForce;
+      const previousLastPost = client.last_post_generated_at ?? null;
+
+      if (!(await claimClientForSchedulerIfNeeded(admin, client, outerSkipClaim, now))) {
         results.push({ client_id: client.id, domain: client.domain, status: "skipped_concurrent" });
         continue;
       }
+
+      const draftPostId = await findOldestDraftPostId(admin, client.user_id);
+      if (draftPostId) {
+        const pub = await requestInternalPublishPost(draftPostId);
+        if (pub.ok) {
+          await admin
+            .from("clients")
+            .update({
+              last_post_generated_at: new Date().toISOString(),
+              last_generation_error: null,
+              last_generation_error_at: null,
+            })
+            .eq("id", client.id);
+          console.log(`[scheduler] Published existing draft for ${client.domain} -> post id ${draftPostId}`);
+          results.push({ client_id: client.id, domain: client.domain, status: "published_draft", post_id: draftPostId });
+          continue;
+        }
+        const errMsg = pub.error ?? `HTTP ${pub.status}`;
+        console.warn(`[scheduler] Draft publish failed for ${client.domain} (${draftPostId}):`, errMsg);
+        try {
+          await admin
+            .from("clients")
+            .update({
+              last_post_generated_at: previousLastPost,
+              last_generation_error: `Draft publish failed: ${errMsg}`,
+              last_generation_error_at: new Date().toISOString(),
+            })
+            .eq("id", client.id);
+        } catch {
+          /* ignore */
+        }
+        results.push({
+          client_id: client.id,
+          domain: client.domain,
+          status: "draft_publish_failed",
+          error: errMsg,
+          post_id: draftPostId,
+        });
+        continue;
+      }
+
+      const postId = await generatePostForClient(client, admin, genAI, imagenAI, {
+        revertLastPostOnGenerationFailure: !outerSkipClaim,
+        now,
+      });
       results.push({ client_id: client.id, domain: client.domain, status: "generated", post_id: postId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -158,13 +202,25 @@ export async function POST(req: NextRequest) {
   }
 
   const generated = results.filter((r) => r.status === "generated").length;
+  const publishedDrafts = results.filter((r) => r.status === "published_draft").length;
   const skipped =
     results.filter((r) => r.status === "skipped_not_due" || r.status === "skipped_concurrent").length;
   const errors = results.filter((r) => r.status === "error").length;
+  const draftPublishFailed = results.filter((r) => r.status === "draft_publish_failed").length;
 
-  console.log(`[scheduler] Done â€” generated: ${generated}, skipped: ${skipped}, errors: ${errors}`);
+  console.log(
+    `[scheduler] Done — generated: ${generated}, published_draft: ${publishedDrafts}, draft_publish_failed: ${draftPublishFailed}, skipped: ${skipped}, errors: ${errors}`,
+  );
 
-  return NextResponse.json({ ok: true, generated, skipped, errors, results });
+  return NextResponse.json({
+    ok: true,
+    generated,
+    published_drafts: publishedDrafts,
+    draft_publish_failed: draftPublishFailed,
+    skipped,
+    errors,
+    results,
+  });
 }
 
 // GET: health check, or run scheduler when authorized (Vercel Cron sends Authorization: Bearer CRON_SECRET, or ?secret=CRON_SECRET)
@@ -226,8 +282,11 @@ type GeneratedContent = {
 };
 
 type SchedulerRunOpts = {
-  /** When true, skip the DB claim (admin force / per-user generate). */
-  skipDueClaim: boolean;
+  /**
+   * When the outer handler successfully claimed the client, revert `last_post_generated_at`
+   * if content generation fails after the claim.
+   */
+  revertLastPostOnGenerationFailure: boolean;
   now: number;
 };
 
@@ -262,13 +321,51 @@ type SchedulerClient = {
   brand_guidelines_text?: string | null;
 };
 
+async function claimClientForSchedulerIfNeeded(
+  admin: ReturnType<typeof createAdminClient>,
+  client: SchedulerClient,
+  outerSkipClaim: boolean,
+  now: number,
+): Promise<boolean> {
+  if (outerSkipClaim) return true;
+  const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
+  const thresholdIso = new Date(now - intervalMs).toISOString();
+  const claimIso = new Date(now).toISOString();
+  const { data: claimedId, error: claimError } = await admin.rpc("claim_client_for_generation", {
+    p_client_id: client.id,
+    p_claim_iso: claimIso,
+    p_threshold_iso: thresholdIso,
+  });
+  if (claimError) throw new Error(claimError.message);
+  return Boolean(claimedId);
+}
+
+async function findOldestDraftPostId(
+  admin: ReturnType<typeof createAdminClient>,
+  authorId: string,
+): Promise<string | null> {
+  const { data, error } = await admin
+    .from("posts")
+    .select("id")
+    .eq("author_id", authorId)
+    .eq("status", "draft")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("[scheduler] findOldestDraftPostId:", error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
 async function generatePostForClient(
   client: SchedulerClient,
   admin: ReturnType<typeof createAdminClient>,
   genAI: GoogleGenerativeAI,
   imagenAI: GoogleGenAI,
   runOpts: SchedulerRunOpts,
-): Promise<string | null> {
+): Promise<string> {
   // Always generate in all three locales; primary matches clients.post_locale (default pt)
   const primaryLocale = normalizeSchedulerPrimaryLocale(client.post_locale);
   const previousLastPost = client.last_post_generated_at ?? null;
@@ -281,22 +378,6 @@ async function generatePostForClient(
   let createdPostId: string | null = null;
 
   try {
-  // Atomic claim so concurrent scheduler runs (Inngest + traffic trigger, overlapping cron, etc.)
-  // cannot both pass the due check. Matches due logic: last_run <= now - interval (see FREQUENCY_INTERVAL_MS).
-  if (!runOpts.skipDueClaim) {
-    const intervalMs = FREQUENCY_INTERVAL_MS[client.frequency] ?? FREQUENCY_INTERVAL_MS.weekly;
-    const thresholdIso = new Date(runOpts.now - intervalMs).toISOString();
-    const claimIso = new Date(runOpts.now).toISOString();
-    // Use an RPC function for the atomic claim so it bypasses PostgREST's
-    // schema-cache validation (avoids "column does not exist" errors on fresh deploys).
-    const { data: claimedId, error: claimError } = await admin.rpc(
-      "claim_client_for_generation",
-      { p_client_id: client.id, p_claim_iso: claimIso, p_threshold_iso: thresholdIso },
-    );
-    if (claimError) throw new Error(claimError.message);
-    if (!claimedId) return null;
-  }
-
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
   }).format(new Date());
@@ -1058,7 +1139,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       last_generation_error: msg,
       last_generation_error_at: new Date().toISOString(),
     };
-    if (!runOpts.skipDueClaim) {
+    if (runOpts.revertLastPostOnGenerationFailure) {
       clientPatch.last_post_generated_at = previousLastPost;
     }
     // Best-effort: don't let a secondary DB error hide the original error

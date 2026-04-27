@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
-import { resolveAuthorForByline } from "@/lib/data/blog-authors";
+import { authorForBlockToWebhookAuthor, resolveAuthorForWebhookDelivery } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 
 export async function POST(
@@ -72,19 +72,25 @@ export async function POST(
     );
   }
 
-  const bylineResolved = await resolveAuthorForByline(
+  const primaryLocale = (post as { primary_locale?: string }).primary_locale ?? "pt";
+  const localizationsRaw = (post.post_localizations ?? []) as Array<{
+    locale: string;
+    title: string | null;
+    excerpt: string | null;
+    content_md: string | null;
+    seo_title: string | null;
+    seo_description: string | null;
+    jsonld: unknown;
+    seo_score: unknown;
+  }>;
+  const authorBlock = await resolveAuthorForWebhookDelivery(
     admin,
     post.author_id,
     (post as { byline_author_id?: string | null }).byline_author_id ?? null,
+    primaryLocale,
+    localizationsRaw,
   );
-  const author = bylineResolved
-    ? {
-        name: bylineResolved.displayName,
-        jobTitle: bylineResolved.jobTitle,
-        bio: bylineResolved.bio,
-        avatarUrl: bylineResolved.avatarUrl,
-      }
-    : null;
+  const author = authorForBlockToWebhookAuthor(authorBlock);
 
   // Build the cover image public URL if available
   let coverImageUrl: string | null = null;
@@ -95,7 +101,7 @@ export async function POST(
     coverImageUrl = urlData?.publicUrl ?? null;
   }
 
-  const localizations = post.post_localizations ?? [];
+  const localizations = localizationsRaw;
 
   // Clean content_md for each localization (replace/remove cover placeholder, strip duplicate H1)
   const COVER_PLACEHOLDER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
@@ -118,7 +124,6 @@ export async function POST(
     ),
   }));
 
-  const primaryLocale = (post as { primary_locale?: string }).primary_locale ?? "pt";
   const gate = publishSeoScoreGate({
     primaryLocale,
     localizations: cleanedLocalizations,
@@ -137,10 +142,7 @@ export async function POST(
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
   }
 
-  // Always provide the structured author object — HTML author block is stripped from content_md above.
-  // The website renders the author from post.author, not from embedded HTML in the markdown.
-  const authorPayload = author;
-
+  // Structured author matches the embedded card in primary `content_md` when it names a real team author (see resolveAuthorForWebhookDelivery).
   const isUpdate = (post as { webhook_status?: string }).webhook_status === "success";
   const format = (client as { webhook_event_format?: "spec" | "legacy" | null }).webhook_event_format ?? "spec";
   const event = resolveWebhookEvent(format, isUpdate);
@@ -157,7 +159,7 @@ export async function POST(
     post: {
       ...revalidation.post,
       cover_image_url: coverImageUrl,
-      ...(authorPayload !== undefined ? { author: authorPayload } : {}),
+      author,
       title: primary.title,
       excerpt: primary.excerpt,
       content_md: primary.content_md,

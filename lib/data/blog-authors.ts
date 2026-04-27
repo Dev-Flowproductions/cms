@@ -1,4 +1,5 @@
 import type { AuthorForBlock } from "@/lib/agent/internal-link";
+import { extractAuthorFieldsFromContentMd } from "@/lib/agent/internal-link";
 
 export type BlogAuthorRow = {
   id: string;
@@ -64,4 +65,75 @@ export async function pickRandomBylineAuthorId(admin: AdminClient, userId: strin
   if (error || !rows?.length) return null;
   const i = Math.floor(Math.random() * rows.length);
   return (rows[i] as { id: string }).id;
+}
+
+type LocalizationRow = { locale: string; content_md: string | null };
+
+/**
+ * Webhook / consumer `post.author` should match what readers see in the primary locale body.
+ * If the embedded "About the author" card names someone who exists as a blog author or the
+ * account profile (case-insensitive), use that identity with the **name spelling from the
+ * markdown** so it matches the editor. Otherwise falls back to {@link resolveAuthorForByline}.
+ */
+export async function resolveAuthorForWebhookDelivery(
+  admin: AdminClient,
+  postAuthorId: string,
+  bylineAuthorId: string | null | undefined,
+  primaryLocale: string,
+  localizations: LocalizationRow[],
+): Promise<AuthorForBlock | null> {
+  const fromDb = await resolveAuthorForByline(admin, postAuthorId, bylineAuthorId);
+  const primaryLoc =
+    localizations.find((l) => l.locale === primaryLocale) ??
+    localizations.find((l) => l.locale === "pt") ??
+    localizations.find((l) => l.locale === "en") ??
+    localizations[0];
+  const rawMd = primaryLoc?.content_md ?? "";
+  const extracted = extractAuthorFieldsFromContentMd(rawMd);
+  const extName = extracted.displayName?.trim();
+  if (!extName) return fromDb;
+
+  const { data: authors } = await admin
+    .from("blog_authors")
+    .select("id, user_id, display_name, job_title, bio, avatar_url, sort_order, created_at")
+    .eq("user_id", postAuthorId);
+  const rows = (authors ?? []) as BlogAuthorRow[];
+  const matchBa = rows.find((r) => r.display_name?.trim().toLowerCase() === extName.toLowerCase());
+  if (matchBa) {
+    const block = blogAuthorRowToForBlock(matchBa);
+    return {
+      displayName: extName,
+      jobTitle: extracted.jobTitle?.trim() || block.jobTitle,
+      bio: extracted.bio?.trim() || block.bio,
+      avatarUrl: block.avatarUrl,
+    };
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("display_name, job_title, bio, avatar_url")
+    .eq("id", postAuthorId)
+    .maybeSingle();
+  if (profile?.display_name?.trim().toLowerCase() === extName.toLowerCase()) {
+    return {
+      displayName: extName,
+      jobTitle: extracted.jobTitle?.trim() || profile.job_title?.trim() || null,
+      bio: extracted.bio?.trim() || profile.bio?.trim() || null,
+      avatarUrl: profile.avatar_url?.trim() || null,
+    };
+  }
+
+  return fromDb;
+}
+
+export function authorForBlockToWebhookAuthor(
+  a: AuthorForBlock | null,
+): { name: string; jobTitle: string | null; bio: string | null; avatarUrl: string | null } | null {
+  if (!a?.displayName?.trim()) return null;
+  return {
+    name: a.displayName.trim(),
+    jobTitle: a.jobTitle ?? null,
+    bio: a.bio ?? null,
+    avatarUrl: a.avatarUrl ?? null,
+  };
 }

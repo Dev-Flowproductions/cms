@@ -39,7 +39,12 @@ import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } fr
 import type { Locale } from "@/lib/types/db";
 import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
 import { verifyTrafficSchedulerInternalRequest } from "@/lib/scheduler/traffic-internal-auth";
-import { pickRandomBylineAuthorId, resolveAuthorForByline } from "@/lib/data/blog-authors";
+import {
+  authorForBlockToWebhookAuthor,
+  pickRandomBylineAuthorId,
+  resolveAuthorForByline,
+  resolveAuthorForWebhookDelivery,
+} from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 
@@ -1050,15 +1055,14 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
       const authorOwnerId = (freshPost as { author_id?: string }).author_id ?? client.user_id;
       const bylineId = (freshPost as { byline_author_id?: string | null }).byline_author_id ?? null;
-      const bylineResolved = await resolveAuthorForByline(admin, authorOwnerId, bylineId);
-      const webhookAuthor = bylineResolved
-        ? {
-            name: bylineResolved.displayName,
-            jobTitle: bylineResolved.jobTitle,
-            bio: bylineResolved.bio,
-            avatarUrl: bylineResolved.avatarUrl,
-          }
-        : null;
+      const authorBlock = await resolveAuthorForWebhookDelivery(
+        admin,
+        authorOwnerId,
+        bylineId,
+        primaryLocale,
+        localizations,
+      );
+      const webhookAuthor = authorForBlockToWebhookAuthor(authorBlock);
 
       const event = resolveWebhookEvent(client.webhook_event_format ?? "spec", false);
       const revalidation = buildRevalidationPayload(event, client.id, {
@@ -1067,14 +1071,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         status: "published",
         updatedAt: new Date().toISOString(),
       });
-      const authorPayload = webhookAuthor;
-
       const webhookPayload = {
         ...revalidation,
         post: {
           ...revalidation.post,
           cover_image_url: coverImageUrl,
-          ...(authorPayload !== undefined ? { author: authorPayload } : {}),
+          author: webhookAuthor,
           title: primary.title,
           excerpt: primary.excerpt,
           content_md: primary.content_md,

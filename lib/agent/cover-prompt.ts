@@ -3,6 +3,8 @@
  * JSON post generation also has a `cover` chunk in `instruction-chunks.ts` for `cover_image_*` fields — keep both aligned on brand colours and English-on-image rules.
  */
 
+import { applyCoverHeadlineCasing } from "@/lib/agent/cover-headline-case";
+
 /** Very long subjects can produce empty image parts from the image model — keep bounded. */
 export const COVER_IMAGE_SUBJECT_MAX_CHARS = 2000;
 
@@ -76,9 +78,9 @@ export function buildCoverPrompt(
 ): string {
   const needsEnglishDerivation = options?.headlineMayBeNonEnglish === true;
   const hasRefs = options?.hasReferenceImages === true;
-  // European style: first letter caps, rest lowercase (sentence case) — for known-English headlines
+  // European sentence case per word, but acronyms (AI, SEO, B2B, …) stay ALL CAPS
   const t = headline.trim();
-  const headlineForImage = t.length > 0 ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t;
+  const headlineForImage = t.length > 0 ? applyCoverHeadlineCasing(t) : t;
 
   const brandParts: string[] = [];
 
@@ -122,13 +124,17 @@ export function buildCoverPrompt(
     "ON-IMAGE TEXT LANGUAGE: Every letter and word shown on the image MUST be English only. " +
     "Do not render Portuguese, French, or any non-English language as readable text — even if the article topic is described in another language above.";
 
+  const acronymRule =
+    "Acronyms and initialisms (AI, SEO, API, B2B, LLM, etc.) must appear in ALL CAPS on the image; " +
+    "other words use European sentence case (first letter uppercase, rest lowercase). ";
+
   const headlineInstruction = needsEnglishDerivation
     ? `${englishOnlyRule} ` +
-      `Centered on-image headline: exactly ONE line, 2–4 words, ENGLISH ONLY (European sentence case: first letter caps, rest lowercase). ` +
+      `Centered on-image headline: exactly ONE line, 2–4 words, ENGLISH ONLY. ${acronymRule}` +
       `The article title below may be in another language — do NOT copy it onto the image; invent a short natural English phrase that fits the topic. ` +
       `Topic / title reference: "${headlineForImage}". `
     : `${englishOnlyRule} ` +
-      `Include this text ONCE only, centered: "${headlineForImage}". European style: first letter caps, rest lowercase. `;
+      `Include this text ONCE only, centered: "${headlineForImage}". ${acronymRule}`;
 
   return (
     `Editorial blog hero graphic: ${subject}. ` +

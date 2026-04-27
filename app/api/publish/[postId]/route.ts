@@ -6,6 +6,7 @@ import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { authorForBlockToWebhookAuthor, resolveAuthorForWebhookDelivery } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
+import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
 
 export async function POST(
   _req: NextRequest,
@@ -41,7 +42,7 @@ export async function POST(
   const { data: post, error: postError } = await admin
     .from("posts")
     .select(`
-      id, slug, author_id, byline_author_id, status, updated_at, webhook_status, primary_locale,
+      id, slug, author_id, byline_author_id, status, updated_at, published_at, webhook_status, primary_locale,
       post_localizations (
         locale, title, excerpt, content_md, seo_title, seo_description, jsonld, seo_score
       ),
@@ -132,11 +133,23 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: 422 });
   }
 
+  const publishMoment = new Date().toISOString();
+  const existingPublishedAt = (post as { published_at?: string | null }).published_at?.trim() ?? "";
+  const datePublishedForPayload = existingPublishedAt ? existingPublishedAt : publishMoment;
+
+  const webhookLocalizations = cleanedLocalizations.map((l) => ({
+    ...l,
+    jsonld: applyPublishTimestampsToJsonLd(l.jsonld, {
+      datePublished: datePublishedForPayload,
+      dateModified: publishMoment,
+    }),
+  }));
+
   const primary =
-    cleanedLocalizations.find((l) => l.locale === primaryLocale) ??
-    cleanedLocalizations.find((l) => l.locale === "pt") ??
-    cleanedLocalizations.find((l) => l.locale === "en") ??
-    cleanedLocalizations[0];
+    webhookLocalizations.find((l) => l.locale === primaryLocale) ??
+    webhookLocalizations.find((l) => l.locale === "pt") ??
+    webhookLocalizations.find((l) => l.locale === "en") ??
+    webhookLocalizations[0];
 
   if (!primary) {
     return NextResponse.json({ error: "Post has no content." }, { status: 422 });
@@ -151,7 +164,7 @@ export async function POST(
     id: post.id,
     slug: post.slug,
     status: "published",
-    updatedAt: (post as { updated_at: string }).updated_at,
+    updatedAt: publishMoment,
   });
 
   const payload = {
@@ -168,7 +181,7 @@ export async function POST(
       json_ld: primary.jsonld ?? null,
       locale: primary.locale,
       translations: Object.fromEntries(
-        cleanedLocalizations.map((l) => [
+        webhookLocalizations.map((l) => [
           l.locale,
           {
             title: l.title,
@@ -229,12 +242,18 @@ export async function POST(
       .from("posts")
       .update({
         status: "published",
-        ...(wasPublished ? {} : { published_at: new Date().toISOString() }),
+        ...(wasPublished ? {} : { published_at: publishMoment }),
         webhook_status: "success",
         webhook_sent_at: new Date().toISOString(),
         webhook_error: null,
       })
       .eq("id", postId);
+
+    await Promise.all(
+      webhookLocalizations.map((l) =>
+        admin.from("post_localizations").update({ jsonld: l.jsonld }).eq("post_id", postId).eq("locale", l.locale),
+      ),
+    );
 
     void notifyDgArticleStatusIfLinked(postId);
     return NextResponse.json({ success: true, deliveredAt: new Date().toISOString() });

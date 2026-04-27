@@ -47,6 +47,7 @@ import {
 } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
+import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
 
 const MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -977,11 +978,12 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
 
   const canAutoPublish = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
+  const publishedAtIso = new Date().toISOString();
 
   if (canAutoPublish) {
     await admin.from("posts").update({
       status: "published",
-      published_at: new Date().toISOString(),
+      published_at: publishedAtIso,
       webhook_status: client.webhook_url ? "pending" : null,
       webhook_sent_at: client.webhook_url ? new Date().toISOString() : null,
       webhook_error: null,
@@ -1039,11 +1041,25 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         ),
       }));
 
+      const webhookLocalizations = cleaned.map((l) => ({
+        ...l,
+        jsonld: applyPublishTimestampsToJsonLd(l.jsonld, {
+          datePublished: publishedAtIso,
+          dateModified: publishedAtIso,
+        }),
+      }));
+
+      await Promise.all(
+        webhookLocalizations.map((l) =>
+          admin.from("post_localizations").update({ jsonld: l.jsonld }).eq("post_id", post.id).eq("locale", l.locale),
+        ),
+      );
+
       const primary =
-        cleaned.find((l) => l.locale === primaryLocale) ??
-        cleaned.find((l) => l.locale === "pt") ??
-        cleaned.find((l) => l.locale === "en") ??
-        cleaned[0];
+        webhookLocalizations.find((l) => l.locale === primaryLocale) ??
+        webhookLocalizations.find((l) => l.locale === "pt") ??
+        webhookLocalizations.find((l) => l.locale === "en") ??
+        webhookLocalizations[0];
 
       if (!primary) throw new Error("No localizations found after generation");
 
@@ -1069,7 +1085,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         id: post.id,
         slug: freshPost?.slug ?? slug,
         status: "published",
-        updatedAt: new Date().toISOString(),
+        updatedAt: publishedAtIso,
       });
       const webhookPayload = {
         ...revalidation,
@@ -1085,7 +1101,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
           json_ld: primary.jsonld ?? null,
           locale: primary.locale,
           translations: Object.fromEntries(
-            cleaned.map((l) => [l.locale, {
+            webhookLocalizations.map((l) => [l.locale, {
               title: l.title,
               excerpt: l.excerpt,
               content_md: l.content_md,

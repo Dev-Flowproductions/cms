@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MAX_BRAND_UPLOAD_BYTES } from "@/lib/brand/brand-asset-limits";
-import type { CoverReferenceImagePart } from "./gemini-cover-image";
+import type { CoverReferenceImagePart } from "./cover-image";
 
 export type { CoverReferenceImagePart };
 

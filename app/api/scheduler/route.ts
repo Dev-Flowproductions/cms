@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleGenAI } from "@google/genai";
 import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
 import {
   combineClientInstructionsForModel,
-  resolveSystemInstructionsWithEmbeddings,
+  resolvePostSystemInstructions,
   buildPrompt,
   type ClientContext,
   type PostContext,
 } from "@/lib/agent/instructions";
+import { createAgentLlmBundle, stripModelJsonFences, type AgentLlmBundle } from "@/lib/agent/text-llm";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
-import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
@@ -48,8 +47,6 @@ import {
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
-
-const MODEL = "gemini-3.1-flash-lite-preview";
 
 /**
  * POST /api/scheduler/run
@@ -94,8 +91,14 @@ export async function POST(req: NextRequest) {
   const userIdParam = new URL(req.url).searchParams.get("userId");
 
   const admin = createAdminClient();
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  let llm: AgentLlmBundle;
+  try {
+    llm = createAgentLlmBundle();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "LLM not configured";
+    console.error("[scheduler]", msg);
+    return NextResponse.json({ error: msg }, { status: 503 });
+  }
 
   // Fetch all clients that have completed onboarding (have a domain)
   const { data: clients, error: clientsError } = await admin
@@ -195,7 +198,7 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const postId = await generatePostForClient(client, admin, genAI, imagenAI, {
+      const postId = await generatePostForClient(client, admin, llm, {
         revertLastPostOnGenerationFailure: !outerSkipClaim,
         now,
       });
@@ -368,10 +371,11 @@ async function findOldestDraftPostId(
 async function generatePostForClient(
   client: SchedulerClient,
   admin: ReturnType<typeof createAdminClient>,
-  genAI: GoogleGenerativeAI,
-  imagenAI: GoogleGenAI,
+  llm: AgentLlmBundle,
   runOpts: SchedulerRunOpts,
 ): Promise<string> {
+  const { text, openai, embeddings } = llm;
+  const modelName = text.modelName;
   // Always generate in all three locales; primary matches clients.post_locale (default pt)
   const primaryLocale = normalizeSchedulerPrimaryLocale(client.post_locale);
   const previousLastPost = client.last_post_generated_at ?? null;
@@ -489,8 +493,8 @@ async function generatePostForClient(
     "logo": { "@type": "ImageObject", "url": `https://${client.domain}/logo.png` },
   };
 
-  const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
-    genAI,
+  const systemInstruction = await resolvePostSystemInstructions(
+    embeddings,
     combinedInstructions,
     {
       contentType: "hero",
@@ -500,16 +504,6 @@ async function generatePostForClient(
       taskKind: "post_generation",
     },
   );
-
-  const geminiModel = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction,
-    generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 8192,
-      topP: 0.95,
-    },
-  });
 
   // ── STEP 1: Generate primary content in clients.post_locale ─────────────────
   let slug = tempSlug;
@@ -529,7 +523,7 @@ async function generatePostForClient(
 
   const { data: primaryRun } = await admin
     .from("agent_runs")
-    .insert({ post_id: post.id, locale: primaryLocale, status: "running", model: MODEL, input: { postCtx, clientCtx } })
+    .insert({ post_id: post.id, locale: primaryLocale, status: "running", model: modelName, input: { postCtx, clientCtx } })
     .select("id")
     .single();
   const primaryRunId = primaryRun?.id;
@@ -539,18 +533,18 @@ async function generatePostForClient(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const result = await geminiModel.generateContent(primaryPrompt);
-      const text = result.response.text().trim();
-      const clean = text
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
+      const raw = await text.generateText({
+        prompt: primaryPrompt,
+        systemInstruction,
+        temperature: 0.4,
+        maxOutputTokens: 8192,
+      });
+      const clean = stripModelJsonFences(raw);
       primaryContent = JSON.parse(clean);
       break;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[scheduler] Gemini attempt ${attempt}/${MAX_RETRIES} failed for ${primaryLocale} (${client.domain}): ${msg}`);
+      console.warn(`[scheduler] ${text.provider} attempt ${attempt}/${MAX_RETRIES} failed for ${primaryLocale} (${client.domain}): ${msg}`);
       if (attempt < MAX_RETRIES) {
         await new Promise((r) => setTimeout(r, 5_000 * attempt));
       }
@@ -558,7 +552,7 @@ async function generatePostForClient(
   }
 
   if (!primaryContent) {
-    if (primaryRunId) await admin.from("agent_runs").update({ status: "failed", error: "Gemini failed after 3 attempts" }).eq("id", primaryRunId);
+    if (primaryRunId) await admin.from("agent_runs").update({ status: "failed", error: "Model failed after 3 attempts" }).eq("id", primaryRunId);
     throw new Error(`Primary content generation failed for ${client.domain}`);
   }
 
@@ -570,8 +564,8 @@ async function generatePostForClient(
   primaryContent.content_md = convertInternalLinksToRelative(primaryContent.content_md, client.domain);
   primaryContent.content_md = sanitizeRelativeMarkdownLinks(primaryContent.content_md, primaryLinkUrls);
 
-  const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
-    genAI,
+  const qualitySystemInstruction = await resolvePostSystemInstructions(
+    embeddings,
     combinedInstructions,
     {
       contentType: "hero",
@@ -584,8 +578,7 @@ async function generatePostForClient(
 
   // Post-generation: score, review, and revise until 90+ (see improve-to-90 MAX_ITERATIONS)
   const { content: improvedContent, score: finalScore } = await improvePostTo90(
-    genAI,
-    MODEL,
+    text,
     {
       title: primaryContent.title,
       content_md: primaryContent.content_md,
@@ -709,8 +702,8 @@ async function generatePostForClient(
   }
 
   // ── STEP 2: Translate to other locales ──────────────────────────────────────
-  const translationSystemInstruction = await resolveSystemInstructionsWithEmbeddings(
-    genAI,
+  const translationSystemInstruction = await resolvePostSystemInstructions(
+    embeddings,
     combinedInstructions,
     {
       contentType: "hero",
@@ -720,15 +713,6 @@ async function generatePostForClient(
       taskKind: "translation",
     },
   );
-  const geminiTranslateModel = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: translationSystemInstruction,
-    generationConfig: {
-      temperature: 0.25,
-      maxOutputTokens: 8192,
-      topP: 0.95,
-    },
-  });
 
   const translationLocales = ALL_LOCALES.filter((l) => l !== primaryLocale);
 
@@ -741,7 +725,7 @@ async function generatePostForClient(
         post_id: post.id,
         locale,
         status: "running",
-        model: MODEL,
+        model: modelName,
         input: { action: "translate", from: primaryLocale, to: locale },
       })
       .select("id")
@@ -794,13 +778,13 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const result = await geminiTranslateModel.generateContent(translationPrompt);
-        const text = result.response.text().trim();
-        const clean = text
-          .replace(/^```json\s*/i, "")
-          .replace(/^```\s*/i, "")
-          .replace(/```\s*$/i, "")
-          .trim();
+        const raw = await text.generateText({
+          prompt: translationPrompt,
+          systemInstruction: translationSystemInstruction,
+          temperature: 0.25,
+          maxOutputTokens: 8192,
+        });
+        const clean = stripModelJsonFences(raw);
         translated = JSON.parse(clean);
         break;
       } catch (err) {
@@ -923,13 +907,13 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     let referenceVisionBrief: string | null = null;
     if (refParts.length > 0) {
       referenceVisionBrief = await requireCoverReferenceVisionBrief(
-        genAI,
+        openai,
         refParts,
         `[scheduler] ref-vision ${client.domain}`,
       );
     }
     const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
-      genAI,
+      embeddings,
       {
         focusKeywordOrTopic: primaryContent.focus_keyword || titleForCoverPrompt,
         contentType: "hero",
@@ -950,7 +934,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       } : null,
       { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly, hasReferenceImages: refParts.length > 0 }
     );
-    const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
+    const buffer = await generateCoverImageBufferWithEmbedFallback(openai, {
       embedPrefix: coverEmbedPrefix,
       basePrompt: baseCoverPrompt,
       logLabel: `[scheduler] cover ${client.domain}`,

@@ -3,7 +3,8 @@
  * improvements needed to reach 90+ on each dimension.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
+import type { TextLlmClient } from "./text-llm";
+import { stripModelJsonFences } from "./text-llm";
 import { seoScoreAverage, type ScoredContent, type SeoScoreResult } from "./score-post";
 
 export type ReviewerOutput = {
@@ -31,8 +32,7 @@ export type ReviewPostOptions = {
 };
 
 export async function reviewPostFor90(
-  genAI: GoogleGenerativeAI,
-  modelName: string,
+  textLlm: TextLlmClient,
   content: ScoredContent,
   currentScore: SeoScoreResult,
   options?: ReviewPostOptions
@@ -63,24 +63,17 @@ Output ONLY this JSON:
 ${userMessage}`;
 
   try {
-    const model = genAI.getGenerativeModel(
-      options?.systemInstruction
-        ? {
-            model: modelName,
-            systemInstruction: `${options.systemInstruction}
+    const systemInstruction = options?.systemInstruction
+      ? `${options.systemInstruction}
 
 ---
-${REVIEWER_SYSTEM}`,
-          }
-        : { model: modelName }
-    );
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    const clean = text
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
+${REVIEWER_SYSTEM}`
+      : undefined;
+    const raw = await textLlm.generateText({
+      prompt: options?.systemInstruction ? userMessage : prompt,
+      systemInstruction,
+    });
+    const clean = stripModelJsonFences(raw);
     const parsed = JSON.parse(clean) as { improvements?: string[] };
     const improvements = Array.isArray(parsed.improvements)
       ? parsed.improvements.filter((s): s is string => typeof s === "string").slice(0, 10)

@@ -1,4 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
+import { getOpenAiTextModelChain } from "@/lib/agent/ai-config";
+import { openAiChatWithModelFallback } from "@/lib/agent/openai-chat";
+import { stripModelJsonFences } from "@/lib/agent/text-llm";
 import type { BrandBook, BrandBookGenerationResult } from "./types";
 
 const BRAND_BOOK_PROMPT = `You are a brand strategist analyzing a company website to create a comprehensive brand book.
@@ -101,23 +104,17 @@ async function fetchWebsiteContent(domain: string): Promise<string> {
 }
 
 export async function generateBrandBook(domain: string): Promise<BrandBookGenerationResult> {
-  if (!process.env.GEMINI_API_KEY) {
-    return { success: false, error: "GEMINI_API_KEY not configured" };
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!openaiKey) {
+    return { success: false, error: "OPENAI_API_KEY not configured" };
   }
 
   try {
     console.log(`[brand-book] Fetching content from ${domain}...`);
     const websiteContent = await fetchWebsiteContent(domain);
 
-    console.log(`[brand-book] Analyzing with Gemini...`);
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 4096,
-      },
-    });
+    console.log(`[brand-book] Analyzing with OpenAI...`);
+    const openai = new OpenAI({ apiKey: openaiKey });
 
     const prompt = `${BRAND_BOOK_PROMPT}
 
@@ -128,30 +125,35 @@ ${websiteContent}
 
 Generate the brand book JSON:`;
 
-    let result;
+    let responseText = "";
     let attempts = 0;
     const maxAttempts = 3;
 
     while (attempts < maxAttempts) {
       attempts++;
       try {
-        result = await model.generateContent(prompt);
+        const { text } = await openAiChatWithModelFallback(
+          openai,
+          { prompt, temperature: 0.3, maxOutputTokens: 4096 },
+          getOpenAiTextModelChain(),
+        );
+        responseText = text;
         break;
       } catch (e) {
-        console.log(`[brand-book] Gemini attempt ${attempts}/${maxAttempts} failed:`, e);
+        console.log(`[brand-book] OpenAI attempt ${attempts}/${maxAttempts} failed:`, e);
         if (attempts >= maxAttempts) throw e;
         await new Promise((r) => setTimeout(r, 2000 * attempts));
       }
     }
 
-    if (!result) {
+    if (!responseText) {
       return { success: false, error: "Failed to generate brand book after retries" };
     }
 
-    const responseText = result.response.text();
+    responseText = stripModelJsonFences(responseText);
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { success: false, error: "Invalid response format from Gemini" };
+      return { success: false, error: "Invalid response format from model" };
     }
 
     const parsed = JSON.parse(jsonMatch[0]);

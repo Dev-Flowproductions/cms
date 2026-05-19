@@ -1,23 +1,10 @@
 /**
- * Ranks **client-specific** instruction sections (from `clients.custom_instructions`) with Gemini Embedding 2.
- * Callers pass the same retrieval query text as for general chunks (`buildInstructionRetrievalQuery(ctx)`).
- * All sections are kept — only order changes.
- *
- * Section boundaries rely on headers from `generateClientSpecificInstructions` (BRAND …, WEBSITE, etc.).
+ * Ranks **client-specific** instruction sections with embedding similarity.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
-import { TaskType } from "@google/generative-ai";
+import type { EmbeddingService } from "./embedding-service";
 
 export type ClientInstructionChunk = { id: string; text: string };
-
-function djb2Key(s: string): string {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) + h) ^ s.charCodeAt(i)!;
-  }
-  return `${s.length}:${(h >>> 0).toString(16)}`;
-}
 
 function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
@@ -33,22 +20,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
   }
   if (na === 0 || nb === 0) return 0;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
-}
-
-const clientChunkVecCache = new Map<string, Map<string, number[]>>();
-
-/** Same default as `instruction-embeddings` (avoid importing that module — cycle). */
-function getGeminiEmbedding2ModelName(): string {
-  return process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2-preview";
-}
-
-function vecCacheForModel(model: string): Map<string, number[]> {
-  let m = clientChunkVecCache.get(model);
-  if (!m) {
-    m = new Map();
-    clientChunkVecCache.set(model, m);
-  }
-  return m;
 }
 
 /**
@@ -79,43 +50,18 @@ export function joinClientInstructionChunksCanonical(chunks: ClientInstructionCh
  * Reorder client sections by similarity to `retrievalQueryText` (use `buildInstructionRetrievalQuery(ctx)` from caller).
  */
 export async function buildClientInstructionsWithEmbeddingOrder(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   chunks: ClientInstructionChunk[],
   retrievalQueryText: string,
 ): Promise<string> {
   if (chunks.length === 0) return "";
   if (chunks.length === 1) return chunks[0]!.text;
 
-  const modelName = getGeminiEmbedding2ModelName();
-  const model = genAI.getGenerativeModel({ model: modelName });
-  const queryRes = await model.embedContent({
-    content: { role: "user", parts: [{ text: retrievalQueryText }] },
-    taskType: TaskType.RETRIEVAL_QUERY,
-  });
-  const qVec = queryRes.embedding.values;
-  if (!qVec?.length) {
-    return joinClientInstructionChunksCanonical(chunks);
-  }
-
-  const cache = vecCacheForModel(modelName);
-  const missing = chunks.filter((c) => !cache.has(djb2Key(c.text)));
-
-  if (missing.length > 0) {
-    const { embeddings } = await model.batchEmbedContents({
-      requests: missing.map((c) => ({
-        content: { role: "user", parts: [{ text: c.text }] },
-        taskType: TaskType.RETRIEVAL_DOCUMENT,
-        title: c.id.slice(0, 50),
-      })),
-    });
-    missing.forEach((c, i) => {
-      const values = embeddings[i]?.values;
-      if (values?.length) cache.set(djb2Key(c.text), values);
-    });
-  }
+  const qVec = await embeddings.embedQuery(retrievalQueryText);
+  const docMap = await embeddings.embedDocuments(chunks.map((c) => ({ id: c.id, text: c.text })));
 
   const scored = chunks.map((c) => {
-    const vec = cache.get(djb2Key(c.text));
+    const vec = docMap.get(c.id);
     if (!vec?.length) return { c, score: 0 };
     return { c, score: cosineSimilarity(qVec, vec) };
   });

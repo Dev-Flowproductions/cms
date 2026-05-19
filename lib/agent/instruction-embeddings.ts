@@ -3,8 +3,7 @@
  * Chunk text lives in `instruction-chunks.ts`; this file only builds queries, embeds, and orders ids.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
-import { TaskType } from "@google/generative-ai";
+import type { EmbeddingService } from "./embedding-service";
 import {
   buildClientInstructionsWithEmbeddingOrder,
   parseClientInstructionsIntoChunks,
@@ -35,9 +34,9 @@ export type InstructionSelectionContext = {
   referenceVisionBrief?: string | null;
 };
 
-/** Gemini Embedding 2 only (override with GEMINI_EMBEDDING_MODEL if Google renames the model id). */
-export function getGeminiEmbedding2ModelName(): string {
-  return process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2-preview";
+/** Active embedding model id (OpenAI or Gemini depending on AI_PROVIDER). */
+export function getEmbeddingModelName(embeddings: EmbeddingService): string {
+  return embeddings.modelName;
 }
 
 /** Task-specific text used as the embedding **query** (same model as document embeddings). */
@@ -114,65 +113,22 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
-type DocCache = Map<string, number[]>;
-const documentEmbeddingCache = new Map<string, DocCache>();
-
-function getDocCache(model: string): DocCache {
-  let m = documentEmbeddingCache.get(model);
-  if (!m) {
-    m = new Map();
-    documentEmbeddingCache.set(model, m);
-  }
-  return m;
-}
-
-async function embedDocumentsForModel(
-  genAI: GoogleGenerativeAI,
-  modelName: string,
-): Promise<Map<string, number[]>> {
-  const cache = getDocCache(modelName);
-  const missing = GENERAL_INSTRUCTION_RANKED_CHUNKS.filter((c) => !cache.has(c.id));
-  if (missing.length === 0) return cache;
-
-  const model = genAI.getGenerativeModel({ model: modelName });
-  const { embeddings } = await model.batchEmbedContents({
-    requests: missing.map((c) => ({
-      content: { role: "user", parts: [{ text: c.text }] },
-      taskType: TaskType.RETRIEVAL_DOCUMENT,
-      title: c.id,
-    })),
-  });
-
-  missing.forEach((c, i) => {
-    const values = embeddings[i]?.values;
-    if (values?.length) cache.set(c.id, values);
-  });
-
-  return cache;
-}
-
 /**
  * Returns ranked chunk ids sorted by similarity to the task query.
  * Excludes internal_links when not applicable.
  */
 export async function rankGeneralInstructionChunkIds(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   ctx: InstructionSelectionContext,
 ): Promise<string[]> {
-  const modelName = getGeminiEmbedding2ModelName();
   const candidates = GENERAL_INSTRUCTION_RANKED_CHUNKS.filter(
     (c) => !c.onlyWithInternalLinks || ctx.hasInternalLinks,
   );
 
-  const model = genAI.getGenerativeModel({ model: modelName });
-  const queryRes = await model.embedContent({
-    content: { role: "user", parts: [{ text: buildInstructionRetrievalQuery(ctx) }] },
-    taskType: TaskType.RETRIEVAL_QUERY,
-  });
-  const qVec = queryRes.embedding.values;
-  if (!qVec?.length) throw new Error("Empty query embedding");
-
-  const docEmbeddings = await embedDocumentsForModel(genAI, modelName);
+  const qVec = await embeddings.embedQuery(buildInstructionRetrievalQuery(ctx));
+  const docEmbeddings = await embeddings.embedDocuments(
+    candidates.map((c) => ({ id: c.id, text: c.text })),
+  );
 
   const scored = candidates.map((c) => {
     const dVec = docEmbeddings.get(c.id);
@@ -185,10 +141,10 @@ export async function rankGeneralInstructionChunkIds(
 
 /** Full general instructions (prefix + ranked middle + JSON suffix). */
 export async function buildGeneralInstructionsWithEmbeddingOrder(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   ctx: InstructionSelectionContext,
 ): Promise<string> {
-  const order = await rankGeneralInstructionChunkIds(genAI, ctx);
+  const order = await rankGeneralInstructionChunkIds(embeddings, ctx);
   return joinGeneralInstructionsInOrder(order);
 }
 
@@ -201,7 +157,7 @@ export type CoverInstructionPrefixMeta = {
 };
 
 async function buildCoverInstructionEmbeddingPrefixCore(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
@@ -229,7 +185,7 @@ async function buildCoverInstructionEmbeddingPrefixCore(
         const ranked =
           cChunks.length === 1
             ? cChunks[0]!.text
-            : await buildClientInstructionsWithEmbeddingOrder(genAI, cChunks, retrievalQuery);
+            : await buildClientInstructionsWithEmbeddingOrder(embeddings, cChunks, retrievalQuery);
         clientSectionsRanked = cChunks.length > 1;
         if (ranked?.trim()) segments.push(`BRAND CONTEXT (embedding-ranked for cover task):\n${ranked}`);
       } catch (e) {
@@ -239,7 +195,7 @@ async function buildCoverInstructionEmbeddingPrefixCore(
     }
   }
 
-  const fullRankOrder = await rankGeneralInstructionChunkIds(genAI, ctx);
+  const fullRankOrder = await rankGeneralInstructionChunkIds(embeddings, ctx);
   const pickedGeneralChunkIds = fullRankOrder.filter((id) => id === "cover" || id === "formatting");
   const text = joinRankedInstructionChunksInOrder(pickedGeneralChunkIds);
   if (!text?.trim()) {
@@ -256,9 +212,10 @@ async function buildCoverInstructionEmbeddingPrefixCore(
   };
 
   console.info(
-    "[cover] gemini-embedding-2 instruction selection",
+    "[cover] instruction embedding selection",
     JSON.stringify({
-      embeddingModel: getGeminiEmbedding2ModelName(),
+      embeddingModel: embeddings.modelName,
+      embeddingProvider: embeddings.provider,
       task: "cover_raster",
       focusKeywordOrTopic: ctx.focusKeywordOrTopic,
       hasReferenceVisionBrief: Boolean(ctx.referenceVisionBrief?.trim()),
@@ -273,14 +230,14 @@ async function buildCoverInstructionEmbeddingPrefixCore(
  * Strict cover prefix + ranking metadata. Throws if Embedding 2 cannot produce general cover/formatting rules.
  */
 export async function buildCoverInstructionEmbeddingPrefixWithMeta(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
 ): Promise<{ prefix: string; meta: CoverInstructionPrefixMeta }> {
   try {
-    return await buildCoverInstructionEmbeddingPrefixCore(genAI, partial, clientInstructionsRaw, referenceVisionBrief);
+    return await buildCoverInstructionEmbeddingPrefixCore(embeddings, partial, clientInstructionsRaw, referenceVisionBrief);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Cover instruction embedding failed: ${msg}`);
@@ -296,14 +253,14 @@ export async function buildCoverInstructionEmbeddingPrefixWithMeta(
  * On failure returns `null` (legacy / lenient callers).
  */
 export async function buildCoverInstructionEmbeddingPrefix(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
 ): Promise<string | null> {
   try {
-    const { prefix } = await buildCoverInstructionEmbeddingPrefixCore(genAI, partial, clientInstructionsRaw, referenceVisionBrief);
+    const { prefix } = await buildCoverInstructionEmbeddingPrefixCore(embeddings, partial, clientInstructionsRaw, referenceVisionBrief);
     return prefix;
   } catch (e) {
     console.warn("[instruction-embeddings] Cover instruction embedding failed:", e);
@@ -315,13 +272,13 @@ const COVER_INSTRUCTION_EMBED_TIMEOUT_MS = 8000;
 
 /** Same as {@link buildCoverInstructionEmbeddingPrefix} but resolves to null if embedding work exceeds the timeout (avoids blocking serverless runs). */
 export function buildCoverInstructionEmbeddingPrefixWithTimeout(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   partial: Parameters<typeof buildCoverInstructionEmbeddingPrefix>[1],
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
 ): Promise<string | null> {
   return Promise.race([
-    buildCoverInstructionEmbeddingPrefix(genAI, partial, clientInstructionsRaw, referenceVisionBrief),
+    buildCoverInstructionEmbeddingPrefix(embeddings, partial, clientInstructionsRaw, referenceVisionBrief),
     new Promise<string | null>((resolve) =>
       setTimeout(() => resolve(null), COVER_INSTRUCTION_EMBED_TIMEOUT_MS),
     ),

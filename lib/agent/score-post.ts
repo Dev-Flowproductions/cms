@@ -3,7 +3,8 @@
  * Prevents default scores (e.g. 85) by making the model read and critique the post.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
+import type { TextLlmClient } from "./text-llm";
+import { stripModelJsonFences } from "./text-llm";
 
 export type SeoScoreResult = {
   seo: number;
@@ -91,8 +92,7 @@ export type ScorePostOptions = {
 };
 
 export async function scorePost(
-  genAI: GoogleGenerativeAI,
-  modelName: string,
+  textLlm: TextLlmClient,
   content: ScoredContent,
   options?: ScorePostOptions
 ): Promise<SeoScoreResult | null> {
@@ -118,24 +118,17 @@ Output ONLY this JSON, nothing else:
 ${userMessage}`;
 
   try {
-    const model = genAI.getGenerativeModel(
-      options?.systemInstruction
-        ? {
-            model: modelName,
-            systemInstruction: `${options.systemInstruction}
+    const systemInstruction = options?.systemInstruction
+      ? `${options.systemInstruction}
 
 ---
-You are an SEO editor. Score this user message's blog post 0–100 for SEO, AEO, and GEO using the instructions above. Output ONLY valid JSON: { "seo": number, "aeo": number, "geo": number, "notes": string }.`,
-          }
-        : { model: modelName }
-    );
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    let clean = text
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
+You are an SEO editor. Score this user message's blog post 0–100 for SEO, AEO, and GEO using the instructions above. Output ONLY valid JSON: { "seo": number, "aeo": number, "geo": number, "notes": string }.`
+      : undefined;
+    const raw = await textLlm.generateText({
+      prompt: options?.systemInstruction ? userMessage : prompt,
+      systemInstruction,
+    });
+    let clean = stripModelJsonFences(raw);
     // Extract JSON object if model wrapped it in extra text
     const braceStart = clean.indexOf("{");
     if (braceStart >= 0) {

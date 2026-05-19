@@ -1,18 +1,14 @@
 /**
- * Vision-language summary of client reference banner images.
- * Feeds (1) embedding retrieval query for cover instructions and (2) the image model text prompt.
+ * Vision-language summary of client reference banner images (OpenAI vision by default).
  */
-import type { GoogleGenerativeAI } from "@google/generative-ai";
-import type { CoverReferenceImagePart } from "./gemini-cover-image";
+import type OpenAI from "openai";
+import type { CoverReferenceImagePart } from "./cover-image";
+import { openAiVisionWithModelFallback } from "./openai-chat";
 
-/** Same text/vision stack as post generation (`scheduler` / `generate` routes). */
-const VISION_MODEL =
-  process.env.GEMINI_COVER_VISION_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
 const MAX_BRIEF_CHARS = 1200;
 
-/** Optional cap for {@link buildCoverReferenceVisionBriefWithTimeout} only (not used by {@link requireCoverReferenceVisionBrief}). */
 export const COVER_REFERENCE_VISION_TIMEOUT_MS = (() => {
-  const raw = process.env.GEMINI_COVER_VISION_TIMEOUT_MS?.trim();
+  const raw = process.env.OPENAI_VISION_TIMEOUT_MS?.trim() ?? process.env.GEMINI_COVER_VISION_TIMEOUT_MS?.trim();
   const n = raw ? Number.parseInt(raw, 10) : NaN;
   return Number.isFinite(n) && n > 0 ? n : 60_000;
 })();
@@ -30,29 +26,15 @@ Write dense instructions for an image generator (not marketing prose). Cover:
 Format: 3–7 short bullet lines. No title or preamble. Max 900 characters of body.`;
 
 export async function buildCoverReferenceVisionBrief(
-  genAI: GoogleGenerativeAI,
+  openai: OpenAI,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
 ): Promise<string | null> {
   const refs = referenceImages.filter((r) => r.base64?.length);
   if (!refs.length) return null;
 
-  const model = genAI.getGenerativeModel({ model: VISION_MODEL });
-  const parts: Array<
-    | { text: string }
-    | { inlineData: { mimeType: string; data: string } }
-  > = [
-    { text: VISION_PROMPT },
-    ...refs.slice(0, 3).map((r) => ({
-      inlineData: { mimeType: r.mimeType, data: r.base64 },
-    })),
-  ];
-
   try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-    });
-    const text = result.response.text()?.trim();
+    const text = await openAiVisionWithModelFallback(openai, VISION_PROMPT, refs);
     if (!text) return null;
     return text.slice(0, MAX_BRIEF_CHARS);
   } catch (e) {
@@ -62,27 +44,20 @@ export async function buildCoverReferenceVisionBrief(
 }
 
 export function buildCoverReferenceVisionBriefWithTimeout(
-  genAI: GoogleGenerativeAI,
+  openai: OpenAI,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
 ): Promise<string | null> {
   return Promise.race([
-    buildCoverReferenceVisionBrief(genAI, referenceImages, logLabel),
+    buildCoverReferenceVisionBrief(openai, referenceImages, logLabel),
     new Promise<string | null>((resolve) =>
       setTimeout(() => resolve(null), COVER_REFERENCE_VISION_TIMEOUT_MS),
     ),
   ]);
 }
 
-/**
- * When reference images are present, vision brief is required for strict cover generation
- * (Embedding 2 query + multimodal alignment).
- *
- * Uses {@link buildCoverReferenceVisionBrief} **without** a short Promise.race timeout — the previous
- * 12s cap caused false failures when Gemini multimodal responses were slow. One retry on empty/failure.
- */
 export async function requireCoverReferenceVisionBrief(
-  genAI: GoogleGenerativeAI,
+  openai: OpenAI,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
 ): Promise<string> {
@@ -90,10 +65,10 @@ export async function requireCoverReferenceVisionBrief(
   if (!refs.length) {
     throw new Error("requireCoverReferenceVisionBrief called with no usable reference images");
   }
-  let brief = await buildCoverReferenceVisionBrief(genAI, refs, logLabel);
+  let brief = await buildCoverReferenceVisionBrief(openai, refs, logLabel);
   if (!brief?.trim()) {
     console.warn(`[${logLabel}] cover-reference-vision empty or failed, retrying once`);
-    brief = await buildCoverReferenceVisionBrief(genAI, refs, `${logLabel} retry`);
+    brief = await buildCoverReferenceVisionBrief(openai, refs, `${logLabel} retry`);
   }
   if (!brief?.trim()) {
     throw new Error(

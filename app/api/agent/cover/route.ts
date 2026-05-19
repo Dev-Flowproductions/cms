@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleGenAI } from "@google/genai";
 import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
 import { combineClientInstructionsForModel } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
-import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
-
-const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const genAIEmbed = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { createAgentLlmBundle } from "@/lib/agent/text-llm";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -31,10 +27,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "post_id and query are required" }, { status: 400 });
   }
 
+  let llm: ReturnType<typeof createAgentLlmBundle>;
+  try {
+    llm = createAgentLlmBundle();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "AI not configured";
+    return NextResponse.json({ error: msg }, { status: 503 });
+  }
+
   const admin = createAdminClient();
   let imageBuffer!: ArrayBuffer | Buffer;
   let contentType = "image/jpeg";
-  let source = "gemini";
+  let source = "openai";
 
   let customInstructions: string | null = null;
   let brandGuidelinesText: string | null = null;
@@ -108,10 +112,10 @@ export async function POST(request: Request) {
   let coverEmbedPrefix: string;
   try {
     if (refParts.length > 0) {
-      referenceVisionBrief = await requireCoverReferenceVisionBrief(genAIEmbed, refParts, "[cover] ref-vision");
+      referenceVisionBrief = await requireCoverReferenceVisionBrief(llm.openai, refParts, "[cover] ref-vision");
     }
     const { prefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
-      genAIEmbed,
+      llm.embeddings,
       { focusKeywordOrTopic: query },
       customInstructions,
       referenceVisionBrief,
@@ -130,7 +134,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    const buf = await generateCoverImageBufferWithEmbedFallback(genai, {
+    const buf = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
       embedPrefix: coverEmbedPrefix,
       basePrompt,
       logLabel: "[cover]",
@@ -139,50 +143,41 @@ export async function POST(request: Request) {
       guidelinesText: brandGuidelinesText,
       enforcePrimaryInstructionEmbedding: true,
     });
-    if (!buf) throw new Error("No image returned from Gemini");
+    if (!buf) throw new Error("No image returned from OpenAI");
     imageBuffer = buf;
     contentType = "image/jpeg";
-    source = "gemini";
+    source = "openai";
 
   } catch (imgErr) {
     // ── Picsum fallback ────────────────────────────────────────────────────
-    console.warn("[cover] Imagen failed, falling back to Picsum:", imgErr);
+    console.warn("[cover] OpenAI image failed, falling back to Picsum:", imgErr);
     const seed = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const fallbackUrl = `https://picsum.photos/seed/${seed}/1920/1440`;
-    const imgRes = await fetch(fallbackUrl, { redirect: "follow" });
-    if (!imgRes.ok) return NextResponse.json({ error: "Failed to download fallback image" }, { status: 502 });
-    imageBuffer = await imgRes.arrayBuffer();
-    contentType = "image/jpeg";
+    const picsumUrl = `https://picsum.photos/seed/${seed}/1536/864`;
+    const picsumRes = await fetch(picsumUrl);
+    if (!picsumRes.ok) {
+      return NextResponse.json({ error: "Cover generation failed" }, { status: 502 });
+    }
+    imageBuffer = await picsumRes.arrayBuffer();
+    contentType = picsumRes.headers.get("content-type") ?? "image/jpeg";
     source = "picsum";
   }
 
-  // ── Upload to Supabase Storage ─────────────────────────────────────────────
-  const ext = contentType.includes("png") ? "png" : "jpg";
-  const path = `${post_id}/cover-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await admin.storage
+  const coverPath = `${post_id}/cover-${Date.now()}.jpg`;
+  const { error: uploadErr } = await admin.storage
     .from("covers")
-    .upload(path, imageBuffer, { contentType, upsert: true });
+    .upload(coverPath, imageBuffer, { contentType, upsert: true });
 
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+  if (uploadErr) {
+    return NextResponse.json({ error: uploadErr.message }, { status: 500 });
   }
 
-  const { error: updateError } = await admin
-    .from("posts")
-    .update({ cover_image_path: path })
-    .eq("id", post_id);
+  await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post_id);
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
-  }
-
-  const { data: urlData } = admin.storage.from("covers").getPublicUrl(path);
+  const { data: urlData } = admin.storage.from("covers").getPublicUrl(coverPath);
 
   return NextResponse.json({
-    success: true,
-    path,
-    publicUrl: urlData.publicUrl,
+    cover_image_path: coverPath,
+    cover_image_url: urlData.publicUrl,
     source,
   });
 }

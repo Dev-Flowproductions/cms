@@ -296,6 +296,7 @@ export function EditUserConfig({
   }
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
+    { value: "every3days", label: tSettings("every3days"), sublabel: tSettings("every3daysSublabel") },
     { value: "weekly", label: tSettings("weekly"), sublabel: tSettings("weeklySublabel") },
     { value: "biweekly", label: tSettings("biweekly"), sublabel: tSettings("biweeklySublabel") },
     { value: "monthly", label: tSettings("monthly"), sublabel: tSettings("monthlySublabel") },

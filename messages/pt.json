@@ -65,6 +65,8 @@
     "connectGoogle": "Ligar Google",
     "reconnectGoogle": "Religar Google",
     "frequency": {
+      "every3days": "A cada 3 dias",
+      "every3daysSublabel": "1 artigo / 3 dias",
       "weekly": "Semanal",
       "weeklySublabel": "1 artigo / semana",
       "biweekly": "Quinzenal",

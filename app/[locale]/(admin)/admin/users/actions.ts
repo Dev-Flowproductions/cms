@@ -16,7 +16,7 @@ const createUserSchema = z.object({
   avatar_url: z.union([z.string().url(), z.literal("")]).optional(),
   bio: z.string().optional(),
   job_title: z.string().optional(),
-  frequency: z.enum(["weekly", "biweekly", "monthly"]),
+  frequency: z.enum(["every3days", "weekly", "biweekly", "monthly"]),
   domain: z.string().optional(),
   company_name: z.string().optional(),
   logo_url: z.union([z.string().url(), z.literal("")]).optional(),

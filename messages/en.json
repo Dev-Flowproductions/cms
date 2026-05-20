@@ -65,6 +65,8 @@
     "connectGoogle": "Connect Google",
     "reconnectGoogle": "Reconnect Google",
     "frequency": {
+      "every3days": "Every 3 days",
+      "every3daysSublabel": "1 post / 3 days",
       "weekly": "Weekly",
       "weeklySublabel": "1 post / week",
       "biweekly": "Bi-weekly",

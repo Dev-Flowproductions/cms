@@ -2,7 +2,8 @@
  * Post reviser agent: applies SEO/AEO/GEO improvements from the reviewer to the content.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
+import type { TextLlmClient } from "./text-llm";
+import { stripModelJsonFences } from "./text-llm";
 import { clampMetaDescription, clampSeoTitle } from "./clamp-seo-fields";
 import type { ScoredContent } from "./score-post";
 import type { ReviewerOutput } from "./seo-reviewer";
@@ -34,8 +35,7 @@ export type RevisePostOptions = {
 };
 
 export async function revisePost(
-  genAI: GoogleGenerativeAI,
-  modelName: string,
+  textLlm: TextLlmClient,
   content: ScoredContent,
   review: ReviewerOutput,
   options?: RevisePostOptions
@@ -68,24 +68,17 @@ Example: { "content_md": "...", "seo_title": "..." } or { "content_md": "..." }`
 ${userMessage}`;
 
   try {
-    const model = genAI.getGenerativeModel(
-      options?.systemInstruction
-        ? {
-            model: modelName,
-            systemInstruction: `${options.systemInstruction}
+    const systemInstruction = options?.systemInstruction
+      ? `${options.systemInstruction}
 
 ---
-${REVISER_SYSTEM}`,
-          }
-        : { model: modelName }
-    );
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    const clean = text
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
+${REVISER_SYSTEM}`
+      : undefined;
+    const raw = await textLlm.generateText({
+      prompt: options?.systemInstruction ? userMessage : prompt,
+      systemInstruction,
+    });
+    const clean = stripModelJsonFences(raw);
     const parsed = JSON.parse(clean) as Record<string, unknown>;
     if (typeof parsed.content_md !== "string") return null;
 

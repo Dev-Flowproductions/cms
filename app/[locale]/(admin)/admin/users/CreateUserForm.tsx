@@ -81,6 +81,7 @@ export function CreateUserForm({ onSuccess, onCancel }: Props) {
   const [autoPublish, setAutoPublish] = useState(false);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
+    { value: "every3days", label: tSettings("frequency.every3days") },
     { value: "weekly",   label: tSettings("frequency.weekly") },
     { value: "biweekly", label: tSettings("frequency.biweekly") },
     { value: "monthly",  label: tSettings("frequency.monthly") },

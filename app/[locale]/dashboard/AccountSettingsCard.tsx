@@ -125,6 +125,7 @@ export function AccountSettingsCard({
   const [avatarUploadBusy, setAvatarUploadBusy] = useState(false);
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
+    { value: "every3days", label: t("frequency.every3days"), sublabel: t("frequency.every3daysSublabel") },
     { value: "weekly",   label: t("frequency.weekly"),   sublabel: t("frequency.weeklySublabel") },
     { value: "biweekly", label: t("frequency.biweekly"), sublabel: t("frequency.biweeklySublabel") },
     { value: "monthly",  label: t("frequency.monthly"),  sublabel: t("frequency.monthlySublabel") },

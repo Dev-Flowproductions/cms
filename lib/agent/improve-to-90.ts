@@ -2,7 +2,7 @@
  * Orchestrates the review-revise loop to achieve 90+ SEO/AEO/GEO scores.
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
+import type { TextLlmClient } from "./text-llm";
 import { restoreInternalLinks } from "./internal-link";
 import { scorePost, seoScoreAverage, type ScoredContent, type SeoScoreResult } from "./score-post";
 import { reviewPostFor90 } from "./seo-reviewer";
@@ -26,8 +26,7 @@ export type ImprovePostTo90Options = {
 
 /** Score, then review-revise until 90+ or max iterations. */
 export async function improvePostTo90(
-  genAI: GoogleGenerativeAI,
-  modelName: string,
+  textLlm: TextLlmClient,
   initialContent: ScoredContent,
   /** Fallback when scoring fails (e.g. generator's self-assessed score). */
   fallbackScore?: SeoScoreResult | null,
@@ -41,7 +40,7 @@ export async function improvePostTo90(
   const agentOpts = options?.systemInstruction
     ? { systemInstruction: options.systemInstruction }
     : undefined;
-  let score = await scorePost(genAI, modelName, content, agentOpts);
+  let score = await scorePost(textLlm, content, agentOpts);
   let iterations = 0;
 
   if (!score) {
@@ -52,7 +51,7 @@ export async function improvePostTo90(
   while (iterations < MAX_ITERATIONS) {
     if (seoScoreAverage(score) >= TARGET_MIN) break;
 
-    let review = await reviewPostFor90(genAI, modelName, content, score, agentOpts);
+    let review = await reviewPostFor90(textLlm, content, score, agentOpts);
     let improvements = review?.improvements?.filter((s) => s.trim()) ?? [];
     // Reviewer sometimes returns empty JSON improvements while scores stay <90 — use scorer notes as a fallback directive.
     if (improvements.length === 0 && score.notes?.trim()) {
@@ -63,7 +62,7 @@ export async function improvePostTo90(
     }
     if (improvements.length === 0) break;
 
-    const revised = await revisePost(genAI, modelName, content, { improvements }, agentOpts);
+    const revised = await revisePost(textLlm, content, { improvements }, agentOpts);
     if (!revised) break;
 
     // Restore any links the reviser corrupted to "/" or homepage
@@ -78,7 +77,7 @@ export async function improvePostTo90(
       ...(revised.faq_blocks != null && { faq_blocks: revised.faq_blocks }),
     };
 
-    const newScore = await scorePost(genAI, modelName, content, agentOpts);
+    const newScore = await scorePost(textLlm, content, agentOpts);
     if (!newScore) break;
 
     score = newScore;

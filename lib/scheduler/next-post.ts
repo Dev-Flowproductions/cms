@@ -3,6 +3,7 @@
  */
 export const FREQUENCY_INTERVAL_MS: Record<string, number> = {
   daily: 1 * 24 * 60 * 60 * 1000,
+  every3days: 3 * 24 * 60 * 60 * 1000,
   weekly: 7 * 24 * 60 * 60 * 1000,
   biweekly: 14 * 24 * 60 * 60 * 1000,
   monthly: 30 * 24 * 60 * 60 * 1000,

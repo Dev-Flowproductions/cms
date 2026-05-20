@@ -4,7 +4,7 @@
  * Brand text: `generate-client-instructions.ts` → `clients.custom_instructions` (sections ranked by embeddings per task).
  */
 
-import type { GoogleGenerativeAI } from "@google/generative-ai";
+import type { EmbeddingService } from "./embedding-service";
 import {
   buildClientInstructionsWithEmbeddingOrder,
   joinClientInstructionChunksCanonical,
@@ -76,12 +76,12 @@ function splitCombinedClientInstructionsForEmbedding(
  * {@link getSystemInstructions} if general embedding fails.
  */
 export async function resolveSystemInstructionsWithEmbeddings(
-  genAI: GoogleGenerativeAI,
+  embeddings: EmbeddingService,
   clientSpecificInstructions: string | null,
   ctx: InstructionSelectionContext,
 ): Promise<string> {
   try {
-    const general = await buildGeneralInstructionsWithEmbeddingOrder(genAI, ctx);
+    const general = await buildGeneralInstructionsWithEmbeddingOrder(embeddings, ctx);
     const { baseForEmbedding, reinforcementTail } = splitCombinedClientInstructionsForEmbedding(clientSpecificInstructions);
 
     if (!baseForEmbedding?.trim() && !reinforcementTail?.trim()) return general;
@@ -94,7 +94,7 @@ export async function resolveSystemInstructionsWithEmbeddings(
         if (chunks.length <= 1) {
           clientBlock = chunks[0]?.text ?? baseForEmbedding.trim();
         } else {
-          clientBlock = await buildClientInstructionsWithEmbeddingOrder(genAI, chunks, q);
+          clientBlock = await buildClientInstructionsWithEmbeddingOrder(embeddings, chunks, q);
         }
       } catch (ce) {
         console.warn("[instructions] Client embedding order failed, using canonical section order:", ce);
@@ -111,6 +111,15 @@ export async function resolveSystemInstructionsWithEmbeddings(
     console.warn("[instructions] Embedding ordering failed, using canonical general instructions:", e);
     return getSystemInstructions(clientSpecificInstructions);
   }
+}
+
+/** System instructions for post agents (embedding-ranked general + client sections). */
+export async function resolvePostSystemInstructions(
+  embeddings: EmbeddingService,
+  clientSpecificInstructions: string | null,
+  ctx: InstructionSelectionContext,
+): Promise<string> {
+  return resolveSystemInstructionsWithEmbeddings(embeddings, clientSpecificInstructions, ctx);
 }
 
 /** @deprecated Use getSystemInstructions(client.custom_instructions) for new code. */

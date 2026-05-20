@@ -1,18 +1,17 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleGenAI } from "@google/genai";
 import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
 import {
   combineClientInstructionsForModel,
-  resolveSystemInstructionsWithEmbeddings,
+  resolvePostSystemInstructions,
   buildPrompt,
   type ClientContext,
   type PostContext,
 } from "@/lib/agent/instructions";
+import { createAgentLlmBundle, stripModelJsonFences } from "@/lib/agent/text-llm";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
-import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/gemini-cover-image";
+import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
@@ -27,10 +26,6 @@ import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 import type { Locale } from "@/lib/types/db";
 import type { BrandBook } from "@/lib/brand-book/types";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const imagenAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const MODEL = "gemini-3.1-flash-lite-preview";
 
 export type ExecuteGenerateSuccess = {
   ok: true;
@@ -169,13 +164,22 @@ export async function executeAgentGeneratePost(input: {
     existing_draft: existing?.content_md || null,
   };
 
+  let llm: ReturnType<typeof createAgentLlmBundle>;
+  try {
+    llm = createAgentLlmBundle();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "LLM not configured";
+    return { ok: false, error: msg, statusCode: 503 };
+  }
+  const modelName = llm.text.modelName;
+
   const { data: run } = await admin
     .from("agent_runs")
     .insert({
       post_id: postId,
       locale,
       status: "running",
-      model: MODEL,
+      model: modelName,
       input: { postCtx, clientCtx },
     })
     .select("id")
@@ -183,8 +187,8 @@ export async function executeAgentGeneratePost(input: {
   const runId = run?.id;
 
   try {
-    const systemInstruction = await resolveSystemInstructionsWithEmbeddings(
-      genAI,
+    const systemInstruction = await resolvePostSystemInstructions(
+      llm.embeddings,
       combinedInstructions,
       {
         contentType: post.content_type,
@@ -195,20 +199,9 @@ export async function executeAgentGeneratePost(input: {
       },
     );
 
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction,
-    });
-
     const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-
-    const clean = text
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
+    const raw = await llm.text.generateText({ prompt, systemInstruction });
+    const clean = stripModelJsonFences(raw);
 
     let generated: {
       title: string;
@@ -229,10 +222,10 @@ export async function executeAgentGeneratePost(input: {
       if (runId) {
         await admin
           .from("agent_runs")
-          .update({ status: "failed", error: "Invalid JSON from Gemini", output: { raw: text } })
+          .update({ status: "failed", error: "Invalid JSON from model", output: { raw } })
           .eq("id", runId);
       }
-      return { ok: false, error: "Gemini returned invalid JSON. Try again." };
+      return { ok: false, error: "Model returned invalid JSON. Try again." };
     }
 
     generated.content_md = sanitizeInternalMarkdownLinks(
@@ -243,8 +236,8 @@ export async function executeAgentGeneratePost(input: {
       generated.content_md = convertInternalLinksToRelative(generated.content_md, clientRow.domain);
     }
 
-    const qualitySystemInstruction = await resolveSystemInstructionsWithEmbeddings(
-      genAI,
+    const qualitySystemInstruction = await resolvePostSystemInstructions(
+      llm.embeddings,
       combinedInstructions,
       {
         contentType: post.content_type,
@@ -256,8 +249,7 @@ export async function executeAgentGeneratePost(input: {
     );
 
     const { content: improvedContent, score: seoScoreToSave } = await improvePostTo90(
-      genAI,
-      MODEL,
+      llm.text,
       {
         title: generated.title,
         content_md: generated.content_md,
@@ -406,10 +398,10 @@ export async function executeAgentGeneratePost(input: {
       ]);
       let referenceVisionBrief: string | null = null;
       if (refParts.length > 0) {
-        referenceVisionBrief = await requireCoverReferenceVisionBrief(genAI, refParts, "[generate] ref-vision");
+        referenceVisionBrief = await requireCoverReferenceVisionBrief(llm.openai, refParts, "[generate] ref-vision");
       }
       const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
-        genAI,
+        llm.embeddings,
         {
           focusKeywordOrTopic: generated.focus_keyword || keyword,
           contentType: post.content_type,
@@ -433,7 +425,7 @@ export async function executeAgentGeneratePost(input: {
         { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly },
       );
 
-      const buffer = await generateCoverImageBufferWithEmbedFallback(imagenAI, {
+      const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
         embedPrefix: coverEmbedPrefix,
         basePrompt: baseCoverPrompt,
         logLabel: "[generate] auto-cover",

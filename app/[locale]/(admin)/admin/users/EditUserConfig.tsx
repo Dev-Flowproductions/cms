@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import {
+  createUser,
   getClientSettingsByAdmin,
   updateClientDomainByAdmin,
   updateClientFrequencyByAdmin,
@@ -39,23 +40,27 @@ const PROFILE_AUTHOR_ROW_ID = "__profile";
 
 type Settings = Awaited<ReturnType<typeof getClientSettingsByAdmin>>;
 
-export function EditUserConfig({
-  user,
-  blogAuthors = [],
-  onClose,
-  onSaved,
-  onAssetsUpdated,
-  closeOnSave = false,
-}: {
-  user: ClientRow;
-  /** Extra byline personas (random per post); empty = profile only */
-  blogAuthors?: AdminBlogAuthorRow[];
+type EditUserConfigProps = {
   onClose: () => void;
   onSaved?: () => void;
   onAssetsUpdated?: () => void;
   /** When true, run onClose after a successful save (e.g. modal). Default: stay on page. */
   closeOnSave?: boolean;
-}) {
+} & (
+  | {
+      mode?: "edit";
+      user: ClientRow;
+      /** Extra byline personas (random per post); empty = profile only */
+      blogAuthors?: AdminBlogAuthorRow[];
+    }
+  | { mode: "create" }
+);
+
+export function EditUserConfig(props: EditUserConfigProps) {
+  const isCreate = props.mode === "create";
+  const user = !isCreate ? props.user : null;
+  const blogAuthors = !isCreate ? (props.blogAuthors ?? []) : [];
+  const { onClose, onSaved, onAssetsUpdated, closeOnSave = false } = props;
   const t = useTranslations("admin.usersPage");
   const tAuthBlog = useTranslations("admin.usersPage.blogAuthors");
   const tBlogAuthors = useTranslations("dashboard.blogAuthors");
@@ -65,11 +70,16 @@ export function EditUserConfig({
   const tWh = useTranslations("settings.webhook");
   const tAssets = useTranslations("settings.brandAssets");
   const tCommon = useTranslations("common");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isCreate);
   const [error, setError] = useState<string | null>(null);
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [domain, setDomain] = useState("");
-  const [frequency, setFrequency] = useState<Frequency>(() => normalizeFrequencyForUi(user.frequency));
+  const [frequency, setFrequency] = useState<Frequency>(() =>
+    isCreate ? "weekly" : normalizeFrequencyForUi(user!.frequency),
+  );
   const [companyName, setCompanyName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#7c5cfc");
@@ -102,7 +112,7 @@ export function EditUserConfig({
 
   const [extraAuthors, setExtraAuthors] = useState<AdminBlogAuthorRow[]>(blogAuthors);
   const [showAddAuthor, setShowAddAuthor] = useState(false);
-  const [editingAuthorId, setEditingAuthorId] = useState<string | null>(null);
+  const [editingAuthorId, setEditingAuthorId] = useState<string | null>(isCreate ? PROFILE_AUTHOR_ROW_ID : null);
   const [expandedAuthorId, setExpandedAuthorId] = useState<string | null>(null);
   const [authorDelPending, startAuthorDel] = useTransition();
 
@@ -166,8 +176,9 @@ export function EditUserConfig({
   }
 
   useEffect(() => {
+    if (isCreate) return;
     let cancelled = false;
-    getClientSettingsByAdmin(user.user_id).then((data) => {
+    getClientSettingsByAdmin(user!.user_id).then((data) => {
       if (cancelled) return;
       applySettingsData(data);
       setLoading(false);
@@ -178,9 +189,13 @@ export function EditUserConfig({
       }
     });
     return () => { cancelled = true; };
-  }, [user.user_id]);
+  }, [isCreate, user?.user_id]);
 
   async function postAdminAsset(formData: FormData, successMessage?: string) {
+    if (isCreate || !user) {
+      setAssetError(t("configAssets.createFirstHint"));
+      return false;
+    }
     setAssetBusy(true);
     setAssetError(null);
     setAssetSuccess(null);
@@ -212,6 +227,10 @@ export function EditUserConfig({
 
   /** Large cover reference images: signed direct upload to Storage (bypasses platform body limits). */
   async function uploadAdminCoverRef(slot: 1 | 2 | 3, file: File, successMessage?: string) {
+    if (isCreate || !user) {
+      setAssetError(t("configAssets.createFirstHint"));
+      return false;
+    }
     setAssetBusy(true);
     setAssetError(null);
     setAssetSuccess(null);
@@ -307,10 +326,55 @@ export function EditUserConfig({
     setSaveError(null);
     const normalizedDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, "") || null;
 
+    if (isCreate) {
+      if (!email.trim()) {
+        setSaving(false);
+        setSaveError("Email is required");
+        return;
+      }
+      if (password.length < 8) {
+        setSaving(false);
+        setSaveError("Password must be at least 8 characters");
+        return;
+      }
+
+      const fd = new FormData();
+      fd.set("email", email.trim());
+      fd.set("password", password);
+      fd.set("display_name", displayName.trim());
+      fd.set("avatar_url", avatarUrl.trim());
+      fd.set("bio", bio.trim());
+      fd.set("job_title", jobTitle.trim());
+      fd.set("frequency", frequency);
+      fd.set("domain", normalizedDomain ?? "");
+      fd.set("company_name", companyName.trim());
+      fd.set("logo_url", logoUrl.trim());
+      fd.set("primary_color", primaryColor);
+      fd.set("secondary_color", secondaryColor);
+      fd.set("tertiary_color", tertiaryColor);
+      fd.set("alternative_color", alternativeColor.trim());
+      fd.set("font_style", fontStyle.trim());
+      fd.set("brand_voice", brandVoice);
+      fd.set("webhook_url", webhookUrl.trim());
+      fd.set("webhook_secret", webhookSecret.trim());
+      fd.set("webhook_event_format", webhookEventFormat);
+      fd.set("auto_publish", autoPublish ? "on" : "off");
+
+      const result = await createUser(fd);
+      setSaving(false);
+      if (result.error) {
+        setSaveError(result.error);
+        return;
+      }
+      onSaved?.();
+      if (closeOnSave) onClose();
+      return;
+    }
+
     const results = await Promise.all([
-      updateClientDomainByAdmin(user.user_id, domain),
-      updateClientFrequencyByAdmin(user.user_id, frequency),
-      updateClientBrandByAdmin(user.user_id, {
+      updateClientDomainByAdmin(user!.user_id, domain),
+      updateClientFrequencyByAdmin(user!.user_id, frequency),
+      updateClientBrandByAdmin(user!.user_id, {
         company_name: companyName.trim() || null,
         logo_url: logoUrl.trim() || null,
         primary_color: primaryColor || null,
@@ -320,13 +384,13 @@ export function EditUserConfig({
         font_style: fontStyle.trim() || null,
         brand_voice: brandVoice,
       }),
-      updateProfileByAdmin(user.user_id, {
+      updateProfileByAdmin(user!.user_id, {
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
         bio: bio.trim() || null,
         job_title: jobTitle.trim() || null,
       }),
-      updateUserWebhookByAdmin(user.user_id, {
+      updateUserWebhookByAdmin(user!.user_id, {
         webhook_url: webhookUrl.trim() || null,
         webhook_secret: webhookSecret.trim() || null,
         webhook_event_format: webhookEventFormat,
@@ -389,15 +453,71 @@ export function EditUserConfig({
             className="mb-0.5 text-xs font-semibold uppercase tracking-widest"
             style={{ color: "var(--adm-primary)" }}
           >
-            {tSettingsMain("account")}
+            {isCreate ? t("createForm.eyebrow") : tSettingsMain("account")}
           </p>
           <h2 className="text-base font-bold" style={{ color: "var(--adm-on-surface)" }}>
-            {tSettingsMain("title")}
+            {isCreate ? t("createForm.title") : tSettingsMain("title")}
           </h2>
         </div>
       </div>
 
       <div className="space-y-8 px-6 py-6">
+        {isCreate && (
+          <div
+            className="space-y-4 rounded-xl p-5"
+            style={{ background: "var(--adm-surface-highest)", border: "1px solid var(--adm-border-subtle)" }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+              {tCommon("account")}
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                  {tCommon("email")} <span style={{ color: "var(--adm-primary)" }}>*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="off"
+                  placeholder={t("createForm.emailPlaceholder")}
+                  className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                  style={inputFieldStyle}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                  {tCommon("password")} <span style={{ color: "var(--adm-primary)" }}>*</span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder={t("createForm.passwordPlaceholder")}
+                  className={`${inputClass} w-full rounded-xl px-4 py-3`}
+                  style={inputFieldStyle}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCreate && (
+          <p
+            className="rounded-xl border px-4 py-3 text-xs leading-relaxed"
+            style={{
+              borderColor: "var(--adm-border-subtle)",
+              background: "var(--adm-surface-highest)",
+              color: "var(--adm-on-variant)",
+            }}
+          >
+            {t("configAssets.createFirstHint")}
+          </p>
+        )}
         {/* Website domain */}
         <div
           className="space-y-3 rounded-xl p-5"
@@ -741,6 +861,7 @@ export function EditUserConfig({
 
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-end">
+            {!isCreate && (
               <button
                 type="button"
                 onClick={() => {
@@ -753,9 +874,10 @@ export function EditUserConfig({
               >
                 {tAuthBlog("addAuthor")}
               </button>
-            </div>
+            )}
+          </div>
 
-            {showAddAuthor && (
+            {showAddAuthor && user && (
               <AdminBlogAuthorForm
                 clientUserId={user.user_id}
                 onDone={afterBlogAuthorMutation}
@@ -766,14 +888,19 @@ export function EditUserConfig({
             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
               {tAuthBlog("authorListHeading", { count: 1 + extraAuthors.length })}
             </p>
-            {extraAuthors.length === 0 && !showAddAuthor ? (
+            {isCreate ? (
+              <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
+                {tAuthBlog("createExtraAuthorsHint")}
+              </p>
+            ) : null}
+            {!isCreate && extraAuthors.length === 0 && !showAddAuthor ? (
               <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>
                 {tAuthBlog("noExtraAuthors")}
               </p>
             ) : null}
             <ul className="space-y-3">
               <li key={PROFILE_AUTHOR_ROW_ID}>
-                {editingAuthorId === PROFILE_AUTHOR_ROW_ID ? (
+                {editingAuthorId === PROFILE_AUTHOR_ROW_ID || isCreate ? (
                   <div
                     className="rounded-xl border p-4"
                     style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
@@ -876,14 +1003,16 @@ export function EditUserConfig({
                       </div>
                     </div>
                     <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={() => setEditingAuthorId(null)}
-                        className="rounded-xl border px-5 py-2.5 text-sm font-semibold"
-                        style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-on-variant)" }}
-                      >
-                        {tBlogAuthors("cancel")}
-                      </button>
+                      {!isCreate && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingAuthorId(null)}
+                          className="rounded-xl border px-5 py-2.5 text-sm font-semibold"
+                          style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-on-variant)" }}
+                        >
+                          {tBlogAuthors("cancel")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -974,11 +1103,12 @@ export function EditUserConfig({
                   </div>
                 )}
               </li>
-              {extraAuthors.map((a) => (
+              {!isCreate &&
+                extraAuthors.map((a) => (
                 <li key={a.id}>
                   {editingAuthorId === a.id ? (
                     <AdminBlogAuthorForm
-                      clientUserId={user.user_id}
+                      clientUserId={user!.user_id}
                       author={a}
                       onDone={afterBlogAuthorMutation}
                       onCancel={() => setEditingAuthorId(null)}
@@ -1069,7 +1199,7 @@ export function EditUserConfig({
                               onClick={() => {
                                 if (!confirm(tAuthBlog("confirmDelete", { name: a.display_name }))) return;
                                 startAuthorDel(async () => {
-                                  const res = await adminDeleteBlogAuthorForClient(user.user_id, a.id);
+                                  const res = await adminDeleteBlogAuthorForClient(user!.user_id, a.id);
                                   if ("error" in res && res.error) alert(res.error);
                                   else afterBlogAuthorMutation();
                                 });
@@ -1268,7 +1398,7 @@ export function EditUserConfig({
               boxShadow: saving ? "none" : "var(--adm-cta-glow-shadow)",
             }}
           >
-            {saving ? tSettingsMain("saving") : t("saveAllChanges")}
+            {saving ? tSettingsMain("saving") : isCreate ? t("createAccount") : t("saveAllChanges")}
           </button>
           <button
             type="button"

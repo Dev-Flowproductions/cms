@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { type ClientRow } from "./actions";
-import { CreateUserForm } from "./CreateUserForm";
+import { EditUserConfig } from "./EditUserConfig";
 import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import { getMsUntilNextPostDue } from "@/lib/scheduler/next-post";
@@ -70,9 +70,11 @@ export function UsersClient({ initialUsers, initialError }: Props) {
       </div>
 
       {showForm && (
-        <CreateUserForm
-          onSuccess={handleSuccess}
-          onCancel={() => setShowForm(false)}
+        <EditUserConfig
+          mode="create"
+          onClose={() => setShowForm(false)}
+          onSaved={handleSuccess}
+          closeOnSave
         />
       )}
 

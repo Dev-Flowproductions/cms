@@ -377,11 +377,13 @@
         "noneYet": "Pas encore",
         "uploadSaved": "Téléversement enregistré.",
         "removeSaved": "Supprimé.",
-        "guidelinesUploadSaved": "Directives enregistrées. Le texte extrait s’affiche ci-dessus lorsqu’il est disponible."
+        "guidelinesUploadSaved": "Directives enregistrées. Le texte extrait s’affiche ci-dessus lorsqu’il est disponible.",
+        "createFirstHint": "Les téléversements (logo, directives, références de couverture, avatar) sont disponibles après la création du compte — rouvrez l’utilisateur pour les ajouter."
       },
       "blogAuthors": {
         "authorSectionTitle": "Auteurs du blog",
         "authorSectionIntro": "Ces noms servent de signature sur les articles. À chaque nouvel article, un auteur est tiré au hasard dans cette liste. Enregistrez la configuration en bas de page pour appliquer les modifications de la première ligne.",
+        "createExtraAuthorsHint": "Vous pourrez ajouter d’autres personas auteur après la création du compte (rouvrir cet utilisateur).",
         "authorListHeading": "Auteurs ({count})",
         "addAuthor": "Ajouter un auteur",
         "noExtraAuthors": "Ajoutez d’autres lignes pour faire tourner plusieurs signatures.",

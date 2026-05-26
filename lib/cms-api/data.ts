@@ -7,6 +7,49 @@ import type {
 
 type AdminClient = ReturnType<typeof import("@/lib/supabase/admin").createAdminClient>;
 
+type LocalizationRow = {
+  locale: string;
+  title?: string | null;
+  excerpt?: string | null;
+  seo_title?: string | null;
+  content_md?: string | null;
+  seo_description?: string | null;
+  jsonld?: unknown;
+};
+
+/** Prefer requested locale, then English, then Portuguese, then first available. */
+function pickLocalization(
+  locs: LocalizationRow[],
+  preferredLocale?: string | null,
+): LocalizationRow | undefined {
+  if (!locs.length) return undefined;
+
+  const normalized = preferredLocale?.trim().toLowerCase();
+  if (normalized) {
+    const match = locs.find((l) => l.locale?.toLowerCase() === normalized);
+    if (match) return match;
+  }
+
+  return (
+    locs.find((l) => l.locale === "en") ??
+    locs.find((l) => l.locale === "pt") ??
+    locs[0]
+  );
+}
+
+function buildListTranslations(locs: LocalizationRow[]): Record<string, ApiPostListItem["translations"][string]> {
+  const translations: ApiPostListItem["translations"] = {};
+  for (const l of locs) {
+    if (!l.locale) continue;
+    translations[l.locale] = {
+      title: l.title ?? "",
+      excerpt: l.excerpt ?? "",
+      seoTitle: l.seo_title ?? null,
+    };
+  }
+  return translations;
+}
+
 function getCoverUrl(admin: AdminClient, coverPath: string | null): string | null {
   if (!coverPath) return null;
   const { data } = admin.storage.from("covers").getPublicUrl(coverPath);
@@ -68,7 +111,7 @@ function resolveListAuthor(p: {
 export async function getPublishedPosts(
   admin: AdminClient,
   userId: string,
-  opts: { page?: number; limit?: number; sort?: string } = {}
+  opts: { page?: number; limit?: number; sort?: string; locale?: string | null } = {}
 ): Promise<{ posts: ApiPostListItem[]; total: number }> {
   const page = Math.max(1, opts.page ?? 1);
   const limit = Math.min(100, Math.max(1, opts.limit ?? 20));
@@ -99,7 +142,7 @@ export async function getPublishedPosts(
 
   const list: ApiPostListItem[] = (posts ?? []).map((p: any) => {
     const locs = p.post_localizations ?? [];
-    const primary = locs.find((l: any) => l.locale === "pt") ?? locs.find((l: any) => l.locale === "en") ?? locs[0];
+    const primary = pickLocalization(locs, opts.locale);
     return {
       id: p.id,
       title: primary?.title ?? "",
@@ -112,6 +155,8 @@ export async function getPublishedPosts(
       author: resolveListAuthor(p),
       categories: [],
       seoTitle: primary?.seo_title ?? null,
+      locale: primary?.locale ?? "en",
+      translations: buildListTranslations(locs),
     };
   });
 
@@ -124,7 +169,8 @@ export async function getPublishedPosts(
 export async function getPublishedPostBySlug(
   admin: AdminClient,
   userId: string,
-  slug: string
+  slug: string,
+  locale?: string | null,
 ): Promise<ApiPost | null> {
   const { data: post, error } = await admin
     .from("posts")
@@ -144,10 +190,7 @@ export async function getPublishedPostBySlug(
   if (error || !post) return null;
 
   const locs = (post as any).post_localizations ?? [];
-  const primary =
-    locs.find((l: any) => l.locale === "pt") ??
-    locs.find((l: any) => l.locale === "en") ??
-    locs[0];
+  const primary = pickLocalization(locs, locale);
   const coverUrl = getCoverUrl(admin, (post as any).cover_image_path);
 
   const translations: ApiPost["translations"] = {};

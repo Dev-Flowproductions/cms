@@ -26,8 +26,9 @@ const createUserSchema = z.object({
   alternative_color: z.string().optional(),
   font_style: z.string().optional(),
   brand_voice: z.string().optional(),
-  webhook_url: z.union([z.string().url(), z.literal("")]).optional(),
+  webhook_url: z.string().optional(),
   webhook_secret: z.string().optional(),
+  webhook_event_format: z.enum(["spec", "legacy"]).optional(),
   auto_publish: z.enum(["on", "off"]).optional(),
 });
 
@@ -58,6 +59,7 @@ export async function createUser(formData: FormData) {
     brand_voice: formData.get("brand_voice")?.toString() || undefined,
     webhook_url: formData.get("webhook_url")?.toString().trim() || undefined,
     webhook_secret: formData.get("webhook_secret")?.toString().trim() || undefined,
+    webhook_event_format: formData.get("webhook_event_format")?.toString() as "spec" | "legacy" | undefined,
     auto_publish: formData.get("auto_publish")?.toString() || undefined,
   });
 
@@ -85,8 +87,17 @@ export async function createUser(formData: FormData) {
     brand_voice,
     webhook_url,
     webhook_secret,
+    webhook_event_format,
     auto_publish,
   } = parsed.data;
+
+  const normalizedWebhookUrl = webhook_url?.trim() || null;
+  if (
+    normalizedWebhookUrl &&
+    !/^https?:\/\/.+/i.test(normalizedWebhookUrl)
+  ) {
+    return { error: "Webhook URL must start with http:// or https://" };
+  }
 
   const admin = createAdminClient();
 
@@ -138,8 +149,9 @@ export async function createUser(formData: FormData) {
     brand_voice: brand_voice || null,
     brand_name: company_name || null,
     brand_tone: brand_voice || null,
-    webhook_url: webhook_url || null,
-    webhook_secret: webhook_secret || null,
+    webhook_url: normalizedWebhookUrl,
+    webhook_secret: webhook_secret?.trim() || null,
+    webhook_event_format: webhook_event_format ?? "spec",
     auto_publish: auto_publish === "on",
   };
   const { error: clientError } = await admin.from("clients").insert(clientPayload);

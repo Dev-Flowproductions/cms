@@ -378,11 +378,13 @@
         "noneYet": "None yet",
         "uploadSaved": "Upload saved.",
         "removeSaved": "Removed.",
-        "guidelinesUploadSaved": "Guidelines uploaded and saved. Extracted text appears above when available."
+        "guidelinesUploadSaved": "Guidelines uploaded and saved. Extracted text appears above when available.",
+        "createFirstHint": "File uploads (logo, guidelines, cover references, avatar) are available after the account is created — open the user again to upload."
       },
       "blogAuthors": {
         "authorSectionTitle": "Blog authors",
         "authorSectionIntro": "These names are used as bylines on posts. When a post is created, one author is picked at random from this list. Save configuration at the bottom of this page to apply edits to the first row.",
+        "createExtraAuthorsHint": "You can add extra author personas after creating the account (open this user again).",
         "authorListHeading": "Authors ({count})",
         "addAuthor": "Add author",
         "noExtraAuthors": "Add more rows to rotate between several bylines.",

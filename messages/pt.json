@@ -377,11 +377,13 @@
         "noneYet": "Ainda não",
         "uploadSaved": "Carregamento guardado.",
         "removeSaved": "Removido.",
-        "guidelinesUploadSaved": "Diretrizes carregadas e guardadas. O texto extraído aparece acima quando disponível."
+        "guidelinesUploadSaved": "Diretrizes carregadas e guardadas. O texto extraído aparece acima quando disponível.",
+        "createFirstHint": "Os uploads de ficheiros (logótipo, diretrizes, referências de capa, avatar) ficam disponíveis depois de criar a conta — abra o utilizador novamente para carregar."
       },
       "blogAuthors": {
         "authorSectionTitle": "Autores do blog",
         "authorSectionIntro": "Estes nomes são usados como assinatura nos artigos. Em cada novo artigo, um autor é escolhido ao acaso desta lista. Guarde a configuração no fim desta página para aplicar alterações à primeira linha.",
+        "createExtraAuthorsHint": "Pode adicionar personas de autor extra depois de criar a conta (abra este utilizador novamente).",
         "authorListHeading": "Autores ({count})",
         "addAuthor": "Adicionar autor",
         "noExtraAuthors": "Adicione mais linhas para alternar entre várias assinaturas.",

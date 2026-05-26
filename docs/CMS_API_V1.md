@@ -24,6 +24,9 @@ Query params:
 | status | string | -      | Must be `published` |
 | page   | number | 1      | Page number        |
 | limit  | number | 20     | Items per page (max 100) |
+| locale | string | site's `post_locale` | Preferred locale for `title`, `excerpt`, and `seoTitle`. Falls back to `en`, then `pt`, then first available. |
+
+Each list item includes `locale` (the resolved locale used for the top-level fields) and `translations` (all available locales with `title`, `excerpt`, and `seoTitle`).
 
 Response:
 
@@ -41,7 +44,12 @@ Response:
       "updatedAt": "ISO8601",
       "author": { "id", "name", "slug", "bio", "avatarUrl" },
       "categories": [],
-      "seoTitle": "string | null"
+      "seoTitle": "string | null",
+      "locale": "en",
+      "translations": {
+        "en": { "title": "string", "excerpt": "string", "seoTitle": "string | null" },
+        "pt": { "title": "string", "excerpt": "string", "seoTitle": "string | null" }
+      }
     }
   ],
   "pagination": { "page", "limit", "total", "totalPages" }
@@ -53,6 +61,12 @@ Response:
 ### Get post by slug
 
 `GET /api/v1/sites/{siteId}/posts/{slug}`
+
+Query params:
+
+| Param  | Type   | Default | Description |
+|--------|--------|--------|-------------|
+| locale | string | site's `post_locale` | Preferred locale for top-level fields. Falls back to `en`, then `pt`, then first available. |
 
 Returns full post including `content`, `seoDescription`, `canonicalUrl`, `ogImageUrl`, `structuredData`, `locale`, and `translations` (keyed by locale).
 

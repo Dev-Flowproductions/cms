@@ -25,6 +25,7 @@ export async function GET(
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)));
   const status = searchParams.get("status");
+  const locale = searchParams.get("locale") ?? site.postLocale;
   if (status && status !== "published") {
     return NextResponse.json(
       { error: "Only status=published is supported" },
@@ -38,6 +39,7 @@ export async function GET(
       page,
       limit,
       sort: "newest",
+      locale,
     });
 
     const totalPages = Math.ceil(total / limit);

@@ -5,6 +5,7 @@ export interface SiteAuthResult {
   userId: string;
   domain: string | null;
   blogBasePath: string;
+  postLocale: string;
 }
 
 /**
@@ -21,7 +22,7 @@ export async function validateSiteApiKey(
   const admin = createAdminClient();
   const { data: client, error } = await admin
     .from("clients")
-    .select("id, user_id, domain, blog_base_path, cms_api_key, webhook_secret")
+    .select("id, user_id, domain, blog_base_path, post_locale, cms_api_key, webhook_secret")
     .eq("id", siteId)
     .maybeSingle();
 
@@ -39,6 +40,7 @@ export async function validateSiteApiKey(
     userId: client.user_id,
     domain: client.domain,
     blogBasePath: client.blog_base_path ?? "/blog",
+    postLocale: client.post_locale ?? "en",
   };
 }
 

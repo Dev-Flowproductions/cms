@@ -6,11 +6,11 @@ import { getPublishedPostBySlug } from "@/lib/cms-api/data";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ siteId: string; slug: string }> }
 ) {
   const { siteId, slug } = await params;
-  const apiKey = getApiKeyFromRequest(_request);
+  const apiKey = getApiKeyFromRequest(request);
   const site = await validateSiteApiKey(siteId, apiKey);
 
   if (!site) {
@@ -20,13 +20,15 @@ export async function GET(
     );
   }
 
+  const locale = request.nextUrl.searchParams.get("locale") ?? site.postLocale;
+
   if (!slug) {
     return NextResponse.json({ error: "Slug is required" }, { status: 400 });
   }
 
   try {
     const admin = createAdminClient();
-    const post = await getPublishedPostBySlug(admin, site.userId, slug);
+    const post = await getPublishedPostBySlug(admin, site.userId, slug, locale);
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });

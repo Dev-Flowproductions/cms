@@ -18,6 +18,12 @@ export interface ApiCategory {
   description: string | null;
 }
 
+export interface ApiPostListTranslation {
+  title: string;
+  excerpt: string;
+  seoTitle: string | null;
+}
+
 export interface ApiPostListItem {
   id: string;
   title: string;
@@ -30,6 +36,8 @@ export interface ApiPostListItem {
   author: ApiAuthor | null;
   categories: ApiCategory[];
   seoTitle: string | null;
+  locale: string;
+  translations: Record<string, ApiPostListTranslation>;
 }
 
 export interface ApiPost extends ApiPostListItem {

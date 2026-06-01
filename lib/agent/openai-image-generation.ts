@@ -12,6 +12,8 @@ import {
 
 const COVER_SIZE_FALLBACKS = [OPENAI_COVER_IMAGE_SIZE, "1536x1024", "1024x1024"] as const;
 
+type ReferenceImagePart = { mimeType: string; base64: string };
+
 export function extractBase64FromImageGenerationResponse(response: Response): string | null {
   for (const item of response.output ?? []) {
     if (item.type === "image_generation_call") {
@@ -22,14 +24,44 @@ export function extractBase64FromImageGenerationResponse(response: Response): st
   return null;
 }
 
+function buildResponsesInput(
+  prompt: string,
+  referenceImages?: ReferenceImagePart[],
+): string | OpenAI.Responses.ResponseInput {
+  const trimmed = prompt.slice(0, 32_000);
+  const refs = referenceImages?.filter((r) => r.base64?.length) ?? [];
+  if (!refs.length) return trimmed;
+
+  return [
+    {
+      role: "user",
+      content: [
+        {
+          type: "input_text",
+          text:
+            `${trimmed}\n\n` +
+            `The ${refs.length} attached image(s) are the client's reference banner examples. ` +
+            `Generate a new banner that matches their visual medium, colour mood, composition density, and typography style. ` +
+            `Do not copy logos or trademarks.`,
+        },
+        ...refs.slice(0, 3).map((img) => ({
+          type: "input_image" as const,
+          image_url: `data:${img.mimeType};base64,${img.base64}`,
+        })),
+      ],
+    },
+  ] as OpenAI.Responses.ResponseInput;
+}
+
 async function generateViaResponsesApi(
   openai: OpenAI,
   prompt: string,
   logLabel: string,
+  referenceImages?: ReferenceImagePart[],
 ): Promise<Buffer | null> {
   const responseModels = getOpenAiResponsesImageModelChain();
   const imageModels = getOpenAiImageModelChain();
-  const trimmed = prompt.slice(0, 32_000);
+  const input = buildResponsesInput(prompt, referenceImages);
 
   for (const responseModel of responseModels) {
     for (const imageModel of imageModels) {
@@ -37,7 +69,7 @@ async function generateViaResponsesApi(
         try {
           const response = await openai.responses.create({
             model: responseModel,
-            input: trimmed,
+            input,
             tools: [
               {
                 type: "image_generation",
@@ -50,8 +82,9 @@ async function generateViaResponsesApi(
           });
           const b64 = extractBase64FromImageGenerationResponse(response);
           if (b64) {
+            const mode = referenceImages?.length ? "multimodal" : "text";
             console.info(
-              `[${logLabel}] Cover via Responses API (model=${responseModel}, image_tool=${imageModel}, size=${size})`,
+              `[${logLabel}] Cover via Responses API (${mode}, model=${responseModel}, image_tool=${imageModel}, size=${size})`,
             );
             return Buffer.from(b64, "base64");
           }
@@ -110,8 +143,9 @@ export async function generateOpenAiCoverImageBuffer(
   openai: OpenAI,
   prompt: string,
   logLabel: string,
+  referenceImages?: ReferenceImagePart[],
 ): Promise<Buffer | null> {
-  const viaResponses = await generateViaResponsesApi(openai, prompt, logLabel);
+  const viaResponses = await generateViaResponsesApi(openai, prompt, logLabel, referenceImages);
   if (viaResponses) return viaResponses;
   return generateViaImagesApi(openai, prompt, logLabel);
 }

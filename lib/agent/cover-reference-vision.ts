@@ -15,15 +15,19 @@ export const COVER_REFERENCE_VISION_TIMEOUT_MS = (() => {
 
 const VISION_PROMPT = `You help keep blog header banners on-brand. The attached image(s) are EXAMPLES this client uses (or wants to emulate).
 
-Write dense instructions for an image generator (not marketing prose). Cover:
-- Medium: illustration vs photo vs 3D; line work; flat vs textured; level of detail
+Write dense instructions for an image generator (not marketing prose).
+
+FIRST LINE (mandatory): start with "MEDIUM: " followed by exactly one of PHOTOGRAPHY | ILLUSTRATION | FLAT DESIGN | 3D RENDER | MIXED-MEDIA — choose the dominant medium in the references.
+
+Then cover:
+- Medium details: realism vs stylized; line work; flat vs textured; level of detail
 - Colour: dominant hues, contrast, background vs foreground
 - Composition: layout, safe areas for headline text, symmetry
 - On-image typography if visible: weight, case, placement
 - Mood and sector vibe
 - End with: "Do not copy any logo, watermark, or trademark pixels."
 
-Format: 3–7 short bullet lines. No title or preamble. Max 900 characters of body.`;
+Format: 4–8 short bullet lines after the MEDIUM line. No title or preamble. Max 900 characters of body.`;
 
 export async function buildCoverReferenceVisionBrief(
   openai: OpenAI,

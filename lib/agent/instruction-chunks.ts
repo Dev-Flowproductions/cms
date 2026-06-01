@@ -80,10 +80,10 @@ section in content_md — the platform appends the author block after generation
    - All headings in content_md must be ## (H2) or ### (H3) — never #
 
 5. FAQ SECTION (REQUIRED — do not omit)
-   - H2 title IN THE POST'S LANGUAGE:
-     • Portuguese: "## Perguntas frequentes"
-     • English: "## Frequently asked questions"
-     • French: "## Questions fréquentes"
+   - H2 title MUST match the post language (see Language in CONTEXT — never mix languages):
+     • English posts: "## Frequently asked questions" ONLY
+     • Portuguese posts: "## Perguntas frequentes" ONLY
+     • French posts: "## Questions fréquentes" ONLY
    - Format: **{question}** followed by answer
    - EXACTLY 5 Q&As in faq_blocks. Each answer 40-60 words, quotable standalone. Phrase questions as real user search queries.
 
@@ -206,7 +206,7 @@ When the CONTEXT includes "INTERNAL LINKS", embed exactly 3 contextual links ins
 COVER IMAGE — EDITORIAL BLOG HERO
 ═══════════════════════════════════════
 
-The cover style follows the client's visual identity. When client reference images are provided the style is determined by those images (photography, illustration, flat design, etc.). When no reference images exist the default is an editorial graphic illustration using brand colours.
+The cover style follows the client's visual identity. When client reference images are provided the visual medium (photography, illustration, flat design, etc.) MUST match those references exactly — do not default to illustration if references are photographic. When no reference images exist the default is an editorial graphic illustration using brand colours.
 
 - BACKGROUND: Primary colour ONLY (from brand). No gradients, no secondary/tertiary on background.
 - COMPOSITION: FEW elements (1–2 accents). Thematic shapes or visuals matching the post. Do NOT fill borders. No repeating elements. Sparse placement in corners. Center stays clear.
@@ -233,7 +233,7 @@ OUTPUT (JSON only, no markdown fences)
   "seo_description": "145-158 chars",
   "focus_keyword": "YOUR chosen keyword based on the topic (ignore any passed value)",
   "excerpt": "1-2 sentences, under 160 chars",
-  "content_md": "Markdown: intro, scannable body (short paragraphs, lists/H3 for rhythm, punchline lines), FAQ (## Perguntas frequentes / Frequently asked questions + 5 Q&As from faq_blocks), conclusion. NO H1, NO date, NO cover, NO author/about-the-author section. 3 internal links when URLs provided.",
+  "content_md": "Markdown: intro, scannable body (short paragraphs, lists/H3 for rhythm, punchline lines), FAQ section (H2 heading in the post's language per FAQ rules + 5 Q&As from faq_blocks), conclusion. NO H1, NO date, NO cover, NO author/about-the-author section. 3 internal links when URLs provided.",
   "faq_blocks": [{ "question": "Real user query (required)", "answer": "40-60 words" }],
   "seo_score": { "seo": 0, "aeo": 0, "geo": 0, "notes": "..." }
 }

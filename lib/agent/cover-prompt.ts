@@ -16,14 +16,21 @@ export function truncateCoverImageSubject(subject: string): string {
 
 const COMPOSITION_VARIATIONS = [
   "Balanced editorial: clear thematic imagery tied to the article — metaphors, symbols, or abstract shapes with depth and layering. Professional polish, not empty.",
-  "Rich illustration: 4–6 cohesive visual elements suggesting the topic; readable hierarchy; avoid generic stock clichés.",
+  "Rich composition: 4–6 cohesive visual elements suggesting the topic; readable hierarchy; avoid generic stock clichés.",
   "Structured hero: strong visual band or shape behind the headline area, secondary motifs in corners that echo the subject.",
   "Asymmetric layout: bold graphic forms on one side, complementary detail opposite; topic-specific, not decorative noise.",
   "Metaphor-led: one main visual concept (scene or object cluster) that clearly evokes the post theme; crisp edges, high clarity.",
 ];
 
-function pickCompositionVariation(): string {
-  return COMPOSITION_VARIATIONS[Math.floor(Math.random() * COMPOSITION_VARIATIONS.length)] ?? COMPOSITION_VARIATIONS[1];
+const REFERENCE_COMPOSITION_VARIATIONS = [
+  "Match reference layout density: same amount of visual content, similar safe area for headline text, comparable spacing.",
+  "Follow reference composition: preserve how subjects are framed, cropped, and layered — adapt topic content only.",
+  "Mirror reference balance: if refs use photography, keep photographic realism; if refs use flat graphics, keep that flatness.",
+];
+
+function pickCompositionVariation(hasRefs: boolean): string {
+  const pool = hasRefs ? REFERENCE_COMPOSITION_VARIATIONS : COMPOSITION_VARIATIONS;
+  return pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
 }
 
 /** Pick one of the available colors for background to add variety across covers. */
@@ -87,16 +94,18 @@ export function buildCoverPrompt(
   if (brandStyle) {
     const backgroundColor = pickBackgroundColor(brandStyle);
     const accentColors = getAccentColors(brandStyle, backgroundColor);
-    // Client font_style is the baseline; brand book visualIdentity adds typography / art direction (often richer).
     const typoFromBook = visualIdentity?.aestheticStyle?.trim();
     const typoLine = typoFromBook
       ? `Typography: match "${brandStyle.fontStyle}" as baseline AND follow brand book direction: ${typoFromBook}`
       : `Typography / font feel: ${brandStyle.fontStyle}`;
     const imageDir = visualIdentity?.imageStyle?.trim();
-    const imageLine = imageDir ? ` Illustration / image style from brand book: ${imageDir}.` : "";
+    const imageLine = imageDir && !hasRefs ? ` Illustration / image style from brand book: ${imageDir}.` : "";
+    const accentUse = hasRefs
+      ? `Use accent colours ${accentColors.slice(0, 3).join(", ") || "from the same palette"} sparingly for depth and contrast — match how the reference banners use colour. `
+      : `Build a substantive, topic-driven graphic: use accent colours ${accentColors.slice(0, 3).join(", ") || "from the same palette"} for illustrations, shapes, and depth. `;
     brandParts.push(
       `COLOUR SYSTEM: base background ${backgroundColor} (solid or very subtle edge vignette only — no loud rainbow gradients). ` +
-      `Build a substantive, topic-driven graphic: use accent colours ${accentColors.slice(0, 3).join(", ") || "from the same palette"} for illustrations, shapes, and depth. ` +
+      accentUse +
       `${typoLine}. Brand mood: ${brandStyle.brandVoice}.${imageLine} ` +
       `Do not use any other platform or agency palette — only these client colours and neutrals (white/black at low opacity) for contrast.`
     );
@@ -112,12 +121,16 @@ export function buildCoverPrompt(
   }
 
   const brandStr = brandParts.length > 0 ? brandParts.join(" ") + " " : "";
-  const variation = pickCompositionVariation();
+  const variation = pickCompositionVariation(hasRefs);
 
   // Style instruction: follow reference images when they exist; otherwise default to editorial illustration
   const styleInstruction = hasRefs
-    ? `Precisely match the visual medium and aesthetic of the reference images (whether photography, flat design, illustration, or mixed-media). Do not default to vector/illustration if the references are photographic or use a different style — let the reference style drive all aesthetic choices. `
+    ? `CRITICAL STYLE: The attached reference banner image(s) define the visual medium. Match them exactly — if they are photographs, generate photography (not illustration, not vector art, not cartoon). If they are flat design or illustration, match that medium. Do not default to vector/illustration when references are photographic. Replicate their realism level, texture, and art direction. `
     : `Polished vector or editorial illustration feel; controlled depth (shadows, layers) allowed. Clean edges, high clarity. `;
+
+  const heroLead = hasRefs
+    ? `Blog hero banner in the same visual medium as the reference images: ${subject}. `
+    : `Editorial blog hero graphic: ${subject}. `;
 
   /** Covers are shared across locales — visible typography must stay English. */
   const englishOnlyRule =
@@ -137,7 +150,7 @@ export function buildCoverPrompt(
       `Include this text ONCE only, centered: "${headlineForImage}". ${acronymRule}`;
 
   return (
-    `Editorial blog hero graphic: ${subject}. ` +
+    heroLead +
     `Composition: ${variation} Wide banner 16:9. ` +
     brandStr +
     styleInstruction +

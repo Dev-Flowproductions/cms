@@ -68,12 +68,15 @@ export function extractAuthorFieldsFromContentMd(contentMd: string): Partial<Aut
     const body = m[1].trim();
     if (!body) continue;
 
-    const divInner = body.match(/<div[^>]*author-block[^>]*>([\s\S]*?)<\/div>/i);
+    const divInner = body.match(
+      /<div[^>]*\bid\s*=\s*["']author-block["'][^>]*>([\s\S]*?)<\/div>/i,
+    ) ?? body.match(/<div[^>]*\bclass\s*=\s*["'][^"']*\bauthor-block\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
     const htmlBlob = divInner ? divInner[1] : /author-name|author-job|author-bio/i.test(body) ? body : null;
-    if (htmlBlob) {
-      const nm = htmlBlob.match(/class\s*=\s*["']author-name["'][^>]*>([^<]*)/i);
-      const jm = htmlBlob.match(/class\s*=\s*["']author-job["'][^>]*>([^<]*)/i);
-      const bm = htmlBlob.match(/class\s*=\s*["']author-bio["'][^>]*>([\s\S]*?)<\/p>/i);
+    if (htmlBlob || /author-name|author-job|author-bio/i.test(body)) {
+      const searchIn = body;
+      const nm = searchIn.match(/class\s*=\s*["']author-name["'][^>]*>([^<]*)/i);
+      const jm = searchIn.match(/class\s*=\s*["']author-job["'][^>]*>([^<]*)/i);
+      const bm = searchIn.match(/class\s*=\s*["']author-bio["'][^>]*>([\s\S]*?)<\/p>/i);
       if (nm?.[1]?.trim()) out.displayName = decodeBasicHtmlEntities(nm[1].trim());
       if (jm?.[1]?.trim()) out.jobTitle = decodeBasicHtmlEntities(jm[1].trim());
       if (bm?.[1]?.trim()) {
@@ -105,6 +108,21 @@ export function extractAuthorFieldsFromContentMd(contentMd: string): Partial<Aut
     return out;
   }
   return out;
+}
+
+/** Prefer author name/job/bio embedded in localized content_md; fall back to DB profile fields. */
+export function mergeAuthorWithContentMd(
+  base: AuthorForBlock | null,
+  contentMd: string,
+): AuthorForBlock | null {
+  if (!base?.displayName?.trim()) return null;
+  const extracted = extractAuthorFieldsFromContentMd(contentMd);
+  return {
+    displayName: extracted.displayName?.trim() || base.displayName,
+    jobTitle: extracted.jobTitle?.trim() || base.jobTitle,
+    bio: extracted.bio?.trim() || base.bio,
+    avatarUrl: base.avatarUrl,
+  };
 }
 
 /**

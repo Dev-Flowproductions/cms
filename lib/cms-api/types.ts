@@ -47,7 +47,7 @@ export interface ApiPost extends ApiPostListItem {
   ogImageUrl: string | null;
   structuredData: unknown;
   locale: string;
-  translations: Record<string, { title: string; excerpt: string; content: string; seoTitle: string | null; seoDescription: string | null }>;
+  translations: Record<string, { title: string; excerpt: string; content: string; seoTitle: string | null; seoDescription: string | null; author: ApiAuthor | null }>;
 }
 
 export interface ApiPostsResponse {

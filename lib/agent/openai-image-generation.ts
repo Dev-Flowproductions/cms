@@ -50,7 +50,7 @@ function buildResponsesInput(
         })),
       ],
     },
-  ];
+  ] as OpenAI.Responses.ResponseInput;
 }
 
 async function generateViaResponsesApi(

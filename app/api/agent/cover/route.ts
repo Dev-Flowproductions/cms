@@ -102,6 +102,7 @@ export async function POST(request: Request) {
     }
   }
 
+  const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
   const coverSubject = truncateCoverImageSubject(
     refParts.length > 0
       ? `Blog hero banner for topic "${query}": match the attached reference banner style; topic-specific visuals.`
@@ -109,7 +110,6 @@ export async function POST(request: Request) {
   );
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
-  const refParts = await loadCoverReferenceImageParts(admin, coverRefPaths);
   let referenceVisionBrief: string | null = null;
   let coverEmbedPrefix: string;
   try {

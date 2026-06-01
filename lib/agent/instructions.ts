@@ -17,6 +17,8 @@ import {
 } from "./instruction-embeddings";
 import type { InstructionSelectionContext, InstructionTaskKind } from "./instruction-embeddings";
 import type { EnrichedUrl } from "./site-urls";
+import { FAQ_HEADING_BY_LOCALE } from "./faq-heading";
+import type { Locale } from "@/lib/types/db";
 
 export type { InstructionSelectionContext, InstructionTaskKind };
 
@@ -324,6 +326,9 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
     lines.push("CRITICAL: Choose a completely different topic and angle from the RECENT ARTICLES listed above — do not repeat those titles or subjects.");
   }
   lines.push("CRITICAL: content_md has NO H1, NO date line, NO cover image — only H2/H3. Start with the intro paragraph.");
+  lines.push(
+    `CRITICAL: FAQ section H2 must be exactly "${FAQ_HEADING_BY_LOCALE[post.locale as Locale] ?? FAQ_HEADING_BY_LOCALE.en}" — never use a FAQ heading in another language.`,
+  );
   lines.push("CRITICAL: Scannable layout — short paragraphs, visual rhythm (lists / ### under H2), punchline takeaways; no long unbroken text blocks.");
   if (linkCandidates.length > 0) {
     lines.push("CRITICAL: 3 internal links. Semantic match: anchor phrase → page whose title best fits. Real search phrases, not generic.");

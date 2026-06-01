@@ -103,7 +103,9 @@ export async function POST(request: Request) {
   }
 
   const coverSubject = truncateCoverImageSubject(
-    `Editorial illustration for blog topic "${query}": rich, topic-specific visuals; distinctive composition.`,
+    refParts.length > 0
+      ? `Blog hero banner for topic "${query}": match the attached reference banner style; topic-specific visuals.`
+      : `Blog hero banner for topic "${query}": rich, topic-specific visuals; distinctive composition.`,
   );
   const headlineForCover = query.trim().split(/\s+/).slice(0, 4).join(" ");
 
@@ -131,6 +133,7 @@ export async function POST(request: Request) {
 
   const basePrompt = buildCoverPrompt(coverSubject, headlineForCover, brandStyle, visualIdentity, {
     headlineMayBeNonEnglish: true,
+    hasReferenceImages: refParts.length > 0,
   });
 
   try {

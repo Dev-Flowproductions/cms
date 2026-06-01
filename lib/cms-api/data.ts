@@ -4,6 +4,7 @@ import type {
   ApiAuthor,
   ApiSitemapEntry,
 } from "./types";
+import { extractAuthorFieldsFromContentMd } from "@/lib/agent/internal-link";
 
 type AdminClient = ReturnType<typeof import("@/lib/supabase/admin").createAdminClient>;
 
@@ -105,6 +106,17 @@ function resolveListAuthor(p: {
   return mapBlogAuthor(byline as Parameters<typeof mapBlogAuthor>[0]) ?? mapAuthor(profile as Parameters<typeof mapAuthor>[0]);
 }
 
+function mergeApiAuthorWithContent(base: ApiAuthor | null, contentMd: string | null | undefined): ApiAuthor | null {
+  if (!base) return null;
+  const extracted = extractAuthorFieldsFromContentMd(contentMd ?? "");
+  return {
+    ...base,
+    name: extracted.displayName?.trim() || base.name,
+    jobTitle: extracted.jobTitle?.trim() ?? base.jobTitle,
+    bio: extracted.bio?.trim() ?? base.bio,
+  };
+}
+
 /**
  * List published posts for a site (client). Scoped by author_id = client's user_id.
  */
@@ -143,6 +155,7 @@ export async function getPublishedPosts(
   const list: ApiPostListItem[] = (posts ?? []).map((p: any) => {
     const locs = p.post_localizations ?? [];
     const primary = pickLocalization(locs, opts.locale);
+    const baseAuthor = resolveListAuthor(p);
     return {
       id: p.id,
       title: primary?.title ?? "",
@@ -152,7 +165,7 @@ export async function getPublishedPosts(
       coverImageAlt: "Cover image",
       publishedAt: p.published_at,
       updatedAt: p.updated_at,
-      author: resolveListAuthor(p),
+      author: mergeApiAuthorWithContent(baseAuthor, primary?.content_md),
       categories: [],
       seoTitle: primary?.seo_title ?? null,
       locale: primary?.locale ?? "en",
@@ -192,6 +205,7 @@ export async function getPublishedPostBySlug(
   const locs = (post as any).post_localizations ?? [];
   const primary = pickLocalization(locs, locale);
   const coverUrl = getCoverUrl(admin, (post as any).cover_image_path);
+  const baseAuthor = resolveListAuthor(post as { blog_authors?: unknown; profiles?: unknown });
 
   const translations: ApiPost["translations"] = {};
   for (const l of locs) {
@@ -201,6 +215,7 @@ export async function getPublishedPostBySlug(
       content: l.content_md ?? "",
       seoTitle: l.seo_title ?? null,
       seoDescription: l.seo_description ?? null,
+      author: mergeApiAuthorWithContent(baseAuthor, l.content_md),
     };
   }
 
@@ -213,7 +228,7 @@ export async function getPublishedPostBySlug(
     coverImageAlt: "Cover image",
     publishedAt: (post as any).published_at,
     updatedAt: (post as any).updated_at,
-    author: resolveListAuthor(post as { blog_authors?: unknown; profiles?: unknown }),
+    author: mergeApiAuthorWithContent(baseAuthor, primary?.content_md),
     categories: [],
     seoTitle: primary?.seo_title ?? null,
     content: primary?.content_md ?? "",

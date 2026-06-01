@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
-import { authorForBlockToWebhookAuthor, resolveAuthorForWebhookDelivery } from "@/lib/data/blog-authors";
+import { authorForBlockToWebhookAuthor, resolveAuthorForWebhookDelivery, resolveAuthorsForWebhookLocalizations } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
 
@@ -92,6 +92,12 @@ export async function POST(
     localizationsRaw,
   );
   const author = authorForBlockToWebhookAuthor(authorBlock);
+  const authorsByLocale = await resolveAuthorsForWebhookLocalizations(
+    admin,
+    post.author_id,
+    (post as { byline_author_id?: string | null }).byline_author_id ?? null,
+    localizationsRaw,
+  );
 
   // Build the cover image public URL if available
   let coverImageUrl: string | null = null;
@@ -190,6 +196,7 @@ export async function POST(
             seo_title: l.seo_title,
             meta_description: l.seo_description,
             json_ld: l.jsonld ?? null,
+            author: authorForBlockToWebhookAuthor(authorsByLocale[l.locale] ?? null),
           },
         ])
       ),

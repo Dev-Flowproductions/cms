@@ -10,7 +10,7 @@ The same pipeline is used in:
 - **Scheduler** — `app/api/scheduler/route.ts` (automated posts for due clients).
 - **Dedicated cover API** — `app/api/agent/cover/route.ts` (regenerate cover for an existing post).
 
-Images are produced with **Google Gemini** (`gemini-3.1-flash-image-preview`), **16:9**, **2K** resolution (`lib/agent/gemini-cover-image.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.
+Images are produced with **OpenAI** (Responses API `image_generation` tool, Images API fallback), **16:9** (`lib/agent/openai-image-generation.ts`, `lib/agent/cover-image.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.
 
 ## How company style is enforced (layers)
 
@@ -51,14 +51,14 @@ General chunks **`cover`** and **`formatting`** from `lib/agent/instruction-chun
 Clients can upload up to **three** reference images (paths on the client row, files in the **`brand-assets`** bucket). The system:
 
 1. **Downloads** them as base64 parts (`lib/agent/cover-reference-images.ts` — `loadCoverReferenceImageParts`).
-2. Runs a **vision pass** with Gemini (`lib/agent/cover-reference-vision.ts`) to produce a short, dense **“visual analysis”** brief (medium, colour, composition, typography on refs, mood). That brief is injected into the text sent to the image model and participates in embedding retrieval.
-3. Sends **multimodal** requests: **text prompt + the same reference images** to the image model (`generateGeminiCoverImageBufferWithReferences`) so the output **matches the medium** (photo vs illustration vs flat design), not only colours in prose.
+2. Runs a **vision pass** with OpenAI (`lib/agent/cover-reference-vision.ts`) to produce a short, dense **“visual analysis”** brief (medium lock, colour, composition, typography on refs, mood). That brief is injected into the text sent to the image model and participates in embedding retrieval.
+3. Sends **multimodal** requests: **text prompt + the same reference images** via the Responses API (`input_image` + `image_generation` tool in `lib/agent/openai-image-generation.ts`) so the output **matches the medium** (photo vs illustration vs flat design), not only colours in prose.
 
 When references exist, `buildCoverPrompt` switches the style line to: **match the reference images’ aesthetic exactly**—including not defaulting to “vector illustration” if the company uses photography (`lib/agent/cover-prompt.ts`, `hasReferenceImages`).
 
 ### 6. Brand guidelines document (plain text)
 
-If **`brand_guidelines_text`** is set (extracted/uploaded guidelines), a trimmed block (up to ~4000 characters) is appended under **CLIENT VISUAL GUIDELINES** in the final prompt (`appendGuidelinesToPrompt` in `lib/agent/gemini-cover-image.ts`).
+If **`brand_guidelines_text`** is set (extracted/uploaded guidelines), a trimmed block (up to ~4000 characters) is appended under **CLIENT VISUAL GUIDELINES** in the final prompt (`appendGuidelinesToPrompt` in `lib/agent/cover-image.ts`).
 
 ### 7. Topic-specific raster prompt (`buildCoverPrompt`)
 
@@ -66,7 +66,7 @@ The **subject** comes from the model’s `cover_image_description` or a safe def
 
 ## End-to-end call: `generateCoverImageBufferWithEmbedFallback`
 
-`lib/agent/gemini-cover-image.ts` assembles the final string roughly as:
+`lib/agent/cover-image.ts` assembles the final string roughly as:
 
 1. **Embed prefix** (PRIMARY when enforced) — ranked client chunks + ranked cover/formatting rules.
 2. **Reference vision brief** (if any).
@@ -80,7 +80,7 @@ It then:
 2. Falls back to **text-only** with the full string if multimodal returns no image.
 3. If embedding enforcement is off and a prefix exists, may retry **text-only without** the embed prefix (lenient paths only).
 
-The dedicated **`/api/agent/cover`** route can fall back to a **Picsum** placeholder if Gemini fails (product behaviour for that endpoint only).
+The dedicated **`/api/agent/cover`** route can fall back to a **Picsum** placeholder if OpenAI image generation fails (product behaviour for that endpoint only).
 
 ## Summary
 

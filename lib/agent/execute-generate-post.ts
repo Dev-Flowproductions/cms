@@ -15,6 +15,7 @@ import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-ima
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
+import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
 import {
   getCandidateSiteUrls,
   enrichWithTitles,
@@ -316,6 +317,8 @@ export async function executeAgentGeneratePost(input: {
       "@graph": [articleEntity, ...(faqEntity ? [faqEntity] : [])],
     };
 
+    generated.content_md = normalizeFaqHeading(generated.content_md, locale);
+
     const authorForBlock = await resolveAuthorForByline(
       admin,
       post.author_id,
@@ -364,7 +367,7 @@ export async function executeAgentGeneratePost(input: {
     try {
       const coverSubjectRaw = generated.cover_image_description
         ? generated.cover_image_description
-        : `Editorial illustration for "${generated.focus_keyword}": rich, topic-specific visuals; distinctive composition.`;
+        : `Blog hero banner for "${generated.focus_keyword}": rich, topic-specific visuals; distinctive composition.`;
       const coverSubject = truncateCoverImageSubject(coverSubjectRaw);
       const headlineForCover =
         generated.cover_image_headline ?? generated.title.trim().split(/\s+/).slice(0, 4).join(" ");
@@ -422,7 +425,10 @@ export async function executeAgentGeneratePost(input: {
               imageStyle: visualIdentity.imageStyle,
             }
           : null,
-        { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly },
+        {
+          headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly,
+          hasReferenceImages: refParts.length > 0,
+        },
       );
 
       const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {

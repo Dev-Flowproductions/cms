@@ -27,6 +27,14 @@ function appendGuidelinesToPrompt(base: string, guidelinesText: string | null | 
   return `${base}\n\nCLIENT VISUAL GUIDELINES (follow for composition, style, and on-image treatment):\n${g.slice(0, 4000)}\n`;
 }
 
+function mediumLockFromVisionBrief(brief: string | null | undefined): string {
+  const line = brief?.split("\n").find((l) => l.trim().toUpperCase().startsWith("MEDIUM:"));
+  if (!line) return "";
+  const medium = line.replace(/^medium:\s*/i, "").trim();
+  if (!medium) return "";
+  return `MEDIUM LOCK (from reference analysis): ${medium}. Do NOT switch to illustration or vector art if the medium is PHOTOGRAPHY. Do NOT switch to photography if the medium is ILLUSTRATION or FLAT DESIGN.\n\n`;
+}
+
 function wrapEmbedPrefix(embedPrefix: string, enforce: boolean): string {
   const e = embedPrefix.trim();
   if (!e) return "";
@@ -48,16 +56,16 @@ export async function generateCoverImageBufferWithEmbedFallback(
   const withGuide = (t: string) => appendGuidelinesToPrompt(t, args.guidelinesText);
   const refs = args.referenceImages?.filter((r) => r.base64?.length) ?? [];
   const visionBlock = args.referenceVisionBrief?.trim()
-    ? `REFERENCE EXAMPLES — VISUAL ANALYSIS (align the new banner with this look-and-feel):\n${args.referenceVisionBrief.trim()}\n\n`
+    ? `${mediumLockFromVisionBrief(args.referenceVisionBrief)}REFERENCE EXAMPLES — VISUAL ANALYSIS (align the new banner with this look-and-feel):\n${args.referenceVisionBrief.trim()}\n\n`
     : "";
   const refHint =
     refs.length > 0
-      ? `REFERENCE IMAGES: ${refs.length} example banner(s) were analyzed; match their visual medium, colour mood, and layout density. Do not reproduce logos or trademarks.\n\n`
+      ? `REFERENCE IMAGES ATTACHED: ${refs.length} example banner(s) are included in this request. Match their visual medium, colour mood, layout density, and typography — not just brand colours in prose. Do not reproduce logos or trademarks.\n\n`
       : "";
   const embedded = wrapEmbedPrefix(args.embedPrefix, enforce);
   const fullText = withGuide(embedded + visionBlock + refHint + args.basePrompt);
 
-  let buf = await generateOpenAiCoverImageBuffer(openai, fullText, args.logLabel);
+  let buf = await generateOpenAiCoverImageBuffer(openai, fullText, args.logLabel, refs.length ? refs : undefined);
   if (buf) return buf;
 
   if (!enforce && args.embedPrefix.trim()) {

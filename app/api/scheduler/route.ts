@@ -17,14 +17,15 @@ import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-ima
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
+import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
 import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
 import {
   appendAuthorBlock,
-  extractAuthorFieldsFromContentMd,
   sanitizeInternalMarkdownLinks,
   sanitizeRelativeMarkdownLinks,
   convertInternalLinksToRelative,
   stripAuthorBlocksFromContentMd,
+  mergeAuthorWithContentMd,
 } from "@/lib/agent/internal-link";
 import {
   getCandidateSiteUrls,
@@ -34,19 +35,17 @@ import {
   rewriteMarkdownRelativePathsToLocale,
   type EnrichedUrl,
 } from "@/lib/agent/site-urls";
-import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import type { Locale } from "@/lib/types/db";
 import { FREQUENCY_INTERVAL_MS } from "@/lib/scheduler/next-post";
 import { verifyTrafficSchedulerInternalRequest } from "@/lib/scheduler/traffic-internal-auth";
 import {
-  authorForBlockToWebhookAuthor,
   pickRandomBylineAuthorId,
   resolveAuthorForByline,
-  resolveAuthorForWebhookDelivery,
 } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
-import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
+
+export const maxDuration = 300;
 
 /**
  * POST /api/scheduler/run
@@ -127,6 +126,37 @@ export async function POST(req: NextRequest) {
 
   const now = Date.now();
   const results: Array<{ client_id: string; domain: string; status: string; post_id?: string; error?: string }> = [];
+
+  // Publish ready drafts first — do not wait for the frequency interval (covers timed-out generations).
+  for (const client of clientsToConsider) {
+    try {
+      const draftResult = await tryPublishOldestDraft(admin, client);
+      if (!draftResult) continue;
+      if (draftResult.ok) {
+        results.push({
+          client_id: client.id,
+          domain: client.domain,
+          status: "published_draft",
+          post_id: draftResult.post_id,
+        });
+      } else {
+        console.warn(
+          `[scheduler] Stranded draft publish failed for ${client.domain} (${draftResult.post_id}):`,
+          draftResult.error,
+        );
+        results.push({
+          client_id: client.id,
+          domain: client.domain,
+          status: "draft_publish_failed",
+          post_id: draftResult.post_id,
+          error: draftResult.error,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.warn(`[scheduler] Stranded draft check failed for ${client.domain}:`, msg);
+    }
+  }
 
   const dueClients: NonNullable<typeof clients> = [];
   for (const client of clientsToConsider) {
@@ -287,6 +317,8 @@ type GeneratedContent = {
   excerpt: string;
   content_md: string;
   faq_blocks: Array<{ question: string; answer: string }>;
+  author_job_title?: string | null;
+  author_bio?: string | null;
   seo_score?: { seo: number; aeo: number; geo: number; notes: string };
 };
 
@@ -366,6 +398,22 @@ async function findOldestDraftPostId(
     return null;
   }
   return data?.id ?? null;
+}
+
+/** Publish the oldest draft when content is ready — runs even if the client is not due yet. */
+async function tryPublishOldestDraft(
+  admin: ReturnType<typeof createAdminClient>,
+  client: SchedulerClient,
+): Promise<{ post_id: string; ok: true } | { post_id: string; ok: false; error: string } | null> {
+  const draftPostId = await findOldestDraftPostId(admin, client.user_id);
+  if (!draftPostId) return null;
+
+  const pub = await requestInternalPublishPost(draftPostId);
+  if (pub.ok) {
+    console.log(`[scheduler] Published stranded draft for ${client.domain} -> post id ${draftPostId}`);
+    return { post_id: draftPostId, ok: true };
+  }
+  return { post_id: draftPostId, ok: false, error: pub.error ?? `HTTP ${pub.status}` };
 }
 
 async function generatePostForClient(
@@ -641,6 +689,8 @@ async function generatePostForClient(
 
   const authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
 
+  primaryContent.content_md = normalizeFaqHeading(primaryContent.content_md, primaryLocale);
+
   const primaryContentMd = appendAuthorBlock(
     primaryContent.content_md,
     primaryLocale as Locale,
@@ -734,15 +784,26 @@ async function generatePostForClient(
 
     const langName = locale === "en" ? "English" : locale === "fr" ? "French" : locale;
     const sourceLangName = localeToEnglishName(primaryLocale);
+    const primaryBodyForTranslation = stripAuthorBlocksFromContentMd(primaryContentMd);
+    const authorSourceBlock = authorForBlock
+      ? `
+AUTHOR BYLINE (translate job title and bio into natural ${langName}; keep the display name unchanged if it is a brand or company name):
+Name: ${authorForBlock.displayName}
+Job title: ${authorForBlock.jobTitle ?? ""}
+Bio: ${authorForBlock.bio ?? ""}
+`
+      : "";
 
     const translationPrompt = `You are a professional translator. Translate the following blog post from ${sourceLangName} to ${langName}.
 
 RULES:
 - Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
-- Translate the title, excerpt, SEO title, SEO description, all FAQ questions/answers, and the single author block at the end (heading "Sobre o autor" / "About the author" / "À propos de l'auteur" and the name, job title, and bio). Do NOT duplicate the author section — output it exactly once.
-- If the author block uses HTML, preserve the layout: <div class="author-block-header"> with <div class="author-avatar"> (unchanged) and <div class="author-block-titles"> containing <p class="author-name"> and <p class="author-job">; optional <p class="author-bio"> below. Translate only the text inside those <p> tags.
-- Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO").
+- Translate the FAQ section H2 heading to the target language (English: "## Frequently asked questions", Portuguese: "## Perguntas frequentes", French: "## Questions fréquentes").
+- Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
+- Translate author_job_title and author_bio into ${langName} (required when author fields are provided below). Do NOT leave the bio in ${sourceLangName}.
+- Do NOT include an "About the author" / author HTML block inside content_md — the CMS appends that separately.
+- Keep any brand names, proper nouns, and technical terms as-is (e.g., "Google Analytics", "SEO", company names).
 - Industry acronyms (SEO, AEO, GEO, AI, CRM, etc.) must remain in ALL CAPS in ${langName}.
 - In content_md: for every markdown link [anchor](url), keep the url EXACTLY unchanged (character-for-character); translate only the anchor text inside the brackets to natural ${langName}. Do not add, remove, or reorder links.
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
@@ -756,9 +817,9 @@ Excerpt: ${primaryContent.excerpt}
 SEO Title: ${primaryContent.seo_title}
 SEO Description: ${primaryContent.seo_description}
 Focus Keyword: ${primaryContent.focus_keyword}
-
-Content (Markdown) — include the "Sobre o autor" / "About the author" section at the end; translate the heading and bio to ${langName}:
-${primaryContentMd}
+${authorSourceBlock}
+Content (Markdown) — body only, no author section:
+${primaryBodyForTranslation}
 
 FAQ Blocks:
 ${(primaryContent.faq_blocks ?? []).map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`).join("\n")}
@@ -770,7 +831,9 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   "seo_title": "Translated SEO title",
   "seo_description": "Translated SEO description",
   "focus_keyword": "Translated focus keyword",
-  "content_md": "Full translated markdown content",
+  "content_md": "Full translated markdown body (no author section)",
+  "author_job_title": "Translated job title or null",
+  "author_bio": "Translated author bio in ${langName}",
   "faq_blocks": [{ "question": "Translated question", "answer": "Translated answer" }]
 }`;
 
@@ -812,18 +875,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     translated.content_md = convertInternalLinksToRelative(translated.content_md, client.domain);
     translated.content_md = rewriteMarkdownRelativePathsToLocale(translated.content_md, locale as Locale);
     translated.content_md = sanitizeRelativeMarkdownLinks(translated.content_md, localeLinkUrls);
-    // Re-append canonical author HTML using translated copy (appendAuthorBlock strips the model section first).
-    const extractedAuthor = extractAuthorFieldsFromContentMd(translated.content_md);
+    translated.content_md = normalizeFaqHeading(translated.content_md, locale);
     const authorForTranslatedLocale = authorForBlock
       ? {
           ...authorForBlock,
-          displayName: extractedAuthor.displayName?.trim() || authorForBlock.displayName,
-          jobTitle: extractedAuthor.jobTitle?.trim() || authorForBlock.jobTitle,
-          bio: extractedAuthor.bio?.trim() || authorForBlock.bio,
+          jobTitle: translated.author_job_title?.trim() || authorForBlock.jobTitle,
+          bio: translated.author_bio?.trim() || authorForBlock.bio,
         }
       : null;
     translated.content_md = appendAuthorBlock(
-      translated.content_md,
+      stripAuthorBlocksFromContentMd(translated.content_md),
       locale as Locale,
       authorForTranslatedLocale,
     );
@@ -878,11 +939,45 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
 
 
-  // â”€â”€ Generate cover image (once, shared across all locales) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const canAutoPublish = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
+
+  if (canAutoPublish) {
+    const pub = await requestInternalPublishPost(post.id);
+    if (!pub.ok) {
+      const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
+      console.warn(
+        `[scheduler] Auto-publish failed for ${client.domain} (${post.id}): ${pub.error ?? pub.status}; avg=${avg ?? "n/a"}`,
+      );
+      await admin.from("posts").update({
+        status: "review",
+        published_at: null,
+        webhook_status: null,
+        webhook_sent_at: null,
+        webhook_error: pub.error ?? null,
+      }).eq("id", post.id);
+    }
+  } else {
+    const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
+    console.warn(
+      `[scheduler] Post ${post.id} left in review: SEO avg ${avg ?? "n/a"} is below 90 or score missing (${client.domain})`,
+    );
+    await admin.from("posts").update({
+      status: "review",
+      published_at: null,
+      webhook_status: null,
+      webhook_sent_at: null,
+      webhook_error: null,
+    }).eq("id", post.id);
+  }
+
+  void notifyDgArticleStatusIfLinked(post.id);
+
+  // ── Generate cover image (once, shared across all locales) ─────────────────
+  let coverAdded = false;
   try {
     const coverSubjectRaw = coverImageDescription
       ? coverImageDescription
-      : `Editorial illustration for "${titleForCoverPrompt}": rich, topic-specific visuals; distinctive composition for this article.`;
+      : `Blog hero banner for "${titleForCoverPrompt}": rich, topic-specific visuals; distinctive composition for this article.`;
     const coverSubject = truncateCoverImageSubject(coverSubjectRaw);
 
     const visualIdentity = (brandBook as { visualIdentity?: { aestheticStyle?: string; imageStyle?: string; colorPalette?: string } } | null)?.visualIdentity ?? null;
@@ -952,6 +1047,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
       if (!uploadErr) {
         await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
+        coverAdded = true;
       } else {
         console.warn(`[scheduler] Cover upload failed for ${client.domain} (non-fatal):`, uploadErr.message);
       }
@@ -960,167 +1056,13 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     console.warn(`[scheduler] Cover generation failed for ${client.domain} (non-fatal):`, coverErr);
   }
 
-
-  const canAutoPublish = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
-  const publishedAtIso = new Date().toISOString();
-
-  if (canAutoPublish) {
-    await admin.from("posts").update({
-      status: "published",
-      published_at: publishedAtIso,
-      webhook_status: client.webhook_url ? "pending" : null,
-      webhook_sent_at: client.webhook_url ? new Date().toISOString() : null,
-      webhook_error: null,
-    }).eq("id", post.id);
-  } else {
-    const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
-    console.warn(
-      `[scheduler] Post ${post.id} left in review: SEO avg ${avg ?? "n/a"} is below 90 or score missing (${client.domain})`,
-    );
-    await admin.from("posts").update({
-      status: "review",
-      published_at: null,
-      webhook_status: null,
-      webhook_sent_at: null,
-      webhook_error: null,
-    }).eq("id", post.id);
-  }
-
-  void notifyDgArticleStatusIfLinked(post.id);
-
-  if (canAutoPublish && client.webhook_url) {
-    try {
-      const { data: freshPost } = await admin
-        .from("posts")
-        .select(
-          "cover_image_path, slug, author_id, byline_author_id, post_localizations(locale, title, excerpt, content_md, seo_title, seo_description, jsonld)",
-        )
-        .eq("id", post.id)
-        .single();
-
-      let coverImageUrl: string | null = null;
-      if (freshPost?.cover_image_path) {
-        const { data: urlData } = admin.storage.from("covers").getPublicUrl(freshPost.cover_image_path);
-        coverImageUrl = urlData?.publicUrl ?? null;
-      }
-
-      const localizations = (freshPost?.post_localizations ?? []) as Array<{
-        locale: string;
-        title: string | null;
-        excerpt: string | null;
-        content_md: string | null;
-        seo_title: string | null;
-        seo_description: string | null;
-        jsonld: unknown;
-      }>;
-
-      const COVER_RE = /!\[Cover image\]\(\{COVER_IMAGE_PLACEHOLDER\}\)\n?/g;
-      const cleaned = localizations.map((l) => ({
-        ...l,
-        // Strip embedded author HTML — consumer sites should use post.author (fresh from DB)
-        content_md: stripAuthorBlocksFromContentMd(
-          (l.content_md ?? "")
-            .replace(COVER_RE, coverImageUrl ? `![Cover image](${coverImageUrl})\n` : "")
-            .trim(),
-        ),
-      }));
-
-      const webhookLocalizations = cleaned.map((l) => ({
-        ...l,
-        jsonld: applyPublishTimestampsToJsonLd(l.jsonld, {
-          datePublished: publishedAtIso,
-          dateModified: publishedAtIso,
-        }),
-      }));
-
-      await Promise.all(
-        webhookLocalizations.map((l) =>
-          admin.from("post_localizations").update({ jsonld: l.jsonld }).eq("post_id", post.id).eq("locale", l.locale),
-        ),
+  if (canAutoPublish && coverAdded && client.webhook_url) {
+    const coverUpdate = await requestInternalPublishPost(post.id);
+    if (!coverUpdate.ok) {
+      console.warn(
+        `[scheduler] Cover update webhook failed for ${client.domain} (${post.id}):`,
+        coverUpdate.error ?? coverUpdate.status,
       );
-
-      const primary =
-        webhookLocalizations.find((l) => l.locale === primaryLocale) ??
-        webhookLocalizations.find((l) => l.locale === "pt") ??
-        webhookLocalizations.find((l) => l.locale === "en") ??
-        webhookLocalizations[0];
-
-      if (!primary) throw new Error("No localizations found after generation");
-
-      const { data: clientConfig } = await admin
-        .from("clients")
-        .select("webhook_secret")
-        .eq("user_id", client.user_id)
-        .maybeSingle();
-
-      const authorOwnerId = (freshPost as { author_id?: string }).author_id ?? client.user_id;
-      const bylineId = (freshPost as { byline_author_id?: string | null }).byline_author_id ?? null;
-      const authorBlock = await resolveAuthorForWebhookDelivery(
-        admin,
-        authorOwnerId,
-        bylineId,
-        primaryLocale,
-        localizations,
-      );
-      const webhookAuthor = authorForBlockToWebhookAuthor(authorBlock);
-
-      const event = resolveWebhookEvent(client.webhook_event_format ?? "spec", false);
-      const revalidation = buildRevalidationPayload(event, client.id, {
-        id: post.id,
-        slug: freshPost?.slug ?? slug,
-        status: "published",
-        updatedAt: publishedAtIso,
-      });
-      const webhookPayload = {
-        ...revalidation,
-        post: {
-          ...revalidation.post,
-          cover_image_url: coverImageUrl,
-          author: webhookAuthor,
-          title: primary.title,
-          excerpt: primary.excerpt,
-          content_md: primary.content_md,
-          seo_title: primary.seo_title,
-          meta_description: primary.seo_description,
-          json_ld: primary.jsonld ?? null,
-          locale: primary.locale,
-          translations: Object.fromEntries(
-            webhookLocalizations.map((l) => [l.locale, {
-              title: l.title,
-              excerpt: l.excerpt,
-              content_md: l.content_md,
-              seo_title: l.seo_title,
-              meta_description: l.seo_description,
-              json_ld: l.jsonld ?? null,
-            }])
-          ),
-        },
-      };
-      const webhookHeaders: Record<string, string> = clientConfig?.webhook_secret
-        ? buildWebhookHeaders(webhookPayload, clientConfig.webhook_secret, event)
-        : { "Content-Type": "application/json" };
-      if (clientConfig?.webhook_secret) webhookHeaders["x-webhook-secret"] = clientConfig.webhook_secret;
-
-      const webhookRes = await fetch(client.webhook_url, {
-        method: "POST",
-        headers: webhookHeaders,
-        body: JSON.stringify(webhookPayload),
-        signal: AbortSignal.timeout(15_000),
-      });
-
-      if (!webhookRes.ok) {
-        const errText = await webhookRes.text().catch(() => "");
-        const errMsg = `Webhook responded with ${webhookRes.status}: ${errText.slice(0, 200)}`;
-        await admin.from("posts").update({ webhook_status: "failed", webhook_error: errMsg }).eq("id", post.id);
-        console.warn(`[scheduler] Webhook failed for ${client.domain}: ${errMsg}`);
-      } else {
-        await admin.from("posts").update({ webhook_status: "success" }).eq("id", post.id);
-        console.log(`[scheduler] Webhook sent to ${client.webhook_url}`);
-      }
-    } catch (webhookErr) {
-      const msg = webhookErr instanceof Error ? webhookErr.message : "Unknown error";
-      await admin.from("posts").update({ webhook_status: "failed", webhook_error: msg }).eq("id", post.id);
-      console.warn(`[scheduler] Webhook error for ${client.domain}:`, msg);
     }
   }
 
@@ -1130,8 +1072,10 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     last_generation_error_at: null,
   }).eq("id", client.id);
 
+  const { data: finalPost } = await admin.from("posts").select("status").eq("id", post.id).maybeSingle();
+  const finalStatus = finalPost?.status ?? (canAutoPublish ? "published" : "review");
   console.log(
-    `[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id}${canAutoPublish ? " (published)" : " (review — avg < 90)"}`,
+    `[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id} (${finalStatus})`,
   );
   return post.id;
   } catch (err) {

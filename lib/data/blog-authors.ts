@@ -1,5 +1,5 @@
 import type { AuthorForBlock } from "@/lib/agent/internal-link";
-import { extractAuthorFieldsFromContentMd } from "@/lib/agent/internal-link";
+import { extractAuthorFieldsFromContentMd, mergeAuthorWithContentMd } from "@/lib/agent/internal-link";
 
 export type BlogAuthorRow = {
   id: string;
@@ -69,6 +69,75 @@ export async function pickRandomBylineAuthorId(admin: AdminClient, userId: strin
 
 type LocalizationRow = { locale: string; content_md: string | null };
 
+type AuthorIdentityContext = {
+  fromDb: AuthorForBlock | null;
+  blogAuthors: BlogAuthorRow[];
+  profile: {
+    display_name?: string | null;
+    job_title?: string | null;
+    bio?: string | null;
+    avatar_url?: string | null;
+  } | null;
+};
+
+async function loadAuthorIdentityContext(
+  admin: AdminClient,
+  postAuthorId: string,
+  bylineAuthorId: string | null | undefined,
+): Promise<AuthorIdentityContext> {
+  const fromDb = await resolveAuthorForByline(admin, postAuthorId, bylineAuthorId);
+  const [{ data: authors }, { data: profile }] = await Promise.all([
+    admin
+      .from("blog_authors")
+      .select("id, user_id, display_name, job_title, bio, avatar_url, sort_order, created_at")
+      .eq("user_id", postAuthorId),
+    admin
+      .from("profiles")
+      .select("display_name, job_title, bio, avatar_url")
+      .eq("id", postAuthorId)
+      .maybeSingle(),
+  ]);
+  return {
+    fromDb,
+    blogAuthors: (authors ?? []) as BlogAuthorRow[],
+    profile: profile ?? null,
+  };
+}
+
+/** Resolve author job/bio/name for one localization's embedded author card. */
+export function resolveAuthorForContentMd(
+  ctx: AuthorIdentityContext,
+  contentMd: string,
+): AuthorForBlock | null {
+  const extracted = extractAuthorFieldsFromContentMd(contentMd);
+  const extName = extracted.displayName?.trim();
+  if (!extName) return mergeAuthorWithContentMd(ctx.fromDb, contentMd);
+
+  const matchBa = ctx.blogAuthors.find(
+    (r) => r.display_name?.trim().toLowerCase() === extName.toLowerCase(),
+  );
+  if (matchBa) {
+    const block = blogAuthorRowToForBlock(matchBa);
+    return {
+      displayName: extName,
+      jobTitle: extracted.jobTitle?.trim() || block.jobTitle,
+      bio: extracted.bio?.trim() || block.bio,
+      avatarUrl: block.avatarUrl,
+    };
+  }
+
+  if (ctx.profile?.display_name?.trim().toLowerCase() === extName.toLowerCase()) {
+    return {
+      displayName: extName,
+      jobTitle: extracted.jobTitle?.trim() || ctx.profile.job_title?.trim() || null,
+      bio: extracted.bio?.trim() || ctx.profile.bio?.trim() || null,
+      avatarUrl: ctx.profile.avatar_url?.trim() || null,
+    };
+  }
+
+  return mergeAuthorWithContentMd(ctx.fromDb, contentMd) ?? ctx.fromDb;
+}
+
 /**
  * Webhook / consumer `post.author` should match what readers see in the primary locale body.
  * If the embedded "About the author" card names someone who exists as a blog author or the
@@ -82,48 +151,28 @@ export async function resolveAuthorForWebhookDelivery(
   primaryLocale: string,
   localizations: LocalizationRow[],
 ): Promise<AuthorForBlock | null> {
-  const fromDb = await resolveAuthorForByline(admin, postAuthorId, bylineAuthorId);
+  const ctx = await loadAuthorIdentityContext(admin, postAuthorId, bylineAuthorId);
   const primaryLoc =
     localizations.find((l) => l.locale === primaryLocale) ??
     localizations.find((l) => l.locale === "pt") ??
     localizations.find((l) => l.locale === "en") ??
     localizations[0];
-  const rawMd = primaryLoc?.content_md ?? "";
-  const extracted = extractAuthorFieldsFromContentMd(rawMd);
-  const extName = extracted.displayName?.trim();
-  if (!extName) return fromDb;
+  return resolveAuthorForContentMd(ctx, primaryLoc?.content_md ?? "");
+}
 
-  const { data: authors } = await admin
-    .from("blog_authors")
-    .select("id, user_id, display_name, job_title, bio, avatar_url, sort_order, created_at")
-    .eq("user_id", postAuthorId);
-  const rows = (authors ?? []) as BlogAuthorRow[];
-  const matchBa = rows.find((r) => r.display_name?.trim().toLowerCase() === extName.toLowerCase());
-  if (matchBa) {
-    const block = blogAuthorRowToForBlock(matchBa);
-    return {
-      displayName: extName,
-      jobTitle: extracted.jobTitle?.trim() || block.jobTitle,
-      bio: extracted.bio?.trim() || block.bio,
-      avatarUrl: block.avatarUrl,
-    };
+export async function resolveAuthorsForWebhookLocalizations(
+  admin: AdminClient,
+  postAuthorId: string,
+  bylineAuthorId: string | null | undefined,
+  localizations: LocalizationRow[],
+): Promise<Record<string, AuthorForBlock | null>> {
+  const ctx = await loadAuthorIdentityContext(admin, postAuthorId, bylineAuthorId);
+  const out: Record<string, AuthorForBlock | null> = {};
+  for (const loc of localizations) {
+    if (!loc.locale) continue;
+    out[loc.locale] = resolveAuthorForContentMd(ctx, loc.content_md ?? "");
   }
-
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("display_name, job_title, bio, avatar_url")
-    .eq("id", postAuthorId)
-    .maybeSingle();
-  if (profile?.display_name?.trim().toLowerCase() === extName.toLowerCase()) {
-    return {
-      displayName: extName,
-      jobTitle: extracted.jobTitle?.trim() || profile.job_title?.trim() || null,
-      bio: extracted.bio?.trim() || profile.bio?.trim() || null,
-      avatarUrl: profile.avatar_url?.trim() || null,
-    };
-  }
-
-  return fromDb;
+  return out;
 }
 
 export function authorForBlockToWebhookAuthor(

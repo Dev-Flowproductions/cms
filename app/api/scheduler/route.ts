@@ -18,6 +18,7 @@ import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-color
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
+import { localizeAuthorForLocale } from "@/lib/agent/localize-author-for-locale";
 import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
 import {
   appendAuthorBlock,
@@ -687,7 +688,10 @@ async function generatePostForClient(
   slug = candidate;
   await admin.from("posts").update({ slug }).eq("id", post.id);
 
-  const authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
+  let authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
+  if (authorForBlock) {
+    authorForBlock = await localizeAuthorForLocale(openai, authorForBlock, primaryLocale as Locale);
+  }
 
   primaryContent.content_md = normalizeFaqHeading(primaryContent.content_md, primaryLocale);
 

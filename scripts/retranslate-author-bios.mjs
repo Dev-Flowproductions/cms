@@ -93,7 +93,7 @@ function appendAuthorBlock(contentMd, locale, author) {
 
 const localeName = { en: "English", pt: "Portuguese", fr: "French" };
 
-async function translateAuthorFields(openai, fromLocale, toLocale, author) {
+async function translateAuthorFields(openai, toLocale, author) {
   const res = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
     temperature: 0.2,
@@ -101,8 +101,8 @@ async function translateAuthorFields(openai, fromLocale, toLocale, author) {
     messages: [
       {
         role: "user",
-        content: `Translate the author byline from ${localeName[fromLocale] ?? fromLocale} to ${localeName[toLocale] ?? toLocale}.
-Keep the display name unchanged if it is a brand/company name. Translate job title and bio fully.
+        content: `Detect the language of the job title and bio below. Translate them into ${localeName[toLocale] ?? toLocale}.
+Keep the display name unchanged if it is a person's name or brand. Translate job title and bio fully.
 
 Name: ${author.name}
 Job title: ${author.job}
@@ -124,6 +124,7 @@ Return JSON: {"author_job_title":"...","author_bio":"..."}`,
 
 const apply = process.argv.includes("--apply");
 const postIdFilter = process.argv.find((a) => a.startsWith("--post-id="))?.slice("--post-id=".length);
+const domainFilter = process.argv.find((a) => a.startsWith("--domain="))?.slice("--domain=".length);
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -140,12 +141,27 @@ const sb = createClient(url, serviceKey, {
 });
 const openai = new OpenAI({ apiKey: openaiKey });
 
+let authorIdFilter = null;
+if (domainFilter) {
+  const { data: client } = await sb
+    .from("clients")
+    .select("user_id")
+    .ilike("domain", `%${domainFilter}%`)
+    .maybeSingle();
+  authorIdFilter = client?.user_id ?? null;
+  if (!authorIdFilter) {
+    console.error("No client matched domain:", domainFilter);
+    process.exit(1);
+  }
+}
+
 let query = sb
   .from("posts")
-  .select("id, primary_locale, post_localizations(locale, content_md)")
+  .select("id, author_id, primary_locale, post_localizations(locale, content_md)")
   .eq("status", "published");
 
 if (postIdFilter) query = query.eq("id", postIdFilter);
+if (authorIdFilter) query = query.eq("author_id", authorIdFilter);
 
 const { data: posts, error } = await query;
 if (error) {
@@ -156,34 +172,45 @@ if (error) {
 let updated = 0;
 
 for (const post of posts ?? []) {
-  const primaryLocale = post.primary_locale ?? "en";
   const locs = post.post_localizations ?? [];
-  const primary = locs.find((l) => l.locale === primaryLocale) ?? locs[0];
-  if (!primary?.content_md) continue;
+  if (!locs.length) continue;
 
-  const primaryAuthor = extractAuthor(primary.content_md);
-  if (!primaryAuthor.bio && !primaryAuthor.job) continue;
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("display_name, job_title, bio, avatar_url")
+    .eq("id", post.author_id)
+    .maybeSingle();
+  if (!profile?.display_name?.trim()) continue;
 
-  const avatarMatch = primary.content_md.match(/class\s*=\s*["']author-avatar["'][^>]*>[\s\S]*?<img[^>]+src\s*=\s*["']([^"']+)["']/i);
-  primaryAuthor.avatarUrl = avatarMatch?.[1] ?? null;
+  const canonical = {
+    name: profile.display_name.trim(),
+    job: profile.job_title?.trim() ?? "",
+    bio: profile.bio?.trim() ?? "",
+    avatarUrl: profile.avatar_url?.trim() ?? null,
+  };
+  if (!canonical.bio && !canonical.job) continue;
+
+  const avatarMatch = locs
+    .map((l) => l.content_md?.match(/class\s*=\s*["']author-avatar["'][^>]*>[\s\S]*?<img[^>]+src\s*=\s*["']([^"']+)["']/i)?.[1])
+    .find(Boolean);
+  if (avatarMatch) canonical.avatarUrl = avatarMatch;
 
   for (const loc of locs) {
-    if (loc.locale === primaryLocale) continue;
     const current = extractAuthor(loc.content_md ?? "");
-    if (current.bio === primaryAuthor.bio && current.job === primaryAuthor.job) {
-      console.log(`[${apply ? "UPDATE" : "DRY-RUN"}] post=${post.id} locale=${loc.locale}`);
-      const translated = await translateAuthorFields(openai, primaryLocale, loc.locale, primaryAuthor);
-      const nextMd = appendAuthorBlock(stripAuthorBlocks(loc.content_md ?? ""), loc.locale, translated);
-      if (apply) {
-        const { error: updateErr } = await sb
-          .from("post_localizations")
-          .update({ content_md: nextMd })
-          .eq("post_id", post.id)
-          .eq("locale", loc.locale);
-        if (updateErr) console.error("  failed:", updateErr.message);
-      }
-      updated += 1;
+    const translated = await translateAuthorFields(openai, loc.locale, canonical);
+    if (translated.bio === current.bio && translated.job === current.job) continue;
+
+    console.log(`[${apply ? "UPDATE" : "DRY-RUN"}] post=${post.id} locale=${loc.locale}`);
+    const nextMd = appendAuthorBlock(stripAuthorBlocks(loc.content_md ?? ""), loc.locale, translated);
+    if (apply) {
+      const { error: updateErr } = await sb
+        .from("post_localizations")
+        .update({ content_md: nextMd })
+        .eq("post_id", post.id)
+        .eq("locale", loc.locale);
+      if (updateErr) console.error("  failed:", updateErr.message);
     }
+    updated += 1;
   }
 }
 

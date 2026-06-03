@@ -16,6 +16,7 @@ import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-color
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
+import { localizeAuthorForLocale } from "@/lib/agent/localize-author-for-locale";
 import {
   getCandidateSiteUrls,
   enrichWithTitles,
@@ -319,11 +320,14 @@ export async function executeAgentGeneratePost(input: {
 
     generated.content_md = normalizeFaqHeading(generated.content_md, locale);
 
-    const authorForBlock = await resolveAuthorForByline(
+    let authorForBlock = await resolveAuthorForByline(
       admin,
       post.author_id,
       (post as { byline_author_id?: string | null }).byline_author_id ?? null,
     );
+    if (authorForBlock) {
+      authorForBlock = await localizeAuthorForLocale(llm.openai, authorForBlock, locale);
+    }
 
     const contentMdOut = appendAuthorBlock(generated.content_md, locale, authorForBlock);
 

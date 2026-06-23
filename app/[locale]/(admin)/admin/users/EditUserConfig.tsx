@@ -607,16 +607,95 @@ export function EditUserConfig(props: EditUserConfigProps) {
 
           <div>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
-              {tBrand("logoLabel")} (URL)
+              {tBrand("logoLabel")}
             </label>
-            <input
-              type="text"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://..."
-              className={`${inputClass} w-full rounded-xl px-4 py-3`}
-              style={inputFieldStyle}
-            />
+            <div
+              className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-start"
+              style={{ background: "var(--adm-surface-high)", borderColor: "var(--adm-border-subtle)" }}
+            >
+              {logoUrl?.trim() ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-lg border object-contain"
+                  style={{ borderColor: "var(--adm-border-subtle)" }}
+                />
+              ) : (
+                <div
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border"
+                  style={{ background: "var(--adm-surface-highest)", borderColor: "var(--adm-border-subtle)" }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--adm-on-variant)" strokeWidth="1.5" aria-hidden>
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                  </svg>
+                </div>
+              )}
+              <div className="min-w-0 flex-1 space-y-3">
+                {isCreate ? (
+                  <p className="text-xs leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+                    {t("configAssets.createFirstHint")}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        disabled={assetBusy}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append("action", "logo");
+                          fd.append("file", file);
+                          await postAdminAsset(fd, t("configAssets.uploadSaved"));
+                        }}
+                      />
+                      <span
+                        className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
+                        style={{ background: "var(--adm-primary-container)", color: "#fff" }}
+                      >
+                        {assetBusy ? t("configAssets.uploading") : logoUrl?.trim() ? tBrand("logoChange") : tBrand("logoUpload")}
+                      </span>
+                    </label>
+                    {logoUrl?.trim() && (
+                      <button
+                        type="button"
+                        disabled={assetBusy}
+                        onClick={async () => {
+                          const fd = new FormData();
+                          fd.append("action", "removeLogo");
+                          await postAdminAsset(fd, t("configAssets.removeSaved"));
+                        }}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                        style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+                      >
+                        {t("configAssets.remove")}
+                      </button>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+                  {tBrand("logoHint")}
+                </p>
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--adm-on-variant)" }}>
+                    {tBrand("logoUrlOptional")}
+                  </label>
+                  <input
+                    type="url"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://..."
+                    className={`${inputClass} w-full rounded-xl px-4 py-2.5 text-sm`}
+                    style={inputFieldStyle}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -725,55 +804,6 @@ export function EditUserConfig(props: EditUserConfigProps) {
             </p>
           </div>
         <div className="flex flex-wrap items-start gap-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.logoFile")}</p>
-            {logoUrl?.trim() ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="" className="h-14 w-auto max-w-[160px] object-contain rounded-lg border" style={{ borderColor: "var(--adm-border-subtle)" }} />
-            ) : (
-              <p className="text-[11px]" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.noneYet")}</p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="hidden"
-                  disabled={assetBusy}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!file) return;
-                    const fd = new FormData();
-                    fd.append("action", "logo");
-                    fd.append("file", file);
-                    await postAdminAsset(fd, t("configAssets.uploadSaved"));
-                  }}
-                />
-                <span
-                  className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ background: "var(--adm-primary-container)", color: "#fff" }}
-                >
-                  {assetBusy ? "Uploading…" : t("configAssets.upload")}
-                </span>
-              </label>
-              {logoUrl?.trim() && (
-                <button
-                  type="button"
-                  disabled={assetBusy}
-                  onClick={async () => {
-                    const fd = new FormData();
-                    fd.append("action", "removeLogo");
-                    await postAdminAsset(fd, t("configAssets.removeSaved"));
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
-                >
-                  {t("configAssets.remove")}
-                </button>
-              )}
-            </div>
-          </div>
           <div className="min-h-0 w-full min-w-0 flex-1 basis-full space-y-3 sm:basis-auto">
             <p className="text-xs font-medium" style={{ color: "var(--adm-on-surface)" }}>{t("configAssets.guidelinesTitle")}</p>
             <p className="text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>{t("configAssets.guidelinesHint")}</p>

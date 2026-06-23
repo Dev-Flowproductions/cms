@@ -55,13 +55,14 @@ function TokenUsageIcon({ isActive }: { isActive: boolean }) {
   const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
   return (
     <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.6" />
       <path
-        d="M4 7h16M4 12h10M4 17h6"
+        d="M12 7.5v9M9.25 10.25c0-1.35 1.25-2.25 2.75-2.25s2.75.9 2.75 2.25-1.25 2.25-2.75 2.25-2.75.9-2.75 2.25"
         stroke={c}
         strokeWidth="1.6"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <circle cx="18" cy="17" r="3" stroke={c} strokeWidth="1.6" />
     </svg>
   );
 }

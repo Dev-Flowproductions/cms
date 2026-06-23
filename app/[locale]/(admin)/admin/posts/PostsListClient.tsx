@@ -54,6 +54,8 @@ export function PostsListClient({
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [genSuccess, setGenSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   const base = userId ? `/admin/posts?user=${userId}` : "/admin/posts";
@@ -110,8 +112,116 @@ export function PostsListClient({
   const allSelected = initialPosts.length > 0 && selected.size === initialPosts.length;
   const selectedCount = selected.size;
 
+  async function handleGenerateAiPost() {
+    if (!userId) return;
+    setGenerating(true);
+    setError(null);
+    setGenSuccess(false);
+    try {
+      const res = await fetch(`/api/scheduler?userId=${encodeURIComponent(userId)}&force=true`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? t("postsPage.generateAiPostError"));
+        return;
+      }
+      setGenSuccess(true);
+      setTimeout(() => setGenSuccess(false), 5000);
+      startTransition(() => router.refresh());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("postsPage.generateAiPostError"));
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <div className="min-w-0">
+      {userId && (
+        <div
+          className="mb-6 flex flex-wrap gap-2 rounded-2xl border p-2"
+          style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-high)" }}
+        >
+          <span
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+            style={{
+              background: "var(--adm-primary-container)",
+              color: "#fff",
+              boxShadow: "var(--adm-cta-glow-shadow)",
+            }}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+              />
+            </svg>
+            {t("postsPage.viewPosts")}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleGenerateAiPost}
+            disabled={generating || isPending}
+            className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
+            style={{
+              background: generating ? "var(--adm-surface-highest)" : "var(--adm-primary-soft-bg)",
+              color: generating ? "var(--adm-on-variant)" : "var(--adm-primary)",
+              borderColor: "var(--adm-outline-variant)",
+            }}
+          >
+            {generating ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                </svg>
+                {t("postsPage.generateAiPostGenerating")}
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"
+                  />
+                </svg>
+                {t("postsPage.generateAiPost")}
+              </>
+            )}
+          </button>
+
+          <Link
+            href={`/admin/posts/new?user=${userId}`}
+            className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all"
+            style={{
+              background: "var(--adm-surface-highest)",
+              color: "var(--adm-on-surface)",
+              borderColor: "var(--adm-outline-variant)",
+            }}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            {t("postsPage.writeManualPost")}
+          </Link>
+        </div>
+      )}
+
+      {genSuccess && (
+        <div
+          className="mb-4 rounded-xl border px-4 py-3 text-sm font-medium"
+          style={{
+            background: "rgba(74, 222, 128, 0.08)",
+            border: "1px solid rgba(74, 222, 128, 0.28)",
+            color: "#4ade80",
+          }}
+        >
+          {t("postsPage.generateAiPostSuccess")}
+        </div>
+      )}
       {error && (
         <div
           className="mb-4 rounded-xl border px-4 py-3 text-sm"

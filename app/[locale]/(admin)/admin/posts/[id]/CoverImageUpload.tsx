@@ -74,8 +74,10 @@ export function CoverImageUpload({
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Failed to generate cover"); return; }
-      setPreviewUrl(json.publicUrl);
-      onCoverChange?.(json.publicUrl);
+      const publicUrl = (json.publicUrl ?? json.cover_image_url) as string | undefined;
+      if (!publicUrl) { setError("No image URL returned"); return; }
+      setPreviewUrl(publicUrl);
+      onCoverChange?.(publicUrl);
       showSuccess();
       router.refresh();
     } catch (e) {

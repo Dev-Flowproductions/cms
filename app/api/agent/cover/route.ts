@@ -184,6 +184,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     cover_image_path: coverPath,
     cover_image_url: urlData.publicUrl,
+    publicUrl: urlData.publicUrl,
     source,
   });
 }

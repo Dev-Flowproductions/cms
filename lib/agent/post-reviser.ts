@@ -77,6 +77,7 @@ ${REVISER_SYSTEM}`
     const raw = await textLlm.generateText({
       prompt: options?.systemInstruction ? userMessage : prompt,
       systemInstruction,
+      assistant: "quality_reviser",
     });
     const clean = stripModelJsonFences(raw);
     const parsed = JSON.parse(clean) as Record<string, unknown>;

@@ -2,27 +2,29 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Locale } from "@/lib/types/db";
+import { isUuid } from "@/lib/uuid";
 
 export async function getPostById(id: string) {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
     .select("*, profiles(display_name)")
     .eq("id", id)
     .single();
-  if (error) throw error;
+  if (error) return null;
   return data;
 }
 
 export async function getPostWithLocalizations(id: string) {
+  if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
     .select("*, profiles(display_name)")
     .eq("id", id)
     .single();
-  if (postError) throw postError;
-  if (!post) return null;
+  if (postError || !post) return null;
 
   const { data: locs, error: locError } = await supabase
     .from("post_localizations")

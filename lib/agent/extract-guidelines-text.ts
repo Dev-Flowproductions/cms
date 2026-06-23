@@ -32,6 +32,7 @@ export async function extractBrandGuidelinesText(
         PDF_EXTRACT_PROMPT,
         [{ mimeType: "application/pdf", base64 }],
         getOpenAiVisionModelChain(),
+        "guidelines_vision",
       );
       return out.slice(0, MAX_TEXT_CHARS);
     } catch (e) {

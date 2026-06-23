@@ -51,14 +51,30 @@ function PostsIcon({ isActive }: { isActive: boolean }) {
   );
 }
 
+function TokenUsageIcon({ isActive }: { isActive: boolean }) {
+  const c = isActive ? "var(--adm-primary)" : "var(--adm-on-variant)";
+  return (
+    <svg className={ICON_BOX} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 7h16M4 12h10M4 17h6"
+        stroke={c}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <circle cx="18" cy="17" r="3" stroke={c} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 const NAV_ITEMS: {
-  key: "dashboard" | "users" | "posts";
+  key: "dashboard" | "users" | "posts" | "tokenUsageLink";
   href: string;
   Icon: (p: { isActive: boolean }) => ReactNode;
 }[] = [
   { key: "dashboard", href: "/admin", Icon: DashboardIcon },
   { key: "users", href: "/admin/users", Icon: UsersIcon },
   { key: "posts", href: "/admin/posts", Icon: PostsIcon },
+  { key: "tokenUsageLink", href: "/admin/token-usage", Icon: TokenUsageIcon },
 ];
 
 function navItemActive(pathname: string, href: string): boolean {

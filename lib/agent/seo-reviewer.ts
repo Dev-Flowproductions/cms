@@ -72,6 +72,7 @@ ${REVIEWER_SYSTEM}`
     const raw = await textLlm.generateText({
       prompt: options?.systemInstruction ? userMessage : prompt,
       systemInstruction,
+      assistant: "quality_reviewer",
     });
     const clean = stripModelJsonFences(raw);
     const parsed = JSON.parse(clean) as { improvements?: string[] };

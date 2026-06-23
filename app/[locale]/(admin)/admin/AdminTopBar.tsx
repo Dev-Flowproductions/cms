@@ -6,10 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-type ShellSection = "dashboard" | "posts" | "users" | "review" | "sources" | "default";
+type ShellSection = "dashboard" | "posts" | "users" | "tokenUsage" | "review" | "sources" | "default";
 
 function shellSection(pathname: string): ShellSection {
   if (pathname === "/admin") return "dashboard";
+  if (pathname.startsWith("/admin/token-usage")) return "tokenUsage";
   if (pathname.startsWith("/admin/posts")) return "posts";
   if (pathname.startsWith("/admin/users")) return "users";
   if (pathname.startsWith("/admin/review-queue")) return "review";
@@ -84,7 +85,7 @@ export function AdminTopBar() {
     >
       <div className="flex min-w-0 flex-1 items-center gap-6 overflow-hidden">
         {section === "posts" && postsUserId && (
-          <div className="hidden min-w-0 flex-wrap items-center gap-x-6 gap-y-2 md:flex">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
             <PostsStatusTabs
               userId={postsUserId}
               currentStatus={postsStatus}
@@ -94,6 +95,14 @@ export function AdminTopBar() {
               publishedLabel={tStatus("published")}
             />
           </div>
+        )}
+        {section === "tokenUsage" && (
+          <span
+            className="font-['Inter',sans-serif] text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: "var(--adm-on-surface)" }}
+          >
+            {t("topTokenUsage")}
+          </span>
         )}
       </div>
 

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUser } from "@/lib/auth";
+import { getUser, requireAdmin } from "@/lib/auth";
 import { z } from "zod";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
@@ -135,6 +135,115 @@ export async function createManualPost(formData: FormData) {
   }
 
   return { success: true, postId: post.id };
+}
+
+const adminManualPostSchema = z.object({
+  author_id: z.string().uuid(),
+  title: z.string().min(1, "Title is required"),
+  content_md: z.string(),
+  primary_locale: z.enum(["pt", "en", "fr"]),
+  content_type: z.enum(["hero", "hub", "hygiene"]),
+  seo_title: z.string().optional(),
+  seo_description: z.string().optional(),
+  focus_keyword: z.string().optional(),
+  excerpt: z.string().optional(),
+});
+
+/** Admin-only: create a manual draft post on behalf of a client user. */
+export async function adminCreateManualPostForUser(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = adminManualPostSchema.safeParse({
+    author_id: formData.get("author_id")?.toString().trim(),
+    title: formData.get("title")?.toString().trim() ?? "",
+    content_md: formData.get("content_md")?.toString() ?? "",
+    primary_locale: formData.get("primary_locale") ?? "pt",
+    content_type: formData.get("content_type") ?? "hero",
+    seo_title: formData.get("seo_title")?.toString().trim() || undefined,
+    seo_description: formData.get("seo_description")?.toString().trim() || undefined,
+    focus_keyword: formData.get("focus_keyword")?.toString().trim() || undefined,
+    excerpt: formData.get("excerpt")?.toString().trim() || undefined,
+  });
+  if (!parsed.success) {
+    const msg =
+      parsed.error.flatten().fieldErrors.title?.[0] ??
+      parsed.error.flatten().fieldErrors.author_id?.[0] ??
+      "Invalid input";
+    return { error: msg };
+  }
+
+  const {
+    author_id,
+    title,
+    content_md,
+    primary_locale,
+    content_type,
+    seo_title,
+    seo_description,
+    focus_keyword,
+    excerpt,
+  } = parsed.data;
+
+  const admin = createAdminClient();
+
+  const { data: clientRow } = await admin.from("clients").select("user_id").eq("user_id", author_id).maybeSingle();
+  if (!clientRow) return { error: "Client account not found" };
+
+  const rawSlug = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
+
+  let slug = rawSlug || `post-${Math.random().toString(36).slice(2, 9)}`;
+  const { data: existing } = await admin.from("posts").select("id").eq("slug", slug).maybeSingle();
+  if (existing) {
+    slug = `${slug}-${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  const { data: bylineRows } = await admin.from("blog_authors").select("id").eq("user_id", author_id);
+  const byline_author_id =
+    bylineRows && bylineRows.length > 0
+      ? (bylineRows[Math.floor(Math.random() * bylineRows.length)] as { id: string }).id
+      : null;
+
+  const { data: post, error: postError } = await admin
+    .from("posts")
+    .insert({
+      slug,
+      primary_locale,
+      content_type,
+      status: "draft",
+      author_id,
+      byline_author_id,
+    })
+    .select("id")
+    .single();
+  if (postError) return { error: postError.message };
+
+  const contentMd = normalizeFaqHeading(content_md, primary_locale);
+  const clampedSeoTitle = seo_title !== undefined ? clampSeoTitle(seo_title) : null;
+  const clampedSeoDesc = seo_description !== undefined ? clampMetaDescription(seo_description) : null;
+
+  const { error: locError } = await admin.from("post_localizations").insert({
+    post_id: post.id,
+    locale: primary_locale,
+    title,
+    excerpt: excerpt ?? clampedSeoDesc ?? "",
+    content_md: contentMd,
+    seo_title: clampedSeoTitle,
+    seo_description: clampedSeoDesc,
+    focus_keyword: focus_keyword ?? null,
+  });
+  if (locError) {
+    await admin.from("posts").delete().eq("id", post.id);
+    return { error: locError.message };
+  }
+
+  return { success: true, postId: post.id, slug };
 }
 
 const updatePostSchema = z.object({
@@ -273,6 +382,27 @@ export async function uploadCoverImage(postId: string, formData: FormData) {
   if (updateError) return { error: updateError.message };
 
   return { success: true, path, publicUrl };
+}
+
+/** Upload an inline image for post body markdown (does not change cover_image_path). */
+export async function uploadContentImage(postId: string, formData: FormData) {
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
+  const file = formData.get("file") as File | null;
+  if (!file?.size) return { error: "No file provided" };
+
+  const supabase = await createClient();
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${postId}/inline/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage.from("covers").upload(path, file, {
+    contentType: file.type,
+    upsert: true,
+  });
+  if (error) return { error: error.message };
+
+  const { data: urlData } = supabase.storage.from("covers").getPublicUrl(path);
+  return { success: true, path, publicUrl: urlData.publicUrl };
 }
 
 export async function deletePost(postId: string) {

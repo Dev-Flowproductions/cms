@@ -34,7 +34,6 @@ export function UserDetailClient({
     setReinforcementEdit(initialUser.instruction_reinforcement ?? "");
   }, [initialUser]);
   const [deleting, setDeleting] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [instructionsCreating, setInstructionsCreating] = useState(false);
   const [instructionsSaving, setInstructionsSaving] = useState(false);
   const [instructionsEdit, setInstructionsEdit] = useState(user.custom_instructions ?? "");
@@ -64,24 +63,6 @@ export function UserDetailClient({
       return;
     }
     router.push("/admin/users");
-  }
-
-  async function handleGeneratePost() {
-    setGenerating(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/scheduler?userId=${encodeURIComponent(user.user_id)}&force=true`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Generation failed");
-        return;
-      }
-      refreshUser();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setGenerating(false);
-    }
   }
 
   return (
@@ -172,20 +153,6 @@ export function UserDetailClient({
             {t("adminActionsTitle")}
           </p>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleGeneratePost}
-              disabled={generating || isPending}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
-              style={{
-                background: generating ? "var(--adm-surface-highest)" : "var(--adm-primary-container)",
-                color: generating ? "var(--adm-on-variant)" : "#fff",
-                border: generating ? "1px solid var(--adm-border-subtle)" : "none",
-                boxShadow: generating ? "none" : "var(--adm-cta-glow-shadow)",
-              }}
-            >
-              {generating ? t("generatePostGenerating") : t("generatePost")}
-            </button>
             <button
               type="button"
               disabled={instructionsCreating}

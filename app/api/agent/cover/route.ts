@@ -9,6 +9,7 @@ import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { createAgentLlmBundle } from "@/lib/agent/text-llm";
+import { bindAiUsageContext } from "@/lib/agent/token-usage";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -55,14 +56,16 @@ export async function POST(request: Request) {
 
   const { data: postRow } = await admin.from("posts").select("author_id").eq("id", post_id).maybeSingle();
   if (postRow?.author_id) {
+    bindAiUsageContext({ userId: postRow.author_id, postId: post_id });
     const { data: clientRow } = await admin
       .from("clients")
       .select(
-        "domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
+        "id, domain, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_book, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text",
       )
       .eq("user_id", postRow.author_id)
       .maybeSingle();
     if (clientRow) {
+      bindAiUsageContext({ clientId: clientRow.id });
       customInstructions = combineClientInstructionsForModel(
         clientRow.custom_instructions,
         clientRow.instruction_reinforcement,

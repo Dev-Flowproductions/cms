@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import type { GoogleGenerativeAI } from "@google/generative-ai";
 import { TaskType } from "@google/generative-ai";
 import { getAiProvider, getOpenAiEmbeddingModelChain } from "./ai-config";
+import { recordAiTokenUsage } from "./token-usage";
 
 export type EmbeddingChunk = { id: string; text: string };
 
@@ -45,6 +46,16 @@ export function createOpenAiEmbeddingService(openai: OpenAI): EmbeddingService {
       try {
         const res = await openai.embeddings.create({ model, input: inputs });
         activeModel = model;
+        if (res.usage?.total_tokens) {
+          recordAiTokenUsage({
+            operation: "embedding",
+            provider: "openai",
+            model,
+            assistant: "instruction_embedding",
+            promptTokens: res.usage.prompt_tokens ?? res.usage.total_tokens,
+            totalTokens: res.usage.total_tokens,
+          });
+        }
         return res.data.map((row) => row.embedding);
       } catch (e) {
         lastErr = e;

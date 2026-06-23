@@ -10,6 +10,7 @@ import {
   type PostContext,
 } from "@/lib/agent/instructions";
 import { createAgentLlmBundle, stripModelJsonFences, type AgentLlmBundle } from "@/lib/agent/text-llm";
+import { bindAiUsageContext } from "@/lib/agent/token-usage";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
@@ -436,6 +437,11 @@ async function generatePostForClient(
   // Track the created post ID so the catch block can clean up
   let createdPostId: string | null = null;
 
+  bindAiUsageContext({
+    userId: client.user_id,
+    clientId: client.id,
+  });
+
   try {
   const publicationDate = new Intl.DateTimeFormat("en-US", {
     month: "long", day: "numeric", year: "numeric",
@@ -484,6 +490,7 @@ async function generatePostForClient(
     throw new Error(postError?.message ?? "Failed to create post row");
   }
   createdPostId = post.id;
+  bindAiUsageContext({ postId: post.id });
 
   const brandBook = client.brand_book as import("@/lib/brand-book/types").BrandBook | null | undefined;
   const resolvedBrandColors = resolveClientBrandColors({
@@ -587,6 +594,7 @@ async function generatePostForClient(
         systemInstruction,
         temperature: 0.4,
         maxOutputTokens: 8192,
+        assistant: "post_writer",
       });
       const clean = stripModelJsonFences(raw);
       primaryContent = JSON.parse(clean);
@@ -850,6 +858,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
           systemInstruction: translationSystemInstruction,
           temperature: 0.25,
           maxOutputTokens: 8192,
+          assistant: "post_translator",
         });
         const clean = stripModelJsonFences(raw);
         translated = JSON.parse(clean);

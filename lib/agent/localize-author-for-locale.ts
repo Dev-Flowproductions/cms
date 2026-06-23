@@ -4,6 +4,7 @@
 import type OpenAI from "openai";
 import type { Locale } from "@/lib/types/db";
 import type { AuthorForBlock } from "@/lib/agent/internal-link";
+import { recordAiTokenUsage } from "@/lib/agent/token-usage";
 
 const LOCALE_NAME: Record<Locale, string> = {
   en: "English",
@@ -22,8 +23,9 @@ export async function localizeAuthorForLocale(
   if (!job && !bio) return author;
 
   const langName = LOCALE_NAME[targetLocale] ?? targetLocale;
+  const model = "gpt-4.1-mini";
   const res = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model,
     temperature: 0.2,
     response_format: { type: "json_object" },
     messages: [
@@ -41,6 +43,19 @@ Return JSON: {"author_job_title":"...","author_bio":"..."}`,
       },
     ],
   });
+
+  const usage = res.usage;
+  if (usage) {
+    recordAiTokenUsage({
+      operation: "chat",
+      provider: "openai",
+      model,
+      assistant: "author_localization",
+      promptTokens: usage.prompt_tokens ?? 0,
+      completionTokens: usage.completion_tokens ?? 0,
+      totalTokens: usage.total_tokens ?? 0,
+    });
+  }
 
   const text = res.choices[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(text) as { author_job_title?: string; author_bio?: string };

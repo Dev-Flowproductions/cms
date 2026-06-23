@@ -17,6 +17,7 @@ import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
 import { localizeAuthorForLocale } from "@/lib/agent/localize-author-for-locale";
+import { bindAiUsageContext } from "@/lib/agent/token-usage";
 import {
   getCandidateSiteUrls,
   enrichWithTitles,
@@ -93,10 +94,16 @@ export async function executeAgentGeneratePost(input: {
   const { data: clientRow } = await admin
     .from("clients")
     .select(
-      "domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text, webhook_url",
+      "id, domain, google_access_token, google_scope, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, brand_name, brand_tone, custom_instructions, instruction_reinforcement, cover_reference_image_1, cover_reference_image_2, cover_reference_image_3, brand_guidelines_text, webhook_url",
     )
     .eq("user_id", post.author_id)
     .maybeSingle();
+
+  bindAiUsageContext({
+    userId: post.author_id,
+    clientId: clientRow?.id ?? null,
+    postId,
+  });
 
   const rawBookForColors = clientRow?.brand_book as BrandBook | null | undefined;
   const resolvedBrandColors = resolveClientBrandColors({
@@ -202,7 +209,7 @@ export async function executeAgentGeneratePost(input: {
     );
 
     const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
-    const raw = await llm.text.generateText({ prompt, systemInstruction });
+    const raw = await llm.text.generateText({ prompt, systemInstruction, assistant: "post_writer" });
     const clean = stripModelJsonFences(raw);
 
     let generated: {

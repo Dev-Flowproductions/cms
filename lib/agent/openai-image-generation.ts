@@ -9,6 +9,7 @@ import {
   getOpenAiResponsesImageModelChain,
   OPENAI_COVER_IMAGE_SIZE,
 } from "./ai-config";
+import { recordAiTokenUsage } from "./token-usage";
 
 const COVER_SIZE_FALLBACKS = [OPENAI_COVER_IMAGE_SIZE, "1536x1024", "1024x1024"] as const;
 
@@ -82,6 +83,18 @@ async function generateViaResponsesApi(
           });
           const b64 = extractBase64FromImageGenerationResponse(response);
           if (b64) {
+            const usage = response.usage;
+            if (usage) {
+              recordAiTokenUsage({
+                operation: "image",
+                provider: "openai",
+                model: responseModel,
+                assistant: "cover_image",
+                promptTokens: usage.input_tokens ?? 0,
+                completionTokens: usage.output_tokens ?? 0,
+                totalTokens: usage.total_tokens ?? 0,
+              });
+            }
             const mode = referenceImages?.length ? "multimodal" : "text";
             console.info(
               `[${logLabel}] Cover via Responses API (${mode}, model=${responseModel}, image_tool=${imageModel}, size=${size})`,
@@ -123,6 +136,13 @@ async function generateViaImagesApi(
         });
         const b64 = res.data?.[0]?.b64_json;
         if (b64) {
+          recordAiTokenUsage({
+            operation: "image",
+            provider: "openai",
+            model,
+            assistant: "cover_image",
+            totalTokens: 0,
+          });
           console.info(`[${logLabel}] Cover via Images API (${model} @ ${size})`);
           return Buffer.from(b64, "base64");
         }

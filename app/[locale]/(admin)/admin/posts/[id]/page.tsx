@@ -8,6 +8,7 @@ import { EditPostForm } from "./EditPostForm";
 import { updatePost, upsertLocalization, uploadCoverImage } from "../actions";
 import { ReviewChecklistBlock } from "./ReviewChecklistBlock";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isUuid } from "@/lib/uuid";
 
 export default async function EditPostPage({
   params,
@@ -15,6 +16,7 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { roles } = await requireTeamMember();
   const data = await getPostWithLocalizations(id);
   if (!data) notFound();

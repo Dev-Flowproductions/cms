@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { getAiProvider } from "./ai-config";
 import { createEmbeddingService, type EmbeddingService } from "./embedding-service";
 import { openAiChatWithModelFallback } from "./openai-chat";
+import { recordAiTokenUsage } from "./token-usage";
 
 export type TextLlmProvider = "gemini" | "openai";
 
@@ -14,6 +15,7 @@ export type TextLlmClient = {
     systemInstruction?: string;
     temperature?: number;
     maxOutputTokens?: number;
+    assistant?: string;
   }): Promise<string>;
 };
 
@@ -43,7 +45,7 @@ function createGeminiTextClient(apiKey: string): TextLlmClient {
   return {
     provider: "gemini",
     modelName,
-    async generateText({ prompt, systemInstruction, temperature, maxOutputTokens }) {
+    async generateText({ prompt, systemInstruction, temperature, maxOutputTokens, assistant }) {
       const model = genAI.getGenerativeModel({
         model: modelName,
         ...(systemInstruction ? { systemInstruction } : {}),
@@ -57,6 +59,18 @@ function createGeminiTextClient(apiKey: string): TextLlmClient {
           : {}),
       });
       const result = await model.generateContent(prompt);
+      const meta = result.response.usageMetadata;
+      if (meta) {
+        recordAiTokenUsage({
+          operation: "chat",
+          provider: "gemini",
+          model: modelName,
+          assistant: assistant ?? "post_writer",
+          promptTokens: meta.promptTokenCount ?? 0,
+          completionTokens: meta.candidatesTokenCount ?? 0,
+          totalTokens: meta.totalTokenCount ?? 0,
+        });
+      }
       return result.response.text().trim();
     },
   };

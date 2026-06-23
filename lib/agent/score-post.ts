@@ -127,6 +127,7 @@ You are an SEO editor. Score this user message's blog post 0–100 for SEO, AEO,
     const raw = await textLlm.generateText({
       prompt: options?.systemInstruction ? userMessage : prompt,
       systemInstruction,
+      assistant: "quality_scorer",
     });
     let clean = stripModelJsonFences(raw);
     // Extract JSON object if model wrapped it in extra text

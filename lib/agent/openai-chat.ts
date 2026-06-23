@@ -1,11 +1,13 @@
 import type OpenAI from "openai";
 import { getOpenAiTextModelChain, getOpenAiVisionModelChain } from "./ai-config";
+import { recordAiTokenUsage } from "./token-usage";
 
 export type OpenAiChatOptions = {
   prompt: string;
   systemInstruction?: string;
   temperature?: number;
   maxOutputTokens?: number;
+  assistant?: string;
 };
 
 export async function openAiChatWithModelFallback(
@@ -29,7 +31,21 @@ export async function openAiChatWithModelFallback(
         ...(options.maxOutputTokens != null ? { max_tokens: options.maxOutputTokens } : {}),
       });
       const text = completion.choices[0]?.message?.content?.trim() ?? "";
-      if (text) return { text, model };
+      if (text) {
+        const usage = completion.usage;
+        if (usage) {
+          recordAiTokenUsage({
+            operation: "chat",
+            provider: "openai",
+            model,
+            assistant: options.assistant ?? "post_writer",
+            promptTokens: usage.prompt_tokens ?? 0,
+            completionTokens: usage.completion_tokens ?? 0,
+            totalTokens: usage.total_tokens ?? 0,
+          });
+        }
+        return { text, model };
+      }
     } catch (e) {
       lastErr = e;
       console.warn(`[openai-chat] model ${model} failed:`, e instanceof Error ? e.message : e);
@@ -45,6 +61,7 @@ export async function openAiVisionWithModelFallback(
   systemOrUserText: string,
   images: OpenAiVisionImagePart[],
   modelChain: string[] = getOpenAiVisionModelChain(),
+  assistant = "cover_vision",
 ): Promise<string> {
   const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
     { type: "text", text: systemOrUserText },
@@ -63,7 +80,21 @@ export async function openAiVisionWithModelFallback(
         max_tokens: 1024,
       });
       const text = completion.choices[0]?.message?.content?.trim() ?? "";
-      if (text) return text;
+      if (text) {
+        const usage = completion.usage;
+        if (usage) {
+          recordAiTokenUsage({
+            operation: "vision",
+            provider: "openai",
+            model,
+            assistant,
+            promptTokens: usage.prompt_tokens ?? 0,
+            completionTokens: usage.completion_tokens ?? 0,
+            totalTokens: usage.total_tokens ?? 0,
+          });
+        }
+        return text;
+      }
     } catch (e) {
       lastErr = e;
       console.warn(`[openai-vision] model ${model} failed:`, e instanceof Error ? e.message : e);

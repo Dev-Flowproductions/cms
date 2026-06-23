@@ -1,23 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { analyzeComposerDraft } from "@/lib/agent/composer-draft-analyzer";
 import type { PostStructureSection } from "@/lib/agent/post-structure-guide";
 import type { Locale } from "@/lib/types/db";
 
-const DEFAULT_TIPS: Record<Locale, string[]> = {
-  en: [
-    "Add a title, then open with 2–3 intro sentences.",
-    "Include one data-backed claim and a bold definition of your main term.",
-  ],
-  pt: [
-    "Adicione um título e comece com 2–3 frases de introdução.",
-    "Inclua uma afirmação com dados e a definição a negrito do termo principal.",
-  ],
-  fr: [
-    "Ajoutez un titre, puis 2–3 phrases d'introduction.",
-    "Incluez une affirmation appuyée par des données et une définition en gras du terme clé.",
-  ],
-};
+function mergeTips(instant: string[], ai: string[]): string[] {
+  if (ai.length === 0) return instant;
+  const merged = [...ai];
+  for (const tip of instant) {
+    if (merged.length >= 4) break;
+    const duplicate = merged.some(
+      (existing) =>
+        existing.toLowerCase().includes(tip.slice(0, 24).toLowerCase()) ||
+        tip.toLowerCase().includes(existing.slice(0, 24).toLowerCase()),
+    );
+    if (!duplicate) merged.push(tip);
+  }
+  return merged.slice(0, 4);
+}
 
 export function WritingCoachPanel({
   authorUserId,
@@ -44,17 +45,33 @@ export function WritingCoachPanel({
     error: string;
   };
 }) {
-  const [tips, setTips] = useState<string[]>(DEFAULT_TIPS[locale] ?? DEFAULT_TIPS.en);
+  const instantTips = useMemo(
+    () => analyzeComposerDraft(locale, title, content),
+    [locale, title, content],
+  );
+  const [aiTips, setAiTips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const draftKeyRef = useRef("");
+
+  const displayTips = aiTips.length >= 2 ? mergeTips(instantTips, aiTips) : instantTips;
 
   const fetchTips = useCallback(
     async (signal?: AbortSignal) => {
+      const hasDraft = title.trim().length > 0 || content.trim().length > 20;
+      if (!hasDraft) {
+        setAiTips([]);
+        return;
+      }
+
       setLoading(true);
       setError(null);
+      const requestKey = `${locale}:${title}:${content}`;
+      draftKeyRef.current = requestKey;
+
       try {
         const res = await fetch("/api/agent/composer-coach", {
           method: "POST",
@@ -68,38 +85,37 @@ export function WritingCoachPanel({
           signal,
         });
         const json = await res.json();
+        if (draftKeyRef.current !== requestKey) return;
         if (!res.ok) {
           setError(json.error ?? labels.error);
           return;
         }
         if (Array.isArray(json.tips) && json.tips.length > 0) {
-          setTips(json.tips);
+          setAiTips(json.tips);
         }
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
         setError(labels.error);
       } finally {
-        setLoading(false);
+        if (draftKeyRef.current === requestKey) setLoading(false);
       }
     },
-    [authorUserId, locale, title, content, labels.error]
+    [authorUserId, locale, title, content, labels.error],
   );
 
   useEffect(() => {
+    setAiTips([]);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     abortRef.current?.abort();
 
     const hasDraft = title.trim().length > 0 || content.trim().length > 20;
-    if (!hasDraft) {
-      setTips(DEFAULT_TIPS[locale] ?? DEFAULT_TIPS.en);
-      return;
-    }
+    if (!hasDraft) return;
 
     debounceRef.current = setTimeout(() => {
       const controller = new AbortController();
       abortRef.current = controller;
       void fetchTips(controller.signal);
-    }, 3500);
+    }, 900);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -156,20 +172,25 @@ export function WritingCoachPanel({
           </p>
         )}
         <ul className="space-y-2">
-          {tips.map((tip) => (
+          {displayTips.map((tip) => (
             <li
               key={tip}
-              className="flex gap-2 text-xs leading-relaxed"
-              style={{ color: "var(--adm-on-surface)" }}
+              className="flex gap-2 text-xs leading-relaxed transition-opacity"
+              style={{ color: "var(--adm-on-surface)", opacity: loading ? 0.92 : 1 }}
             >
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--adm-primary)" }} />
               <span>{tip}</span>
             </li>
           ))}
         </ul>
-        {tips.length === 0 && !loading && (
+        {displayTips.length === 0 && !loading && (
           <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
             {labels.empty}
+          </p>
+        )}
+        {loading && displayTips.length > 0 && (
+          <p className="text-[10px]" style={{ color: "var(--adm-on-variant)" }}>
+            {labels.loading}
           </p>
         )}
       </div>

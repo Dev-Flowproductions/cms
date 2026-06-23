@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useMemo } from "react";
 import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -15,6 +15,7 @@ import { BrandedMarkdownPreview, type ClientBrandPreview } from "@/components/ad
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { ComposerCoverPanel } from "@/components/admin/ComposerCoverPanel";
 import { MagicImproveButton } from "@/components/admin/MagicImproveButton";
+import { ScoreBadge } from "@/components/ScoreDisplay";
 import { getPostStructureGuide } from "@/lib/agent/post-structure-guide";
 import type { Locale } from "@/lib/types/db";
 
@@ -77,10 +78,23 @@ export function AdminPostComposer({
   const [error, setError] = useState<string | null>(null);
   const [postId, setPostId] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [optimizedFingerprint, setOptimizedFingerprint] = useState<string | null>(null);
+  const [seoScore, setSeoScore] = useState<{ seo: number; aeo: number; geo: number } | null>(null);
+  const [optimizeReady, setOptimizeReady] = useState(false);
 
   const structureSections = getPostStructureGuide(locale, "hero");
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const draftPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  const draftFingerprint = useMemo(
+    () => `${locale}:${title.trim()}:${content}`,
+    [locale, title, content],
+  );
+  const canPublish = Boolean(
+    postId && optimizedFingerprint === draftFingerprint && optimizeReady,
+  );
 
   function deriveDraftTitle(): string {
     if (title.trim()) return title.trim();
@@ -142,34 +156,111 @@ export function AdminPostComposer({
     }
   }
 
+  async function persistDraft(): Promise<string | null> {
+    const id = await ensureDraft({ requireTitle: true });
+    if (!id) return null;
+
+    const metaFd = new FormData();
+    metaFd.set("primary_locale", locale);
+    const metaResult = await updatePost(id, metaFd);
+    if (metaResult.error) {
+      setError(metaResult.error);
+      return null;
+    }
+
+    const result = await upsertLocalization(id, buildLocalizationFormData());
+    if (result.error) {
+      setError(result.error);
+      return null;
+    }
+    return id;
+  }
+
   async function handleSaveDraft(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
 
-    if (postId) {
-      const metaFd = new FormData();
-      metaFd.set("primary_locale", locale);
-      const metaResult = await updatePost(postId, metaFd);
-      if (metaResult.error) {
-        setSaving(false);
-        setError(metaResult.error);
-        return;
-      }
-      const result = await upsertLocalization(postId, buildLocalizationFormData());
-      setSaving(false);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      startTransition(() => router.refresh());
-      return;
-    }
-
-    const id = await ensureDraft({ requireTitle: true });
+    const id = await persistDraft();
     setSaving(false);
     if (id) {
       startTransition(() => router.refresh());
+    }
+  }
+
+  async function handleOptimize() {
+    if (!title.trim() && !content.trim()) {
+      setError(t("composerPage.titleRequired"));
+      return;
+    }
+    if (content.trim().split(/\s+/).length < 40) {
+      setError(t("composerPage.optimizeNeedsContent"));
+      return;
+    }
+
+    setOptimizing(true);
+    setError(null);
+    setOptimizedFingerprint(null);
+    setOptimizeReady(false);
+    setSeoScore(null);
+
+    try {
+      const id = await persistDraft();
+      if (!id) return;
+
+      const res = await fetch("/api/agent/optimize-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: id,
+          locale,
+          title: title.trim() || deriveDraftTitle(),
+          content_md: content,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? t("composerPage.optimizeFailed"));
+        return;
+      }
+
+      const newTitle = typeof json.title === "string" ? json.title : title;
+      const newContent = typeof json.content_md === "string" ? json.content_md : content;
+      setTitle(newTitle);
+      setContent(newContent);
+      if (json.seo_score) setSeoScore(json.seo_score);
+
+      setOptimizedFingerprint(`${locale}:${newTitle.trim()}:${newContent}`);
+      setOptimizeReady(Boolean(json.meets_publish_bar));
+
+      if (!json.meets_publish_bar) {
+        setError(t("composerPage.optimizeBelowBar"));
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("composerPage.optimizeFailed"));
+    } finally {
+      setOptimizing(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!canPublish || !postId) return;
+
+    setPublishing(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/publish/${postId}`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? t("composerPage.publishFailed"));
+        return;
+      }
+      startTransition(() => router.push(postsListHref));
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("composerPage.publishFailed"));
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -364,29 +455,78 @@ export function AdminPostComposer({
             }}
           />
 
-          <div className="flex flex-wrap gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-50"
-              style={{ background: "var(--adm-primary-container)", boxShadow: "var(--adm-cta-glow-shadow)" }}
-            >
-              {saving ? t("composerPage.saving") : postId ? t("composerPage.savedDraft") : t("composerPage.saveDraft")}
-            </button>
+          <div className="space-y-3 pt-2">
+            {seoScore && (
+              <div
+                className="rounded-xl border px-4 py-3"
+                style={{ borderColor: "var(--adm-border-subtle)", background: "var(--adm-surface-highest)" }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--adm-on-variant)" }}>
+                  {t("composerPage.scoreTitle")}
+                </p>
+                <ScoreBadge score={seoScore} />
+              </div>
+            )}
 
-            {postId && (
-              <Link
-                href={`/admin/posts/${postId}`}
-                className="inline-flex items-center rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all"
+            {optimizedFingerprint && optimizedFingerprint !== draftFingerprint && (
+              <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
+                {t("composerPage.optimizeStale")}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={saving || optimizing || publishing}
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                style={{ background: "var(--adm-primary-container)", boxShadow: "var(--adm-cta-glow-shadow)" }}
+              >
+                {saving ? t("composerPage.saving") : postId ? t("composerPage.savedDraft") : t("composerPage.saveDraft")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleOptimize()}
+                disabled={saving || optimizing || publishing}
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                style={{ background: "var(--adm-primary)", boxShadow: "var(--adm-cta-glow-shadow)" }}
+              >
+                {optimizing ? t("composerPage.optimizing") : t("composerPage.optimizeSeo")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handlePublish()}
+                disabled={!canPublish || saving || optimizing || publishing}
+                title={!canPublish ? t("composerPage.publishLockedHint") : undefined}
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50"
                 style={{
-                  background: "var(--adm-surface-high)",
-                  color: "var(--adm-on-surface)",
-                  borderColor: "var(--adm-outline-variant)",
+                  background: canPublish ? "var(--adm-success, #16a34a)" : "var(--adm-surface-high)",
+                  color: canPublish ? "#fff" : "var(--adm-on-variant)",
+                  border: canPublish ? "none" : "1px solid var(--adm-outline-variant)",
                 }}
               >
-                {t("composerPage.openFullEditor")}
-              </Link>
-            )}
+                {publishing ? t("composerPage.publishing") : t("composerPage.publish")}
+              </button>
+
+              {postId && (
+                <Link
+                  href={`/admin/posts/${postId}`}
+                  className="inline-flex items-center rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all"
+                  style={{
+                    background: "var(--adm-surface-high)",
+                    color: "var(--adm-on-surface)",
+                    borderColor: "var(--adm-outline-variant)",
+                  }}
+                >
+                  {t("composerPage.openFullEditor")}
+                </Link>
+              )}
+            </div>
+
+            <p className="text-xs leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+              {t("composerPage.optimizeRequiredHint")}
+            </p>
           </div>
         </form>
 

@@ -952,40 +952,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
 
 
 
-  const canAutoPublish = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
-
-  if (canAutoPublish) {
-    const pub = await requestInternalPublishPost(post.id);
-    if (!pub.ok) {
-      const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
-      console.warn(
-        `[scheduler] Auto-publish failed for ${client.domain} (${post.id}): ${pub.error ?? pub.status}; avg=${avg ?? "n/a"}`,
-      );
-      await admin.from("posts").update({
-        status: "review",
-        published_at: null,
-        webhook_status: null,
-        webhook_sent_at: null,
-        webhook_error: pub.error ?? null,
-      }).eq("id", post.id);
-    }
-  } else {
-    const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
-    console.warn(
-      `[scheduler] Post ${post.id} left in review: SEO avg ${avg ?? "n/a"} is below 90 or score missing (${client.domain})`,
-    );
-    await admin.from("posts").update({
-      status: "review",
-      published_at: null,
-      webhook_status: null,
-      webhook_sent_at: null,
-      webhook_error: null,
-    }).eq("id", post.id);
-  }
-
-  void notifyDgArticleStatusIfLinked(post.id);
-
-  // ── Generate cover image (once, shared across all locales) ─────────────────
+  // ── Generate cover image before publish (once, shared across all locales) ───
   let coverAdded = false;
   try {
     const coverSubjectRaw = coverImageDescription
@@ -1062,22 +1029,59 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         await admin.from("posts").update({ cover_image_path: coverPath }).eq("id", post.id);
         coverAdded = true;
       } else {
-        console.warn(`[scheduler] Cover upload failed for ${client.domain} (non-fatal):`, uploadErr.message);
+        console.warn(`[scheduler] Cover upload failed for ${client.domain}:`, uploadErr.message);
       }
+    } else {
+      console.warn(`[scheduler] Cover generation returned no image for ${client.domain}`);
     }
   } catch (coverErr) {
-    console.warn(`[scheduler] Cover generation failed for ${client.domain} (non-fatal):`, coverErr);
+    console.warn(`[scheduler] Cover generation failed for ${client.domain}:`, coverErr);
   }
 
-  if (canAutoPublish && coverAdded && client.webhook_url) {
-    const coverUpdate = await requestInternalPublishPost(post.id);
-    if (!coverUpdate.ok) {
+  const scoreOk = seoScoreMeetsPublishBar(primaryContent.seo_score ?? null);
+  const canAutoPublish = scoreOk && coverAdded;
+
+  if (canAutoPublish) {
+    const pub = await requestInternalPublishPost(post.id);
+    if (!pub.ok) {
+      const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
       console.warn(
-        `[scheduler] Cover update webhook failed for ${client.domain} (${post.id}):`,
-        coverUpdate.error ?? coverUpdate.status,
+        `[scheduler] Auto-publish failed for ${client.domain} (${post.id}): ${pub.error ?? pub.status}; avg=${avg ?? "n/a"}`,
       );
+      await admin.from("posts").update({
+        status: "review",
+        published_at: null,
+        webhook_status: null,
+        webhook_sent_at: null,
+        webhook_error: pub.error ?? null,
+      }).eq("id", post.id);
     }
+  } else if (scoreOk && !coverAdded) {
+    console.warn(
+      `[scheduler] Post ${post.id} left in review: cover image missing (${client.domain})`,
+    );
+    await admin.from("posts").update({
+      status: "review",
+      published_at: null,
+      webhook_status: null,
+      webhook_sent_at: null,
+      webhook_error: "Cover image could not be generated",
+    }).eq("id", post.id);
+  } else {
+    const avg = primaryContent.seo_score ? seoScoreAverage(primaryContent.seo_score) : null;
+    console.warn(
+      `[scheduler] Post ${post.id} left in review: SEO avg ${avg ?? "n/a"} is below 90 or score missing (${client.domain})`,
+    );
+    await admin.from("posts").update({
+      status: "review",
+      published_at: null,
+      webhook_status: null,
+      webhook_sent_at: null,
+      webhook_error: null,
+    }).eq("id", post.id);
   }
+
+  void notifyDgArticleStatusIfLinked(post.id);
 
   await admin.from("clients").update({
     last_post_generated_at: new Date().toISOString(),
@@ -1088,7 +1092,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
   const { data: finalPost } = await admin.from("posts").select("status").eq("id", post.id).maybeSingle();
   const finalStatus = finalPost?.status ?? (canAutoPublish ? "published" : "review");
   console.log(
-    `[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id} (${finalStatus})`,
+    `[scheduler] Generated post (3 locales) for ${client.domain} -> post id ${post.id} (${finalStatus}, cover=${coverAdded ? "yes" : "no"})`,
   );
   return post.id;
   } catch (err) {

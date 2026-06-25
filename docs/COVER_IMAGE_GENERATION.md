@@ -7,7 +7,7 @@ This document describes how the CMS generates **blog cover images** (16:9 hero b
 The same pipeline is used in:
 
 - **Post generation** — `lib/agent/execute-generate-post.ts` (manual “Generate with AI” and DG brief flows).
-- **Scheduler** — `app/api/scheduler/route.ts` (automated posts for due clients).
+- **Scheduler** — `app/api/scheduler/route.ts` (automated posts for due clients). Cover is generated **before** auto-publish; posts with SEO ≥ 90 but no cover stay in review.
 - **Dedicated cover API** — `app/api/agent/cover/route.ts` (regenerate cover for an existing post).
 
 Images are produced with **OpenAI** (Responses API `image_generation` tool, Images API fallback), **16:9** (`lib/agent/openai-image-generation.ts`, `lib/agent/cover-image.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.

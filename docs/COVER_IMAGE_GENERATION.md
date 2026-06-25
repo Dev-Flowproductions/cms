@@ -8,6 +8,10 @@ The same pipeline is used in:
 
 - **Post generation** — `lib/agent/execute-generate-post.ts` (manual “Generate with AI” and DG brief flows).
 - **Scheduler** — `app/api/scheduler/route.ts` (automated posts for due clients). Cover is generated **before** auto-publish; posts with SEO ≥ 90 but no cover stay in review.
+
+### Legacy webhook clients (e.g. Flow Productions)
+
+If `webhook_event_format = legacy`, the site receives `cms.post.published` then (historically) a second `cms.post.updated` when cover finished. Sites that **insert** on every event instead of upserting by CMS `post.id` will show **duplicate blog cards**—often one with cover and two without. The scheduler reorder fix sends **one** webhook after cover exists; the site should still upsert by `post.id` on both event types.
 - **Dedicated cover API** — `app/api/agent/cover/route.ts` (regenerate cover for an existing post).
 
 Images are produced with **OpenAI** (Responses API `image_generation` tool, Images API fallback), **16:9** (`lib/agent/openai-image-generation.ts`, `lib/agent/cover-image.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.

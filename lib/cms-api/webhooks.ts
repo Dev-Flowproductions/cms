@@ -6,7 +6,8 @@ export type WebhookEvent =
   | "post.unpublished"
   | "post.deleted"
   | "cms.post.published"
-  | "cms.post.updated";
+  | "cms.post.updated"
+  | "cms.post.deleted";
 
 /** Resolve event string from client format. Legacy = cms.post.* (original scheduler); spec = post.* */
 export function resolveWebhookEvent(
@@ -17,6 +18,14 @@ export function resolveWebhookEvent(
     return isUpdate ? "cms.post.updated" : "cms.post.published";
   }
   return isUpdate ? "post.updated" : "post.published";
+}
+
+/** Delete/unpublish event for client webhook format. */
+export function resolveWebhookDeleteEvent(
+  format: "spec" | "legacy" | null | undefined,
+): WebhookEvent {
+  if (format === "legacy") return "cms.post.deleted";
+  return "post.deleted";
 }
 
 export interface RevalidationPostPayload {

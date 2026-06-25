@@ -442,9 +442,12 @@ export async function deletePost(postId: string) {
         .maybeSingle();
 
       if (client?.webhook_url) {
-        const { buildRevalidationPayload, buildWebhookHeaders } = await import("@/lib/cms-api/webhooks");
+        const { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookDeleteEvent } = await import("@/lib/cms-api/webhooks");
+        const deleteEvent = resolveWebhookDeleteEvent(
+          (client as { webhook_event_format?: "spec" | "legacy" | null }).webhook_event_format,
+        );
         const payload = {
-          ...buildRevalidationPayload("post.deleted", client.id, {
+          ...buildRevalidationPayload(deleteEvent, client.id, {
             id: postId,
             slug: post.slug,
             status: "deleted",
@@ -454,7 +457,7 @@ export async function deletePost(postId: string) {
           slug: post.slug,
         };
         const headers = client.webhook_secret
-          ? buildWebhookHeaders(payload, client.webhook_secret, "post.deleted")
+          ? buildWebhookHeaders(payload, client.webhook_secret, deleteEvent)
           : { "Content-Type": "application/json" };
         if (client.webhook_secret) {
           (headers as Record<string, string>)["x-webhook-secret"] = client.webhook_secret;

@@ -95,6 +95,10 @@ export function createOpenAiEmbeddingService(openai: OpenAI): EmbeddingService {
   };
 }
 
+function estimateGeminiEmbeddingTokens(texts: string[]): number {
+  return texts.reduce((sum, t) => sum + Math.max(1, Math.ceil(t.length / 4)), 0);
+}
+
 export function createGeminiEmbeddingService(genAI: GoogleGenerativeAI): EmbeddingService {
   const modelName = getGeminiEmbeddingModelName();
   const model = genAI.getGenerativeModel({ model: modelName });
@@ -109,6 +113,14 @@ export function createGeminiEmbeddingService(genAI: GoogleGenerativeAI): Embeddi
       });
       const qVec = queryRes.embedding.values;
       if (!qVec?.length) throw new Error("Empty query embedding");
+      recordAiTokenUsage({
+        operation: "embedding",
+        provider: "gemini",
+        model: modelName,
+        assistant: "instruction_embedding",
+        promptTokens: estimateGeminiEmbeddingTokens([text]),
+        totalTokens: estimateGeminiEmbeddingTokens([text]),
+      });
       return qVec;
     },
     async embedDocuments(chunks) {
@@ -121,6 +133,14 @@ export function createGeminiEmbeddingService(genAI: GoogleGenerativeAI): Embeddi
             taskType: TaskType.RETRIEVAL_DOCUMENT,
             title: c.id.slice(0, 50),
           })),
+        });
+        recordAiTokenUsage({
+          operation: "embedding",
+          provider: "gemini",
+          model: modelName,
+          assistant: "instruction_embedding",
+          promptTokens: estimateGeminiEmbeddingTokens(missing.map((c) => c.text)),
+          totalTokens: estimateGeminiEmbeddingTokens(missing.map((c) => c.text)),
         });
         missing.forEach((c, i) => {
           const values = embeddings[i]?.values;

@@ -1,5 +1,5 @@
 /**
- * Blog cover image generation — Gemini (default) or OpenAI fallback.
+ * Blog cover image generation — Gemini (default) or OpenAI fallback with cross-provider retry.
  */
 import type OpenAI from "openai";
 import { getAiProvider } from "./ai-config";
@@ -67,59 +67,61 @@ function buildFullCoverPrompt(args: CoverGenerationArgs): string {
   return withGuide(embedded + visionBlock + refHint + args.basePrompt);
 }
 
+async function generateWithProvider(
+  provider: "gemini" | "openai",
+  clients: CoverImageClients,
+  fullText: string,
+  args: CoverGenerationArgs,
+  logLabel: string,
+): Promise<Buffer | null> {
+  const refs = args.referenceImages?.filter((r) => r.base64?.length) ?? [];
+  if (provider === "gemini") {
+    if (!clients.geminiApiKey) return null;
+    return generateGeminiCoverImageBuffer({
+      apiKey: clients.geminiApiKey,
+      prompt: fullText,
+      logLabel,
+      referenceImages: refs.length ? refs : undefined,
+    });
+  }
+  if (!clients.openai) return null;
+  return generateOpenAiCoverImageBuffer(
+    clients.openai,
+    fullText,
+    logLabel,
+    refs.length ? refs : undefined,
+  );
+}
+
 /**
  * Tries: full prompt with embed prefix → text-only without embed prefix (unless enforce).
+ * Falls back to the alternate provider when the primary returns no image.
  */
 export async function generateCoverImageBufferWithEmbedFallback(
   clients: CoverImageClients,
   args: CoverGenerationArgs,
 ): Promise<Buffer | null> {
-  const provider = getAiProvider();
+  const primary = getAiProvider();
+  const fallback: "gemini" | "openai" = primary === "gemini" ? "openai" : "gemini";
   const fullText = buildFullCoverPrompt(args);
   const enforce = args.enforcePrimaryInstructionEmbedding === true;
-  const refs = args.referenceImages?.filter((r) => r.base64?.length) ?? [];
 
-  if (provider === "gemini") {
-    if (!clients.geminiApiKey) {
-      throw new Error("GEMINI_API_KEY is required for cover generation when AI_PROVIDER=gemini");
-    }
-
-    let buf = await generateGeminiCoverImageBuffer({
-      apiKey: clients.geminiApiKey,
-      prompt: fullText,
-      logLabel: args.logLabel,
-      referenceImages: refs.length ? refs : undefined,
-    });
+  for (const provider of [primary, fallback] as const) {
+    let buf = await generateWithProvider(provider, clients, fullText, args, args.logLabel);
     if (buf) return buf;
 
     if (!enforce && args.embedPrefix.trim()) {
-      buf = await generateGeminiCoverImageBuffer({
-        apiKey: clients.geminiApiKey,
-        prompt: appendGuidelinesToPrompt(args.basePrompt, args.guidelinesText),
-        logLabel: `${args.logLabel} retry-no-embed`,
-      });
+      const slimPrompt = appendGuidelinesToPrompt(args.basePrompt, args.guidelinesText);
+      buf = await generateWithProvider(
+        provider,
+        clients,
+        slimPrompt,
+        args,
+        `${args.logLabel} retry-no-embed`,
+      );
+      if (buf) return buf;
     }
-    return buf;
   }
 
-  if (!clients.openai) {
-    throw new Error("OPENAI_API_KEY is required for cover generation when AI_PROVIDER=openai");
-  }
-
-  let buf = await generateOpenAiCoverImageBuffer(
-    clients.openai,
-    fullText,
-    args.logLabel,
-    refs.length ? refs : undefined,
-  );
-  if (buf) return buf;
-
-  if (!enforce && args.embedPrefix.trim()) {
-    buf = await generateOpenAiCoverImageBuffer(
-      clients.openai,
-      appendGuidelinesToPrompt(args.basePrompt, args.guidelinesText),
-      `${args.logLabel} retry-no-embed`,
-    );
-  }
-  return buf;
+  return null;
 }

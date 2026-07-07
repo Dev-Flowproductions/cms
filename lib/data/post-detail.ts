@@ -1,6 +1,8 @@
 "use server";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicReadClient } from "@/lib/supabase/public-read";
 import type { Locale } from "@/lib/types/db";
 import { isUuid } from "@/lib/uuid";
 
@@ -36,8 +38,8 @@ export async function getPostWithLocalizations(id: string) {
   return { ...post, post_localizations: locs ?? [] };
 }
 
-export async function getPublishedPostBySlug(slug: string, locale: Locale) {
-  const supabase = await createClient();
+export const getPublishedPostBySlug = cache(async (slug: string, locale: Locale) => {
+  const supabase = createPublicReadClient();
   const { data: post, error: postError } = await supabase
     .from("posts")
     .select("id, slug, primary_locale, author_id, byline_author_id, cover_image_path, published_at, profiles(display_name, avatar_url, bio, job_title)")
@@ -93,10 +95,10 @@ export async function getPublishedPostBySlug(slug: string, locale: Locale) {
   if (!localization) return null;
 
   return { post: postWithProfile, localization };
-}
+});
 
-export async function getPublishedPostLocales(slug: string) {
-  const supabase = await createClient();
+export const getPublishedPostLocales = cache(async (slug: string) => {
+  const supabase = createPublicReadClient();
   const { data: post } = await supabase
     .from("posts")
     .select("id")
@@ -109,10 +111,10 @@ export async function getPublishedPostLocales(slug: string) {
     .select("locale")
     .eq("post_id", post.id);
   return (locs ?? []).map((l: { locale: string }) => l.locale);
-}
+});
 
 async function getLocalizationByPostAndLocale(postId: string, locale: string) {
-  const supabase = await createClient();
+  const supabase = createPublicReadClient();
   const { data } = await supabase
     .from("post_localizations")
     .select("*")

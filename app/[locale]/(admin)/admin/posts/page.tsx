@@ -7,12 +7,13 @@ import { UsersListClient } from "./UsersListClient";
 export default async function AdminPostsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; user?: string }>;
+  searchParams: Promise<{ status?: string; user?: string; page?: string }>;
 }) {
   const t = await getTranslations("admin");
   const params = await searchParams;
   const status = params.status as "idea" | "draft" | "review" | "published" | undefined;
   const userId = params.user?.trim() || undefined;
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
 
   if (!userId) {
     const users = await getUsersWithPostCount();
@@ -31,8 +32,8 @@ export default async function AdminPostsPage({
     );
   }
 
-  const { posts, clientByAuthor } = await getPostsForAdmin(
-    status ? { status, userId } : { userId }
+  const { posts, clientByAuthor, totalCount, pageSize } = await getPostsForAdmin(
+    status ? { status, userId, page } : { userId, page },
   );
   const accountName =
     clientByAuthor[userId]?.company_name ?? clientByAuthor[userId]?.brand_name ?? "—";
@@ -59,6 +60,9 @@ export default async function AdminPostsPage({
         statusFilter={status}
         clientByAuthor={clientByAuthor}
         userId={userId}
+        page={page}
+        totalCount={totalCount}
+        pageSize={pageSize}
       />
     </div>
   );

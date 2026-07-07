@@ -1,8 +1,14 @@
+import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { HtmlLang } from "@/components/HtmlLang";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -20,10 +26,20 @@ export default async function LocaleLayout({
     notFound();
   }
   const messages = await getMessages();
+
   return (
-    <NextIntlClientProvider messages={messages}>
-      <HtmlLang />
-      {children}
-    </NextIntlClientProvider>
+    <html lang={locale} suppressHydrationWarning className={inter.variable}>
+      <head>
+        <link rel="icon" href="/images/L_favicon.png" type="image/png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('theme');var p=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',s||p);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className={inter.className}>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

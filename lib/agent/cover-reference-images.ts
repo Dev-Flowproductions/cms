@@ -28,21 +28,27 @@ export async function loadCoverReferenceImageParts(
   const out: CoverReferenceImagePart[] = [];
   const unique = [...new Set(paths.filter((p): p is string => typeof p === "string" && p.trim().length > 0))];
 
-  for (const path of unique.slice(0, 6)) {
-    const { data, error } = await admin.storage.from(BUCKET).download(path.trim());
-    if (error || !data) {
-      console.warn("[cover-ref] Failed to download", path, error?.message);
-      continue;
-    }
-    const buf = Buffer.from(await data.arrayBuffer());
-    if (buf.length > MAX_BRAND_UPLOAD_BYTES) {
-      console.warn("[cover-ref] Skipping oversized image", path);
-      continue;
-    }
-    out.push({
-      mimeType: guessMimeFromPath(path),
-      base64: buf.toString("base64"),
-    });
+  const downloads = await Promise.all(
+    unique.slice(0, 6).map(async (path) => {
+      const { data, error } = await admin.storage.from(BUCKET).download(path.trim());
+      if (error || !data) {
+        console.warn("[cover-ref] Failed to download", path, error?.message);
+        return null;
+      }
+      const buf = Buffer.from(await data.arrayBuffer());
+      if (buf.length > MAX_BRAND_UPLOAD_BYTES) {
+        console.warn("[cover-ref] Skipping oversized image", path);
+        return null;
+      }
+      return {
+        mimeType: guessMimeFromPath(path),
+        base64: buf.toString("base64"),
+      } satisfies CoverReferenceImagePart;
+    }),
+  );
+
+  for (const part of downloads) {
+    if (part) out.push(part);
     if (out.length >= 3) break;
   }
 

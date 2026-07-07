@@ -3,6 +3,7 @@
 import { AI_ASSISTANTS, resolveAssistantKey, type AiAssistantId } from "@/lib/agent/ai-assistants";
 import { estimateAiUsageCostUsd } from "@/lib/agent/ai-pricing";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdminForDataLoader } from "@/lib/auth";
 import { isUuid } from "@/lib/uuid";
 
 export type TokenUsageTotals = {
@@ -75,14 +76,21 @@ function isMissingTableError(message: string): boolean {
   );
 }
 
-async function fetchUsageRows(): Promise<{ rows: UsageRow[]; tableMissing: boolean }> {
+async function fetchUsageRows(sinceDays?: number): Promise<{ rows: UsageRow[]; tableMissing: boolean }> {
+  await requireAdminForDataLoader();
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("ai_token_usage")
     .select(
       "user_id, client_id, assistant, operation, provider, model, prompt_tokens, completion_tokens, total_tokens, created_at",
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(50_000);
+  if (sinceDays != null && sinceDays > 0) {
+    const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
+    query = query.gte("created_at", since);
+  }
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingTableError(error.message)) {
@@ -264,8 +272,8 @@ async function aggregateByClient(rows: UsageRow[]): Promise<TokenUsageByClient[]
 }
 
 /** Single fetch for totals + per-client breakdown (avoids duplicate queries). */
-export async function getTokenUsageReport(): Promise<TokenUsageReport> {
-  const { rows, tableMissing } = await fetchUsageRows();
+export async function getTokenUsageReport(options?: { sinceDays?: number }): Promise<TokenUsageReport> {
+  const { rows, tableMissing } = await fetchUsageRows(options?.sinceDays ?? 90);
   const [totals, byAssistant, byClient] = await Promise.all([
     Promise.resolve(aggregateTotals(rows)),
     Promise.resolve(aggregateByAssistant(rows)),

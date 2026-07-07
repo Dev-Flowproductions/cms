@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { executeAgentGeneratePost } from "@/lib/agent/execute-generate-post";
 import type { Locale } from "@/lib/types/db";
 
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {

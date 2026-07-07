@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateBrandBook } from "@/lib/brand-book/generate";
 import { generateClientSpecificInstructions } from "@/lib/agent/generate-client-instructions";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

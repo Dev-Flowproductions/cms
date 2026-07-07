@@ -4,6 +4,8 @@ import { getUser, getUserRoles, hasAdminRole } from "@/lib/auth";
 import { improveManualField } from "@/lib/agent/improve-manual-field";
 import type { Locale } from "@/lib/types/db";
 
+export const maxDuration = 120;
+
 export async function POST(request: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

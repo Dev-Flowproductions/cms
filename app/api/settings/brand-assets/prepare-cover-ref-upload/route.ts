@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { MAX_BRAND_UPLOAD_BYTES, MAX_BRAND_UPLOAD_MB } from "@/lib/brand/brand-asset-limits";
 import { buildCoverRefStoragePath, normalizeCoverRefFileExt } from "@/lib/brand/cover-ref-upload";
 
+export const maxDuration = 60;
+
 /** JSON only — large files go direct to Supabase Storage (bypasses platform body limits). */
 export async function POST(request: Request) {
   const supabase = await createClient();

@@ -55,7 +55,16 @@ export default async function middleware(request: NextRequest) {
       const dest = new URL(`/${adminMatch[1]}/login`, request.url);
       return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
     }
-    // Admins skip onboarding — let them through
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", user.id)
+      .eq("role_id", "admin")
+      .maybeSingle();
+    if (!adminRole) {
+      const dest = new URL(`/${adminMatch[1]}/dashboard`, request.url);
+      return copySupabaseCookies(supabaseRes, NextResponse.redirect(dest));
+    }
   }
 
   const dashboardMatch = pathname.match(/^\/(en|pt|fr)\/dashboard(\/|$)/);

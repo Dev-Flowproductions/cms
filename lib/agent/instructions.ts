@@ -116,12 +116,35 @@ export async function resolveSystemInstructionsWithEmbeddings(
 }
 
 /** System instructions for post agents (embedding-ranked general + client sections). */
+const instructionResolveCache = new Map<string, { value: string; expiresAt: number }>();
+const INSTRUCTION_CACHE_TTL_MS = 60 * 60 * 1000;
+
+function instructionCacheKey(
+  clientSpecificInstructions: string | null,
+  ctx: InstructionSelectionContext,
+): string {
+  return JSON.stringify({
+    taskKind: ctx.taskKind,
+    hasInternalLinks: ctx.hasInternalLinks ?? false,
+    focus: ctx.focusKeywordOrTopic ?? "",
+    locale: ctx.locale ?? "",
+    contentType: ctx.contentType ?? "",
+    client: clientSpecificInstructions?.trim().slice(0, 400) ?? "",
+  });
+}
+
 export async function resolvePostSystemInstructions(
   embeddings: EmbeddingService,
   clientSpecificInstructions: string | null,
   ctx: InstructionSelectionContext,
 ): Promise<string> {
-  return resolveSystemInstructionsWithEmbeddings(embeddings, clientSpecificInstructions, ctx);
+  const key = instructionCacheKey(clientSpecificInstructions, ctx);
+  const hit = instructionResolveCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) return hit.value;
+
+  const value = await resolveSystemInstructionsWithEmbeddings(embeddings, clientSpecificInstructions, ctx);
+  instructionResolveCache.set(key, { value, expiresAt: Date.now() + INSTRUCTION_CACHE_TTL_MS });
+  return value;
 }
 
 /** @deprecated Use getSystemInstructions(client.custom_instructions) for new code. */

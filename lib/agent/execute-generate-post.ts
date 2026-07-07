@@ -22,7 +22,7 @@ import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { appendAuthorBlock, sanitizeInternalMarkdownLinks, convertInternalLinksToRelative } from "@/lib/agent/internal-link";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
 import { localizeAuthorForLocale } from "@/lib/agent/localize-author-for-locale";
-import { bindAiUsageContext } from "@/lib/agent/token-usage";
+import { bindAiUsageContext, flushAiTokenUsageWrites } from "@/lib/agent/token-usage";
 import {
   getCandidateSiteUrls,
   enrichWithTitles,
@@ -214,8 +214,6 @@ export async function executeAgentGeneratePost(input: {
     );
 
     const prompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
-    const raw = await llm.text.generateText({ prompt, systemInstruction, assistant: "post_writer" });
-    const clean = stripModelJsonFences(raw);
 
     let generated: {
       title: string;
@@ -228,18 +226,30 @@ export async function executeAgentGeneratePost(input: {
       content_md: string;
       faq_blocks: Array<{ question: string; answer: string }>;
       seo_score?: { seo: number; aeo: number; geo: number; notes: string };
-    };
+    } | null = null;
+    let lastGenError: string | null = null;
 
-    try {
-      generated = JSON.parse(clean);
-    } catch {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const raw = await llm.text.generateText({ prompt, systemInstruction, assistant: "post_writer" });
+        const clean = stripModelJsonFences(raw);
+        generated = JSON.parse(clean);
+        break;
+      } catch (err) {
+        lastGenError = err instanceof Error ? err.message : String(err);
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+
+    if (!generated) {
       if (runId) {
         await admin
           .from("agent_runs")
-          .update({ status: "failed", error: "Invalid JSON from model", output: { raw } })
+          .update({ status: "failed", error: lastGenError ?? "Invalid JSON from model" })
           .eq("id", runId);
       }
-      return { ok: false, error: "Model returned invalid JSON. Try again." };
+      await flushAiTokenUsageWrites();
+      return { ok: false, error: lastGenError ?? "Model returned invalid JSON. Try again." };
     }
 
     generated.content_md = sanitizeInternalMarkdownLinks(
@@ -507,5 +517,7 @@ export async function executeAgentGeneratePost(input: {
       await admin.from("agent_runs").update({ status: "failed", error: msg }).eq("id", runId);
     }
     return { ok: false, error: msg };
+  } finally {
+    await flushAiTokenUsageWrites();
   }
 }

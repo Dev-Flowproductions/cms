@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAX_BRAND_UPLOAD_BYTES, MAX_BRAND_UPLOAD_MB } from "@/lib/brand/brand-asset-limits";
 
+export const maxDuration = 60;
+
 function normalizeGuidelinesExt(raw: string): string | null {
   const e = raw.toLowerCase().replace(/^\./, "");
   if (e === "markdown") return "md";

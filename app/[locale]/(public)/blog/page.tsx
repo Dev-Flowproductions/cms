@@ -2,6 +2,8 @@ import { Link } from "@/lib/navigation";
 import { getLocale } from "next-intl/server";
 import { getPublishedPostsList } from "@/lib/data/blog";
 
+export const revalidate = 60;
+
 export default async function BlogListPage() {
   const locale = (await getLocale()) as "en" | "pt" | "fr";
   const { items } = await getPublishedPostsList(locale);

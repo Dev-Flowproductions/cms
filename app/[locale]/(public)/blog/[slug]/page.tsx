@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link as IntlLink } from "@/lib/navigation";
 import { getPublishedPostBySlug, getPublishedPostLocales } from "@/lib/data/post-detail";
@@ -7,6 +8,8 @@ import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { buildArticleJsonLd } from "@/lib/rendering/jsonld";
 import type { Locale } from "@/lib/types/db";
 import type { Metadata } from "next";
+
+export const revalidate = 60;
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://localhost:3000";
 
@@ -105,6 +108,18 @@ export default async function BlogPostPage({
               {localization.excerpt}
             </p>
           )}
+          {imageUrl && (
+            <div className="relative mt-6 aspect-[16/9] w-full overflow-hidden rounded-xl">
+              <Image
+                src={imageUrl}
+                alt={localization.title || post.slug}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 672px"
+                priority
+              />
+            </div>
+          )}
         </header>
         <div
           className="prose max-w-none"
@@ -122,7 +137,7 @@ export default async function BlogPostPage({
                   style={{ background: "var(--accent-soft, var(--border))", color: "var(--accent)" }}
                 >
                   {authorAvatarUrl ? (
-                    <img src={authorAvatarUrl} alt={authorName} className="w-full h-full object-cover" />
+                    <img src={authorAvatarUrl} alt={authorName} className="h-full w-full object-cover" />
                   ) : (
                     <span>{authorInitial}</span>
                   )}

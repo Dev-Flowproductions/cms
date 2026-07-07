@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/lib/navigation";
 import { getPostWithLocalizations } from "@/lib/data/post-detail";
-import { requireTeamMember } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getSourcesList, getCitationsForPost } from "../../sources/actions";
 import { EditPostForm } from "./EditPostForm";
 import { updatePost, upsertLocalization, uploadCoverImage } from "../actions";
@@ -17,7 +17,7 @@ export default async function EditPostPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const { roles } = await requireTeamMember();
+  const { roles } = await requireAdmin();
   const data = await getPostWithLocalizations(id);
   if (!data) notFound();
 

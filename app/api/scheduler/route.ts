@@ -16,10 +16,10 @@ import {
   stripModelJsonFences,
   type AgentLlmBundle,
 } from "@/lib/agent/text-llm";
-import { bindAiUsageContext } from "@/lib/agent/token-usage";
+import { bindAiUsageContext, flushAiTokenUsageWrites } from "@/lib/agent/token-usage";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
-import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
+import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
@@ -178,10 +178,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Process due clients with a random stagger (0â€“30 s per client) to spread API load
+  // Process at most one due client per invocation (avoids 300s timeout with multi-client queues).
+  const MAX_CLIENTS_PER_RUN = 1;
+  let processedDue = 0;
+
   for (let i = 0; i < dueClients.length; i++) {
-    const client = dueClients[i];
-    if (i > 0) {
+    if (processedDue >= MAX_CLIENTS_PER_RUN) {
+      results.push({
+        client_id: dueClients[i]!.id,
+        domain: dueClients[i]!.domain,
+        status: "deferred_next_run",
+      });
+      continue;
+    }
+    const client = dueClients[i]!;
+    if (i > 0 && processedDue > 0) {
       // Random delay 5â€“30 s between each client
       const jitterMs = 5_000 + Math.floor(Math.random() * 25_000);
       await new Promise((r) => setTimeout(r, jitterMs));
@@ -240,6 +251,7 @@ export async function POST(req: NextRequest) {
         revertLastPostOnGenerationFailure: !outerSkipClaim,
         now,
       });
+      processedDue += 1;
       results.push({ client_id: client.id, domain: client.domain, status: "generated", post_id: postId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -258,6 +270,8 @@ export async function POST(req: NextRequest) {
   console.log(
     `[scheduler] Done — generated: ${generated}, published_draft: ${publishedDrafts}, draft_publish_failed: ${draftPublishFailed}, skipped: ${skipped}, errors: ${errors}`,
   );
+
+  await flushAiTokenUsageWrites();
 
   return NextResponse.json({
     ok: true,
@@ -835,9 +849,8 @@ async function generatePostForClient(
 
   const translationLocales = ALL_LOCALES.filter((l) => l !== primaryLocale);
 
-  for (const locale of translationLocales) {
-    await new Promise((r) => setTimeout(r, 2_000)); // Rate limit pause
-
+  await Promise.all(
+    translationLocales.map(async (locale) => {
     const { data: transRun } = await admin
       .from("agent_runs")
       .insert({
@@ -932,7 +945,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     if (!translated) {
       if (transRunId) await admin.from("agent_runs").update({ status: "failed", error: "Translation failed" }).eq("id", transRunId);
       console.warn(`[scheduler] Skipping ${locale} translation for ${client.domain}`);
-      continue;
+      return;
     }
 
     // Carry over SEO scores from primary content
@@ -1005,9 +1018,8 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     );
 
     if (transRunId) await admin.from("agent_runs").update({ status: "done", output: { ...translated, content_md: translatedMd } }).eq("id", transRunId);
-  }
-
-
+    }),
+  );
 
   // ── Generate cover image before publish (once, shared across all locales) ───
   let coverAdded = false;
@@ -1038,11 +1050,16 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     console.info(`[scheduler] cover refs for ${client.domain}: ${refParts.length} image(s) loaded (of ${[client.cover_reference_image_1, client.cover_reference_image_2, client.cover_reference_image_3].filter(Boolean).length} configured)`);
     let referenceVisionBrief: string | null = null;
     if (refParts.length > 0) {
-      referenceVisionBrief = await requireCoverReferenceVisionBrief(
+      referenceVisionBrief = await buildCoverReferenceVisionBriefWithTimeout(
         coverVisionClientsFromLlm(llm),
         refParts,
         `[scheduler] ref-vision ${client.domain}`,
       );
+      if (!referenceVisionBrief?.trim()) {
+        console.warn(
+          `[scheduler] cover-reference-vision unavailable for ${client.domain} — continuing without brief`,
+        );
+      }
     }
     const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
       embeddings,

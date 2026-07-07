@@ -1,4 +1,5 @@
 import "../(admin)/admin/admin-shell.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { getAuthUserWithRoles, hasAdminRole } from "@/lib/auth";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
@@ -21,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const initial = (user.email ?? "?")[0].toUpperCase();
 
   return (
+    <ThemeProvider>
     <DashboardShell
       userEmail={user.email ?? ""}
       userInitial={initial}
@@ -35,5 +37,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     >
       {children}
     </DashboardShell>
+    </ThemeProvider>
   );
 }

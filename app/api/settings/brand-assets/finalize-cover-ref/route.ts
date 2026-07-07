@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateAndPersistCoverRef } from "@/lib/brand/finalize-cover-ref-server";
 
+export const maxDuration = 60;
+
 /** JSON only — file already in Storage from browser upload. */
 export async function POST(request: Request) {
   const supabase = await createClient();

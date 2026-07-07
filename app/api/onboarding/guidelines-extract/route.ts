@@ -5,6 +5,8 @@ import { resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
 import { getMultipartBlob } from "@/lib/http/form-data";
 import { MAX_BRAND_UPLOAD_BYTES, MAX_BRAND_UPLOAD_MB } from "@/lib/brand/brand-asset-limits";
 
+export const maxDuration = 60;
+
 /** Extract text from a guidelines file for onboarding preview (no DB write). */
 export async function POST(request: Request) {
   const supabase = await createClient();

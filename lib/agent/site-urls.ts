@@ -56,11 +56,14 @@ async function expandSitemapIndex(xml: string, baseHost: string): Promise<string
   if (!isIndex || locs.length === 0) return locs;
 
   const merged: string[] = [];
-  for (const loc of locs.slice(0, 12)) {
-    if (!sameHost(loc, baseHost)) continue;
-    const sub = await fetchText(loc);
-    if (sub) merged.push(...parseSitemapLocs(sub));
-  }
+  const subLocs = locs.slice(0, 12).filter((loc) => sameHost(loc, baseHost));
+  const subResults = await Promise.all(
+    subLocs.map(async (loc) => {
+      const sub = await fetchText(loc);
+      return sub ? parseSitemapLocs(sub) : [];
+    }),
+  );
+  for (const parsed of subResults) merged.push(...parsed);
   return merged.length > 0 ? merged : locs;
 }
 

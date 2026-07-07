@@ -4,7 +4,7 @@ import { validateSiteApiKey, getApiKeyFromRequest } from "@/lib/cms-api/auth";
 import { getPublishedPosts } from "@/lib/cms-api/data";
 import type { ApiPostsResponse } from "@/lib/cms-api/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function GET(
   request: NextRequest,

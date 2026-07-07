@@ -46,13 +46,18 @@ export async function requireAuth() {
   return user;
 }
 
-export async function requireRole(allowedRoles: Role[]) {
+export async function requireRole(
+  allowedRoles: Role[],
+  options?: { redirectTo?: "login" | "dashboard" },
+) {
   const user = await requireAuth();
   const roles = await getUserRoles(user.id);
   const hasRole = allowedRoles.some((r) => roles.includes(r));
   if (!hasRole) {
     const locale = await getLocale();
-    redirect(`/${locale}/login`);
+    const dest =
+      options?.redirectTo === "dashboard" ? `/${locale}/dashboard` : `/${locale}/login`;
+    redirect(dest);
   }
   return { user, roles };
 }
@@ -62,7 +67,12 @@ export async function requireTeamMember() {
 }
 
 export async function requireAdmin() {
-  return requireRole(ADMIN_ROLES);
+  return requireRole(ADMIN_ROLES, { redirectTo: "dashboard" });
+}
+
+/** Guard admin-only data loaders that use the service-role client. */
+export async function requireAdminForDataLoader() {
+  await requireAdmin();
 }
 
 /** Returns user and their roles, or redirects to login. Use for dashboard etc. */

@@ -73,6 +73,13 @@ export async function POST(
     );
   }
 
+  if (!(post.cover_image_path as string | null | undefined)?.trim()) {
+    return NextResponse.json(
+      { error: "Cover image is required before publish. Generate a cover first." },
+      { status: 422 },
+    );
+  }
+
   const primaryLocale = (post as { primary_locale?: string }).primary_locale ?? "pt";
   const localizationsRaw = (post.post_localizations ?? []) as Array<{
     locale: string;

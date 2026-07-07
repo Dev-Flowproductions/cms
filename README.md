@@ -83,16 +83,19 @@ Copy `.env.example` to `.env.local` and fill in values.
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key (client + server user context) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Recommended | Bypasses RLS for admin jobs, webhooks, scheduler |
-| `OPENAI_API_KEY` | Yes | Text, embeddings, cover images (GPT Image), vision |
-| `OPENAI_TEXT_MODEL` | No | Chat model (default `gpt-4.1-mini`; fallbacks `gpt-4.1`, `gpt-4o-mini`) |
-| `OPENAI_IMAGE_MODEL` | No | Cover model (default `gpt-image-2-2026-04-21`; fallbacks `gpt-image-1.5`, `gpt-image-1`) |
+| `AI_PROVIDER` | No | `gemini` (default) or `openai` |
+| `GEMINI_API_KEY` | Yes (when `AI_PROVIDER=gemini`) | Text, embeddings, cover images, vision |
+| `GEMINI_TEXT_MODEL` | No | Chat model (default `gemini-3.1-flash-lite`) |
+| `GEMINI_EMBEDDING_MODEL` | No | Instruction ranking (default `gemini-embedding-2`) |
+| `GEMINI_IMAGE_MODEL` | No | Cover model (default `gemini-3.1-flash-image`) |
+| `GEMINI_VISION_MODEL` | No | Reference banner vision (default `gemini-3.1-flash-lite`) |
+| `OPENAI_API_KEY` | Yes (when `AI_PROVIDER=openai`); optional fallback | OpenAI stack or quota fallback |
+| `OPENAI_TEXT_MODEL` | No | Chat model (default `gpt-4.1-mini`) |
+| `OPENAI_IMAGE_MODEL` | No | Cover model (default `gpt-image-2`) |
 | `OPENAI_EMBEDDING_MODEL` | No | Instruction ranking (default `text-embedding-3-large`) |
-| `AI_PROVIDER` | No | `openai` (default) or `gemini` for legacy Google stack |
-| `GEMINI_API_KEY` | Only if `AI_PROVIDER=gemini` | Legacy Gemini text/embeddings |
 | `NEXT_PUBLIC_APP_URL` | Yes | OAuth redirects, internal publish calls |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | If using Google | OAuth |
 | `CRON_SECRET` | If using secured scheduler | `Authorization: Bearer <secret>` for `POST /api/scheduler` |
-| `GEMINI_EMBEDDING_MODEL` | No | Legacy Gemini embeddings when `AI_PROVIDER=gemini` |
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical site URL for public metadata / sitemap |
 
 ---

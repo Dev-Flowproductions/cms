@@ -39,7 +39,7 @@ const admin = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const { createAgentLlmBundle } = await import("../lib/agent/text-llm.ts");
+const { createAgentLlmBundle, coverImageClientsFromLlm, coverVisionClientsFromLlm } = await import("../lib/agent/text-llm.ts");
 const { loadCoverReferenceImageParts } = await import("../lib/agent/cover-reference-images.ts");
 const { requireCoverReferenceVisionBrief } = await import("../lib/agent/cover-reference-vision.ts");
 const { buildCoverInstructionEmbeddingPrefixWithMeta } = await import("../lib/agent/instruction-embeddings.ts");
@@ -91,7 +91,7 @@ try {
     console.log("Running requireCoverReferenceVisionBrief...");
     const t0 = Date.now();
     referenceVisionBrief = await requireCoverReferenceVisionBrief(
-      llm.openai,
+      coverVisionClientsFromLlm(llm),
       refParts,
       "[test] ref-vision",
     );
@@ -155,7 +155,7 @@ const baseCoverPrompt = buildCoverPrompt(
 
 console.log("Generating cover image...");
 const t1 = Date.now();
-const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
+const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
   embedPrefix: coverEmbedPrefix,
   basePrompt: baseCoverPrompt,
   logLabel: "[test] cover",

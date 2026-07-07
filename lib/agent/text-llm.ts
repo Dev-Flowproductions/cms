@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
-import { getAiProvider } from "./ai-config";
+import { getAiProvider, getGeminiTextModelName } from "./ai-config";
 import { createEmbeddingService, type EmbeddingService } from "./embedding-service";
 import { openAiChatWithModelFallback } from "./openai-chat";
 import { recordAiTokenUsage } from "./token-usage";
@@ -21,10 +21,10 @@ export type TextLlmClient = {
 
 export type AgentLlmBundle = {
   text: TextLlmClient;
-  openai: OpenAI;
+  openai: OpenAI | null;
   embeddings: EmbeddingService;
-  /** Only set when AI_PROVIDER=gemini and GEMINI_API_KEY is configured. */
   gemini: GoogleGenerativeAI | null;
+  geminiApiKey: string | null;
 };
 
 export function getTextLlmProvider(): TextLlmProvider {
@@ -41,7 +41,7 @@ export function stripModelJsonFences(text: string): string {
 
 function createGeminiTextClient(apiKey: string): TextLlmClient {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
+  const modelName = getGeminiTextModelName();
   return {
     provider: "gemini",
     modelName,
@@ -96,9 +96,8 @@ function isOpenAiQuotaOrRateLimitError(err: unknown): boolean {
   return /429|quota|rate limit|insufficient_quota|billing/i.test(msg);
 }
 
-/** When OpenAI is out of quota, retry with Gemini if configured. */
-function withGeminiQuotaFallback(primary: TextLlmClient, gemini: TextLlmClient | null): TextLlmClient {
-  if (!gemini) return primary;
+function withOpenAiQuotaFallback(primary: TextLlmClient, secondary: TextLlmClient | null): TextLlmClient {
+  if (!secondary) return primary;
   return {
     provider: primary.provider,
     get modelName() {
@@ -110,42 +109,75 @@ function withGeminiQuotaFallback(primary: TextLlmClient, gemini: TextLlmClient |
       } catch (err) {
         if (!isOpenAiQuotaOrRateLimitError(err)) throw err;
         console.warn(
-          `[text-llm] OpenAI quota/rate limit (${err instanceof Error ? err.message : err}) — falling back to Gemini (${gemini.modelName})`,
+          `[text-llm] OpenAI quota/rate limit (${err instanceof Error ? err.message : err}) — falling back to Gemini (${secondary.modelName})`,
         );
-        return gemini.generateText(options);
+        return secondary.generateText(options);
+      }
+    },
+  };
+}
+
+function withGeminiQuotaFallback(primary: TextLlmClient, secondary: TextLlmClient | null): TextLlmClient {
+  if (!secondary) return primary;
+  return {
+    provider: primary.provider,
+    get modelName() {
+      return primary.modelName;
+    },
+    async generateText(options) {
+      try {
+        return await primary.generateText(options);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const retryable = /429|quota|rate limit|resource exhausted|billing/i.test(msg);
+        if (!retryable) throw err;
+        console.warn(
+          `[text-llm] Gemini quota/rate limit (${msg}) — falling back to OpenAI (${secondary.modelName})`,
+        );
+        return secondary.generateText(options);
       }
     },
   };
 }
 
 /**
- * OpenAI-first agent stack (text, embeddings, cover images, vision).
- * Set AI_PROVIDER=gemini to restore Google Gemini for text/embeddings (covers still need OpenAI unless extended).
+ * Gemini-first agent stack (text, embeddings, cover images, vision).
+ * Set AI_PROVIDER=openai for the OpenAI stack.
  */
 export function createAgentLlmBundle(): AgentLlmBundle {
   const provider = getAiProvider();
   const openaiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
   const geminiKey = process.env.GEMINI_API_KEY?.trim() ?? "";
 
-  if (!openaiKey) {
-    throw new Error("OPENAI_API_KEY is required (default AI provider is OpenAI)");
+  if (provider === "gemini" && !geminiKey) {
+    throw new Error("GEMINI_API_KEY is required when AI_PROVIDER=gemini");
+  }
+  if (provider === "openai" && !openaiKey) {
+    throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai");
   }
 
-  const openai = new OpenAI({ apiKey: openaiKey });
+  const openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
   const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
+  const geminiText = geminiKey ? createGeminiTextClient(geminiKey) : null;
+  const openaiText = openai ? createOpenAiTextClient(openai) : null;
 
   let text: TextLlmClient;
-  const geminiText = geminiKey ? createGeminiTextClient(geminiKey) : null;
   if (provider === "gemini") {
-    if (!geminiKey) {
-      throw new Error("GEMINI_API_KEY is required when AI_PROVIDER=gemini");
-    }
-    text = createGeminiTextClient(geminiKey);
+    text = withGeminiQuotaFallback(geminiText!, openaiText);
   } else {
-    text = withGeminiQuotaFallback(createOpenAiTextClient(openai), geminiText);
+    text = withOpenAiQuotaFallback(openaiText!, geminiText);
   }
 
   const embeddings = createEmbeddingService(openai, gemini);
 
-  return { text, openai, embeddings, gemini };
+  return { text, openai, embeddings, gemini, geminiApiKey: geminiKey || null };
+}
+
+/** Helpers for cover generation and reference vision call sites. */
+export function coverImageClientsFromLlm(llm: AgentLlmBundle) {
+  return { openai: llm.openai, geminiApiKey: llm.geminiApiKey };
+}
+
+export function coverVisionClientsFromLlm(llm: AgentLlmBundle) {
+  return { openai: llm.openai, gemini: llm.gemini };
 }

@@ -7,7 +7,12 @@ import {
   type ClientContext,
   type PostContext,
 } from "@/lib/agent/instructions";
-import { createAgentLlmBundle, stripModelJsonFences } from "@/lib/agent/text-llm";
+import {
+  coverImageClientsFromLlm,
+  coverVisionClientsFromLlm,
+  createAgentLlmBundle,
+  stripModelJsonFences,
+} from "@/lib/agent/text-llm";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
@@ -333,7 +338,7 @@ export async function executeAgentGeneratePost(input: {
       (post as { byline_author_id?: string | null }).byline_author_id ?? null,
     );
     if (authorForBlock) {
-      authorForBlock = await localizeAuthorForLocale(llm.openai, authorForBlock, locale);
+      authorForBlock = await localizeAuthorForLocale(llm.text, authorForBlock, locale);
     }
 
     const contentMdOut = appendAuthorBlock(generated.content_md, locale, authorForBlock);
@@ -412,7 +417,11 @@ export async function executeAgentGeneratePost(input: {
       ]);
       let referenceVisionBrief: string | null = null;
       if (refParts.length > 0) {
-        referenceVisionBrief = await requireCoverReferenceVisionBrief(llm.openai, refParts, "[generate] ref-vision");
+        referenceVisionBrief = await requireCoverReferenceVisionBrief(
+          coverVisionClientsFromLlm(llm),
+          refParts,
+          "[generate] ref-vision",
+        );
       }
       const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
         llm.embeddings,
@@ -442,7 +451,7 @@ export async function executeAgentGeneratePost(input: {
         },
       );
 
-      const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
+      const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
         embedPrefix: coverEmbedPrefix,
         basePrompt: baseCoverPrompt,
         logLabel: "[generate] auto-cover",

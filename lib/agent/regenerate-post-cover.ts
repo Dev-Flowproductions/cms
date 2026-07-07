@@ -6,7 +6,11 @@ import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-ima
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief, buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
-import type { AgentLlmBundle } from "@/lib/agent/text-llm";
+import {
+  coverImageClientsFromLlm,
+  coverVisionClientsFromLlm,
+  type AgentLlmBundle,
+} from "@/lib/agent/text-llm";
 import { bindAiUsageContext } from "@/lib/agent/token-usage";
 import { requestInternalPublishPost } from "@/lib/publish/request-internal-publish";
 
@@ -65,7 +69,7 @@ export async function regeneratePostCover(
   if (refParts.length > 0) {
     if (options.allowMissingReferenceVision) {
       referenceVisionBrief = await buildCoverReferenceVisionBriefWithTimeout(
-        llm.openai,
+        coverVisionClientsFromLlm(llm),
         refParts,
         `${logLabel} ref-vision`,
       );
@@ -76,7 +80,7 @@ export async function regeneratePostCover(
       }
     } else {
       referenceVisionBrief = await requireCoverReferenceVisionBrief(
-        llm.openai,
+        coverVisionClientsFromLlm(llm),
         refParts,
         `${logLabel} ref-vision`,
       );
@@ -115,7 +119,7 @@ export async function regeneratePostCover(
     colorPaletteText: null,
   });
 
-  const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
+  const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
     embedPrefix: coverEmbedPrefix,
     basePrompt: buildCoverPrompt(
       coverSubject,

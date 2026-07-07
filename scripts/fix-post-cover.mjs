@@ -51,7 +51,7 @@ const admin = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const { createAgentLlmBundle } = await import("../lib/agent/text-llm.ts");
+const { createAgentLlmBundle, coverImageClientsFromLlm, coverVisionClientsFromLlm } = await import("../lib/agent/text-llm.ts");
 const { loadCoverReferenceImageParts } = await import("../lib/agent/cover-reference-images.ts");
 const { requireCoverReferenceVisionBrief } = await import("../lib/agent/cover-reference-vision.ts");
 const { buildCoverInstructionEmbeddingPrefixWithMeta } = await import("../lib/agent/instruction-embeddings.ts");
@@ -101,7 +101,11 @@ const refParts = await loadCoverReferenceImageParts(admin, [
 
 let referenceVisionBrief = null;
 if (refParts.length > 0) {
-  referenceVisionBrief = await requireCoverReferenceVisionBrief(llm.openai, refParts, "[fix-cover] ref-vision");
+  referenceVisionBrief = await requireCoverReferenceVisionBrief(
+    coverVisionClientsFromLlm(llm),
+    refParts,
+    "[fix-cover] ref-vision",
+  );
 }
 
 const combinedInstructions = combineClientInstructionsForModel(
@@ -136,7 +140,7 @@ const resolvedBrandColors = resolveClientBrandColors({
   colorPaletteText: null,
 });
 
-const buffer = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
+const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
   embedPrefix: coverEmbedPrefix,
   basePrompt: buildCoverPrompt(
     coverSubject,

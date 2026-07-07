@@ -383,23 +383,64 @@ async function claimClientForSchedulerIfNeeded(
   return Boolean(claimedId);
 }
 
+const STRANDED_DRAFT_SLUG_RE = /^draft-[0-9a-f]{8}-\d+$/;
+
+function isStrandedSchedulerDraftSlug(slug: string | null | undefined): boolean {
+  return !!slug && STRANDED_DRAFT_SLUG_RE.test(slug);
+}
+
+/** Empty scheduler placeholders left when generation times out before content is saved. */
+async function cleanupStrandedSchedulerDrafts(
+  admin: ReturnType<typeof createAdminClient>,
+  authorId: string,
+): Promise<string[]> {
+  const { data: drafts, error } = await admin
+    .from("posts")
+    .select("id, slug, post_localizations(id)")
+    .eq("author_id", authorId)
+    .eq("status", "draft");
+
+  if (error || !drafts?.length) return [];
+
+  const deleted: string[] = [];
+  for (const draft of drafts) {
+    const locCount = (draft as { post_localizations?: Array<{ id: string }> }).post_localizations?.length ?? 0;
+    if (locCount === 0 && isStrandedSchedulerDraftSlug(draft.slug)) {
+      const { error: delErr } = await admin.from("posts").delete().eq("id", draft.id);
+      if (!delErr) {
+        deleted.push(draft.id);
+        console.log(`[scheduler] Removed stranded empty draft ${draft.id} (${draft.slug})`);
+      } else {
+        console.warn(`[scheduler] Failed to remove stranded draft ${draft.id}:`, delErr.message);
+      }
+    }
+  }
+  return deleted;
+}
+
 async function findOldestDraftPostId(
   admin: ReturnType<typeof createAdminClient>,
   authorId: string,
 ): Promise<string | null> {
-  const { data, error } = await admin
+  await cleanupStrandedSchedulerDrafts(admin, authorId);
+
+  const { data: drafts, error } = await admin
     .from("posts")
-    .select("id")
+    .select("id, post_localizations(id)")
     .eq("author_id", authorId)
     .eq("status", "draft")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
+
   if (error) {
     console.error("[scheduler] findOldestDraftPostId:", error.message);
     return null;
   }
-  return data?.id ?? null;
+
+  for (const draft of drafts ?? []) {
+    const locCount = (draft as { post_localizations?: Array<{ id: string }> }).post_localizations?.length ?? 0;
+    if (locCount > 0) return draft.id;
+  }
+  return null;
 }
 
 /** Publish the oldest draft when content is ready — runs even if the client is not due yet. */
@@ -586,6 +627,7 @@ async function generatePostForClient(
 
   const primaryPrompt = buildPrompt(postCtx, clientCtx, { hasCustomInstructions: !!combinedInstructions });
   const MAX_RETRIES = 3;
+  let lastPrimaryError: string | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -601,6 +643,7 @@ async function generatePostForClient(
       break;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      lastPrimaryError = msg;
       console.warn(`[scheduler] ${text.provider} attempt ${attempt}/${MAX_RETRIES} failed for ${primaryLocale} (${client.domain}): ${msg}`);
       if (attempt < MAX_RETRIES) {
         await new Promise((r) => setTimeout(r, 5_000 * attempt));
@@ -609,8 +652,16 @@ async function generatePostForClient(
   }
 
   if (!primaryContent) {
-    if (primaryRunId) await admin.from("agent_runs").update({ status: "failed", error: "Model failed after 3 attempts" }).eq("id", primaryRunId);
-    throw new Error(`Primary content generation failed for ${client.domain}`);
+    if (primaryRunId) {
+      await admin
+        .from("agent_runs")
+        .update({ status: "failed", error: lastPrimaryError ?? "Model failed after 3 attempts" })
+        .eq("id", primaryRunId);
+    }
+    const quotaHint = lastPrimaryError && /429|quota|billing/i.test(lastPrimaryError)
+      ? `OpenAI quota exceeded${client.domain ? ` for ${client.domain}` : ""}. Add billing or configure a valid GEMINI_API_KEY for fallback.`
+      : `Primary content generation failed for ${client.domain}${lastPrimaryError ? `: ${lastPrimaryError}` : ""}`;
+    throw new Error(quotaHint);
   }
 
   const primaryLinkUrls = primaryLinkEnriched.map((c) => c.url);

@@ -4,7 +4,7 @@ import { combineClientInstructionsForModel } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
-import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
+import { requireCoverReferenceVisionBrief, buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import type { AgentLlmBundle } from "@/lib/agent/text-llm";
 import { bindAiUsageContext } from "@/lib/agent/token-usage";
@@ -22,7 +22,7 @@ export async function regeneratePostCover(
   admin: SupabaseClient,
   llm: AgentLlmBundle,
   postId: string,
-  options: { republish?: boolean; logLabel?: string } = {},
+  options: { republish?: boolean; logLabel?: string; allowMissingReferenceVision?: boolean } = {},
 ): Promise<RegeneratePostCoverResult> {
   const logLabel = options.logLabel ?? "[regenerate-cover]";
 
@@ -61,13 +61,26 @@ export async function regeneratePostCover(
     client.cover_reference_image_3,
   ]);
 
-  let referenceVisionBrief = null;
+  let referenceVisionBrief: string | null = null;
   if (refParts.length > 0) {
-    referenceVisionBrief = await requireCoverReferenceVisionBrief(
-      llm.openai,
-      refParts,
-      `${logLabel} ref-vision`,
-    );
+    if (options.allowMissingReferenceVision) {
+      referenceVisionBrief = await buildCoverReferenceVisionBriefWithTimeout(
+        llm.openai,
+        refParts,
+        `${logLabel} ref-vision`,
+      );
+      if (!referenceVisionBrief?.trim()) {
+        console.warn(
+          `${logLabel} reference vision unavailable — generating cover from reference images only`,
+        );
+      }
+    } else {
+      referenceVisionBrief = await requireCoverReferenceVisionBrief(
+        llm.openai,
+        refParts,
+        `${logLabel} ref-vision`,
+      );
+    }
   }
 
   const combinedInstructions = combineClientInstructionsForModel(

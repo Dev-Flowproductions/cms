@@ -11,9 +11,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { postId?: string; republish?: boolean };
+  let body: { postId?: string; republish?: boolean; allowMissingReferenceVision?: boolean };
   try {
-    body = (await req.json()) as { postId?: string; republish?: boolean };
+    body = (await req.json()) as {
+      postId?: string;
+      republish?: boolean;
+      allowMissingReferenceVision?: boolean;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -33,6 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await regeneratePostCover(createAdminClient(), llm, body.postId.trim(), {
       republish: body.republish !== false,
+      allowMissingReferenceVision: body.allowMissingReferenceVision !== false,
       logLabel: "[internal/regenerate-cover]",
     });
     return NextResponse.json({ ok: true, ...result });

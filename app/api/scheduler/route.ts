@@ -9,7 +9,13 @@ import {
   type ClientContext,
   type PostContext,
 } from "@/lib/agent/instructions";
-import { createAgentLlmBundle, stripModelJsonFences, type AgentLlmBundle } from "@/lib/agent/text-llm";
+import {
+  coverImageClientsFromLlm,
+  coverVisionClientsFromLlm,
+  createAgentLlmBundle,
+  stripModelJsonFences,
+  type AgentLlmBundle,
+} from "@/lib/agent/text-llm";
 import { bindAiUsageContext } from "@/lib/agent/token-usage";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
@@ -465,7 +471,7 @@ async function generatePostForClient(
   llm: AgentLlmBundle,
   runOpts: SchedulerRunOpts,
 ): Promise<string> {
-  const { text, openai, embeddings } = llm;
+  const { text, embeddings } = llm;
   const modelName = text.modelName;
   // Always generate in all three locales; primary matches clients.post_locale (default pt)
   const primaryLocale = normalizeSchedulerPrimaryLocale(client.post_locale);
@@ -659,7 +665,7 @@ async function generatePostForClient(
         .eq("id", primaryRunId);
     }
     const quotaHint = lastPrimaryError && /429|quota|billing/i.test(lastPrimaryError)
-      ? `OpenAI quota exceeded${client.domain ? ` for ${client.domain}` : ""}. Add billing or configure a valid GEMINI_API_KEY for fallback.`
+      ? `AI quota exceeded${client.domain ? ` for ${client.domain}` : ""}. Check GEMINI_API_KEY / Google billing, or set OPENAI_API_KEY for fallback when AI_PROVIDER=gemini.`
       : `Primary content generation failed for ${client.domain}${lastPrimaryError ? `: ${lastPrimaryError}` : ""}`;
     throw new Error(quotaHint);
   }
@@ -749,7 +755,7 @@ async function generatePostForClient(
 
   let authorForBlock = await resolveAuthorForByline(admin, client.user_id, bylineAuthorId);
   if (authorForBlock) {
-    authorForBlock = await localizeAuthorForLocale(openai, authorForBlock, primaryLocale as Locale);
+    authorForBlock = await localizeAuthorForLocale(text, authorForBlock, primaryLocale as Locale);
   }
 
   primaryContent.content_md = normalizeFaqHeading(primaryContent.content_md, primaryLocale);
@@ -1033,7 +1039,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
     let referenceVisionBrief: string | null = null;
     if (refParts.length > 0) {
       referenceVisionBrief = await requireCoverReferenceVisionBrief(
-        openai,
+        coverVisionClientsFromLlm(llm),
         refParts,
         `[scheduler] ref-vision ${client.domain}`,
       );
@@ -1060,7 +1066,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       } : null,
       { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly, hasReferenceImages: refParts.length > 0 }
     );
-    const buffer = await generateCoverImageBufferWithEmbedFallback(openai, {
+    const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
       embedPrefix: coverEmbedPrefix,
       basePrompt: baseCoverPrompt,
       logLabel: `[scheduler] cover ${client.domain}`,

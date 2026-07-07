@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 import type { GoogleGenerativeAI } from "@google/generative-ai";
 import { TaskType } from "@google/generative-ai";
-import { getAiProvider, getOpenAiEmbeddingModelChain } from "./ai-config";
+import { getAiProvider, getGeminiEmbeddingModelName, getOpenAiEmbeddingModelChain } from "./ai-config";
 import { recordAiTokenUsage } from "./token-usage";
 
 export type EmbeddingChunk = { id: string; text: string };
@@ -95,10 +95,6 @@ export function createOpenAiEmbeddingService(openai: OpenAI): EmbeddingService {
   };
 }
 
-function getGeminiEmbeddingModelName(): string {
-  return process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2-preview";
-}
-
 export function createGeminiEmbeddingService(genAI: GoogleGenerativeAI): EmbeddingService {
   const modelName = getGeminiEmbeddingModelName();
   const model = genAI.getGenerativeModel({ model: modelName });
@@ -141,10 +137,14 @@ export function createGeminiEmbeddingService(genAI: GoogleGenerativeAI): Embeddi
   };
 }
 
-export function createEmbeddingService(openai: OpenAI, gemini: GoogleGenerativeAI | null): EmbeddingService {
+export function createEmbeddingService(
+  openai: OpenAI | null,
+  gemini: GoogleGenerativeAI | null,
+): EmbeddingService {
   if (getAiProvider() === "gemini") {
     if (!gemini) throw new Error("GEMINI_API_KEY is required when AI_PROVIDER=gemini");
     return createGeminiEmbeddingService(gemini);
   }
+  if (!openai) throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai");
   return createOpenAiEmbeddingService(openai);
 }

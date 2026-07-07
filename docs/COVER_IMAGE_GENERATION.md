@@ -14,7 +14,7 @@ The same pipeline is used in:
 If `webhook_event_format = legacy`, the site receives `cms.post.published` then (historically) a second `cms.post.updated` when cover finished. Sites that **insert** on every event instead of upserting by CMS `post.id` will show **duplicate blog cards**—often one with cover and two without. The scheduler reorder fix sends **one** webhook after cover exists; the site should still upsert by `post.id` on both event types.
 - **Dedicated cover API** — `app/api/agent/cover/route.ts` (regenerate cover for an existing post).
 
-Images are produced with **OpenAI** (Responses API `image_generation` tool, Images API fallback), **16:9** (`lib/agent/openai-image-generation.ts`, `lib/agent/cover-image.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.
+Images are produced with **Gemini** by default (Nano Banana 2 — `gemini-3.1-flash-image`, 16:9 via `lib/agent/gemini-image-generation.ts`, `lib/agent/cover-image.ts`). Set `AI_PROVIDER=openai` to use the OpenAI stack (`lib/agent/openai-image-generation.ts`). Successful outputs are uploaded to Supabase Storage (`covers` bucket) and linked on `posts.cover_image_path`.
 
 ## How company style is enforced (layers)
 
@@ -55,8 +55,8 @@ General chunks **`cover`** and **`formatting`** from `lib/agent/instruction-chun
 Clients can upload up to **three** reference images (paths on the client row, files in the **`brand-assets`** bucket). The system:
 
 1. **Downloads** them as base64 parts (`lib/agent/cover-reference-images.ts` — `loadCoverReferenceImageParts`).
-2. Runs a **vision pass** with OpenAI (`lib/agent/cover-reference-vision.ts`) to produce a short, dense **“visual analysis”** brief (medium lock, colour, composition, typography on refs, mood). That brief is injected into the text sent to the image model and participates in embedding retrieval.
-3. Sends **multimodal** requests: **text prompt + the same reference images** via the Responses API (`input_image` + `image_generation` tool in `lib/agent/openai-image-generation.ts`) so the output **matches the medium** (photo vs illustration vs flat design), not only colours in prose.
+2. Runs a **vision pass** with Gemini or OpenAI (`lib/agent/cover-reference-vision.ts`, default Gemini) to produce a short, dense **“visual analysis”** brief (medium lock, colour, composition, typography on refs, mood). That brief is injected into the text sent to the image model and participates in embedding retrieval.
+3. Sends **multimodal** requests: **text prompt + the same reference images** (Gemini `generateContent` with inline data, or OpenAI Responses API) so the output **matches the medium** (photo vs illustration vs flat design), not only colours in prose.
 
 When references exist, `buildCoverPrompt` switches the style line to: **match the reference images’ aesthetic exactly**—including not defaulting to “vector illustration” if the company uses photography (`lib/agent/cover-prompt.ts`, `hasReferenceImages`).
 
@@ -84,7 +84,7 @@ It then:
 2. Falls back to **text-only** with the full string if multimodal returns no image.
 3. If embedding enforcement is off and a prefix exists, may retry **text-only without** the embed prefix (lenient paths only).
 
-The dedicated **`/api/agent/cover`** route can fall back to a **Picsum** placeholder if OpenAI image generation fails (product behaviour for that endpoint only).
+The dedicated **`/api/agent/cover`** route can fall back to a **Picsum** placeholder if image generation fails (product behaviour for that endpoint only).
 
 ## Summary
 

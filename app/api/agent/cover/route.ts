@@ -8,7 +8,8 @@ import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-ima
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
-import { createAgentLlmBundle } from "@/lib/agent/text-llm";
+import { getAiProvider } from "@/lib/agent/ai-config";
+import { createAgentLlmBundle, coverImageClientsFromLlm, coverVisionClientsFromLlm } from "@/lib/agent/text-llm";
 import { bindAiUsageContext } from "@/lib/agent/token-usage";
 
 export async function POST(request: Request) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let imageBuffer!: ArrayBuffer | Buffer;
   let contentType = "image/jpeg";
-  let source = "openai";
+  let source: string = getAiProvider();
 
   let customInstructions: string | null = null;
   let brandGuidelinesText: string | null = null;
@@ -117,7 +118,11 @@ export async function POST(request: Request) {
   let coverEmbedPrefix: string;
   try {
     if (refParts.length > 0) {
-      referenceVisionBrief = await requireCoverReferenceVisionBrief(llm.openai, refParts, "[cover] ref-vision");
+      referenceVisionBrief = await requireCoverReferenceVisionBrief(
+        coverVisionClientsFromLlm(llm),
+        refParts,
+        "[cover] ref-vision",
+      );
     }
     const { prefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
       llm.embeddings,
@@ -140,7 +145,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    const buf = await generateCoverImageBufferWithEmbedFallback(llm.openai, {
+    const buf = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
       embedPrefix: coverEmbedPrefix,
       basePrompt,
       logLabel: "[cover]",
@@ -149,14 +154,13 @@ export async function POST(request: Request) {
       guidelinesText: brandGuidelinesText,
       enforcePrimaryInstructionEmbedding: true,
     });
-    if (!buf) throw new Error("No image returned from OpenAI");
+    if (!buf) throw new Error("No image returned from image provider");
     imageBuffer = buf;
     contentType = "image/jpeg";
-    source = "openai";
+    source = getAiProvider();
 
   } catch (imgErr) {
-    // ── Picsum fallback ────────────────────────────────────────────────────
-    console.warn("[cover] OpenAI image failed, falling back to Picsum:", imgErr);
+    console.warn(`[cover] ${getAiProvider()} image failed, falling back to Picsum:`, imgErr);
     const seed = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const picsumUrl = `https://picsum.photos/seed/${seed}/1536/864`;
     const picsumRes = await fetch(picsumUrl);

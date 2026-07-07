@@ -1,7 +1,9 @@
 /**
- * Vision-language summary of client reference banner images (OpenAI vision by default).
+ * Vision-language summary of client reference banner images.
  */
+import type { GoogleGenerativeAI } from "@google/generative-ai";
 import type OpenAI from "openai";
+import { getAiProvider, getGeminiVisionModelName } from "./ai-config";
 import type { CoverReferenceImagePart } from "./cover-image";
 import { openAiVisionWithModelFallback } from "./openai-chat";
 
@@ -29,7 +31,37 @@ Then cover:
 
 Format: 4–8 short bullet lines after the MEDIUM line. No title or preamble. Max 900 characters of body.`;
 
-export async function buildCoverReferenceVisionBrief(
+export type CoverVisionClients = {
+  openai: OpenAI | null;
+  gemini: GoogleGenerativeAI | null;
+};
+
+async function buildCoverReferenceVisionBriefGemini(
+  genAI: GoogleGenerativeAI,
+  referenceImages: CoverReferenceImagePart[],
+  logLabel: string,
+): Promise<string | null> {
+  const refs = referenceImages.filter((r) => r.base64?.length);
+  if (!refs.length) return null;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: getGeminiVisionModelName() });
+    const result = await model.generateContent([
+      VISION_PROMPT,
+      ...refs.slice(0, 5).map((r) => ({
+        inlineData: { data: r.base64, mimeType: r.mimeType },
+      })),
+    ]);
+    const text = result.response.text()?.trim();
+    if (!text) return null;
+    return text.slice(0, MAX_BRIEF_CHARS);
+  } catch (e) {
+    console.warn(`[${logLabel}] gemini cover-reference-vision failed:`, e);
+    return null;
+  }
+}
+
+async function buildCoverReferenceVisionBriefOpenAi(
   openai: OpenAI,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
@@ -47,13 +79,27 @@ export async function buildCoverReferenceVisionBrief(
   }
 }
 
+export async function buildCoverReferenceVisionBrief(
+  clients: CoverVisionClients,
+  referenceImages: CoverReferenceImagePart[],
+  logLabel: string,
+): Promise<string | null> {
+  if (getAiProvider() === "gemini" && clients.gemini) {
+    return buildCoverReferenceVisionBriefGemini(clients.gemini, referenceImages, logLabel);
+  }
+  if (clients.openai) {
+    return buildCoverReferenceVisionBriefOpenAi(clients.openai, referenceImages, logLabel);
+  }
+  return null;
+}
+
 export function buildCoverReferenceVisionBriefWithTimeout(
-  openai: OpenAI,
+  clients: CoverVisionClients,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
 ): Promise<string | null> {
   return Promise.race([
-    buildCoverReferenceVisionBrief(openai, referenceImages, logLabel),
+    buildCoverReferenceVisionBrief(clients, referenceImages, logLabel),
     new Promise<string | null>((resolve) =>
       setTimeout(() => resolve(null), COVER_REFERENCE_VISION_TIMEOUT_MS),
     ),
@@ -61,7 +107,7 @@ export function buildCoverReferenceVisionBriefWithTimeout(
 }
 
 export async function requireCoverReferenceVisionBrief(
-  openai: OpenAI,
+  clients: CoverVisionClients,
   referenceImages: CoverReferenceImagePart[],
   logLabel: string,
 ): Promise<string> {
@@ -69,10 +115,10 @@ export async function requireCoverReferenceVisionBrief(
   if (!refs.length) {
     throw new Error("requireCoverReferenceVisionBrief called with no usable reference images");
   }
-  let brief = await buildCoverReferenceVisionBrief(openai, refs, logLabel);
+  let brief = await buildCoverReferenceVisionBrief(clients, refs, logLabel);
   if (!brief?.trim()) {
     console.warn(`[${logLabel}] cover-reference-vision empty or failed, retrying once`);
-    brief = await buildCoverReferenceVisionBrief(openai, refs, `${logLabel} retry`);
+    brief = await buildCoverReferenceVisionBrief(clients, refs, `${logLabel} retry`);
   }
   if (!brief?.trim()) {
     throw new Error(

@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BLOG_POSTS_TAG, cmsApiSiteTag } from "@/lib/cache/tags";
 import { buildRevalidationPayload, buildWebhookHeaders, resolveWebhookEvent } from "@/lib/cms-api/webhooks";
 import { publishSeoScoreGate } from "@/lib/agent/score-post";
 import { stripAuthorBlocksFromContentMd } from "@/lib/agent/internal-link";
 import { authorForBlockToWebhookAuthor, resolveAuthorForWebhookDelivery, resolveAuthorsForWebhookLocalizations } from "@/lib/data/blog-authors";
 import { notifyDgArticleStatusIfLinked } from "@/lib/integrations/dg/notify";
 import { applyPublishTimestampsToJsonLd } from "@/lib/publish/jsonld-publish-dates";
+
+export const maxDuration = 60;
 
 export async function POST(
   _req: NextRequest,
@@ -270,6 +274,14 @@ export async function POST(
     );
 
     void notifyDgArticleStatusIfLinked(postId);
+
+    revalidateTag(BLOG_POSTS_TAG);
+    revalidateTag(cmsApiSiteTag(post.author_id));
+    for (const loc of ["en", "pt", "fr"] as const) {
+      revalidatePath(`/${loc}/blog/${post.slug}`);
+    }
+    revalidatePath(`/${post.primary_locale}/blog`);
+
     return NextResponse.json({ success: true, deliveredAt: new Date().toISOString() });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";

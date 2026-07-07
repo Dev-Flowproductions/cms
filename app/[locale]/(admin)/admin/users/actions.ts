@@ -200,8 +200,11 @@ export type ClientRow = {
   instruction_reinforcement?: string | null;
 };
 
-const ADMIN_CLIENT_ROW_SELECT =
-  "id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, instruction_reinforcement, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
+const ADMIN_CLIENT_LIST_SELECT =
+  "id, user_id, domain, frequency, post_locale, created_at, webhook_url, auto_publish, brand_name, brand_tone, company_name, logo_url, primary_color, secondary_color, tertiary_color, font_style, brand_voice, custom_instructions, instruction_reinforcement, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
+
+const ADMIN_CLIENT_DETAIL_SELECT =
+  "id, user_id, domain, google_access_token, google_refresh_token, google_scope, google_connected_at, frequency, post_locale, created_at, webhook_url, webhook_secret, auto_publish, brand_name, brand_tone, brand_book, company_name, logo_url, primary_color, secondary_color, tertiary_color, alternative_color, font_style, brand_voice, custom_instructions, instruction_reinforcement, last_generation_error, last_generation_error_at, last_post_generated_at, profiles(id, display_name, avatar_url, bio, job_title)";
 
 export async function listUsers(): Promise<ClientRow[]> {
   await requireAdmin();
@@ -209,7 +212,7 @@ export async function listUsers(): Promise<ClientRow[]> {
 
   const { data, error } = await admin
     .from("clients")
-    .select(ADMIN_CLIENT_ROW_SELECT)
+    .select(ADMIN_CLIENT_LIST_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -233,7 +236,7 @@ export async function getClientRowByUserId(userId: string): Promise<ClientRow | 
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("clients")
-    .select(ADMIN_CLIENT_ROW_SELECT)
+    .select(ADMIN_CLIENT_DETAIL_SELECT)
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;

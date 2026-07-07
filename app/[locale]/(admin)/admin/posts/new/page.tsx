@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getLocale } from "next-intl/server";
@@ -7,7 +8,11 @@ import { requireAdmin } from "@/lib/auth";
 import { isUuid } from "@/lib/uuid";
 import { createPost } from "../actions";
 import { NewPostForm } from "./NewPostForm";
-import { AdminPostComposer } from "../AdminPostComposer";
+
+const AdminPostComposer = dynamic(
+  () => import("../AdminPostComposer").then((m) => m.AdminPostComposer),
+  { loading: () => <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>Loading composer…</p> },
+);
 
 export default async function NewPostPage({
   searchParams,

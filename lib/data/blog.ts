@@ -1,12 +1,12 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createPublicReadClient } from "@/lib/supabase/public-read";
 import type { Locale } from "@/lib/types/db";
 
 const PAGE_SIZE = 20;
 
 export async function getPublishedPostsList(locale: Locale, page = 1) {
-  const supabase = await createClient();
+  const supabase = createPublicReadClient();
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 

@@ -13,8 +13,8 @@ type Localization = {
   locale: string;
   seo_title: string | null;
   focus_keyword: string | null;
-  faq_blocks: unknown;
-  jsonld: unknown;
+  faq_blocks?: unknown;
+  jsonld?: unknown;
   seo_score: SeoScore | null;
 };
 
@@ -42,11 +42,17 @@ export function PostsListClient({
   statusFilter,
   clientByAuthor,
   userId,
+  page = 1,
+  totalCount = 0,
+  pageSize = 50,
 }: {
   initialPosts: Row[];
   statusFilter?: string;
   clientByAuthor?: Record<string, { company_name: string | null; brand_name: string | null }>;
   userId?: string;
+  page?: number;
+  totalCount?: number;
+  pageSize?: number;
 }) {
   const t = useTranslations("admin");
   const tPostStatus = useTranslations("post.status");
@@ -60,6 +66,15 @@ export function PostsListClient({
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   const base = userId ? `/admin/posts?user=${userId}` : "/admin/posts";
   const statusSep = base.includes("?") ? "&" : "?";
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const pageQuery = (p: number) => {
+    const params = new URLSearchParams();
+    if (userId) params.set("user", userId);
+    if (statusFilter) params.set("status", statusFilter);
+    if (p > 1) params.set("page", String(p));
+    const q = params.toString();
+    return q ? `/admin/posts?${q}` : "/admin/posts";
+  };
 
   useEffect(() => {
     const valid = new Set(initialPosts.map((p) => p.id));
@@ -429,6 +444,49 @@ export function PostsListClient({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm" style={{ color: "var(--adm-on-variant)" }}>
+          <span>
+            {t("postsPage.paginationSummary", {
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, totalCount),
+              total: totalCount,
+            })}
+          </span>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link
+                href={pageQuery(page - 1)}
+                className="rounded-lg border px-3 py-1.5 font-semibold transition-all"
+                style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-on-surface)" }}
+              >
+                {t("postsPage.prevPage")}
+              </Link>
+            ) : (
+              <span className="rounded-lg border px-3 py-1.5 opacity-40" style={{ borderColor: "var(--adm-outline-variant)" }}>
+                {t("postsPage.prevPage")}
+              </span>
+            )}
+            <span className="px-1 tabular-nums">
+              {page} / {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={pageQuery(page + 1)}
+                className="rounded-lg border px-3 py-1.5 font-semibold transition-all"
+                style={{ borderColor: "var(--adm-outline-variant)", color: "var(--adm-on-surface)" }}
+              >
+                {t("postsPage.nextPage")}
+              </Link>
+            ) : (
+              <span className="rounded-lg border px-3 py-1.5 opacity-40" style={{ borderColor: "var(--adm-outline-variant)" }}>
+                {t("postsPage.nextPage")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {confirmDeleteIds && confirmDeleteIds.length > 0 && (
         <div

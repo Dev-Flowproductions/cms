@@ -1,13 +1,18 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { type ClientRow } from "./actions";
-import { EditUserConfig } from "./EditUserConfig";
 import { Link, useRouter } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
 import { getMsUntilNextPostDue } from "@/lib/scheduler/next-post";
 import { NextPostCountdown } from "@/components/NextPostCountdown";
 import { AdminSiteIdRow } from "./AdminSiteIdCopy";
+
+const EditUserConfig = dynamic(
+  () => import("./EditUserConfig").then((m) => m.EditUserConfig),
+  { loading: () => <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>Loading settings…</p> },
+);
 
 type Props = {
   initialUsers: ClientRow[];

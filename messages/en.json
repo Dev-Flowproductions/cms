@@ -318,7 +318,10 @@
       "confirmDeletePost": "This will permanently delete \"{slug}\" and all locale versions from the CMS.",
       "confirmDeleteSelected": "This will permanently delete {count} post(s) and all locale versions from the CMS. This cannot be undone.",
       "confirmNo": "No, keep it",
-      "confirmYes": "Yes, delete"
+      "confirmYes": "Yes, delete",
+      "paginationSummary": "Showing {from}–{to} of {total}",
+      "prevPage": "Previous",
+      "nextPage": "Next"
     },
     "editPostPage": {
       "postSettings": "Post settings",

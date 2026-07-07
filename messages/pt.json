@@ -317,7 +317,10 @@
       "confirmDeletePost": "Isto elimina permanentemente \"{slug}\" e todas as versões de idioma do CMS.",
       "confirmDeleteSelected": "Isto elimina permanentemente {count} artigo(s) e todas as versões de idioma do CMS. Não pode ser anulado.",
       "confirmNo": "Não, manter",
-      "confirmYes": "Sim, eliminar"
+      "confirmYes": "Sim, eliminar",
+      "paginationSummary": "A mostrar {from}–{to} de {total}",
+      "prevPage": "Anterior",
+      "nextPage": "Seguinte"
     },
     "editPostPage": {
       "postSettings": "Definições do artigo",

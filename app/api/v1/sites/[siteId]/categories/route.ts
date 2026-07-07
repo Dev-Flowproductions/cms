@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateSiteApiKey, getApiKeyFromRequest } from "@/lib/cms-api/auth";
 import type { ApiCategory } from "@/lib/cms-api/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function GET(
   _request: NextRequest,

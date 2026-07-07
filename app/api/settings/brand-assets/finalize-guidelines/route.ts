@@ -7,6 +7,8 @@ import { resolveGuidelinesBuffer } from "@/lib/agent/guidelines-upload";
 
 const BUCKET = "brand-assets";
 
+export const maxDuration = 60;
+
 function isUserGuidelinesObjectPath(userId: string, path: string): boolean {
   if (!path || path.includes("..") || path.includes("//")) return false;
   return path.startsWith(`${userId}/guidelines-`);

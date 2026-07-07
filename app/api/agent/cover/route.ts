@@ -10,7 +10,9 @@ import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vi
 import { resolveClientBrandColors } from "@/lib/agent/resolve-client-brand-colors";
 import { getAiProvider } from "@/lib/agent/ai-config";
 import { createAgentLlmBundle, coverImageClientsFromLlm, coverVisionClientsFromLlm } from "@/lib/agent/text-llm";
-import { bindAiUsageContext } from "@/lib/agent/token-usage";
+import { bindAiUsageContext, flushAiTokenUsageWrites } from "@/lib/agent/token-usage";
+
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const supabase = await createClient();

@@ -9,9 +9,8 @@ import { reviewPostFor90 } from "./seo-reviewer";
 import { revisePost } from "./post-reviser";
 import { clampMetaDescription, clampSeoTitle } from "./clamp-seo-fields";
 
-const TARGET_MIN = 90; // Rounded average of SEO, AEO, GEO (matches publish gate and UI “avg”)
-/** Each iteration = one review + revise + rescore. 3 was often too few for GEO/AEO gaps. */
-const MAX_ITERATIONS = 5;
+const TARGET_MIN = 90;
+const MAX_ITERATIONS = 3;
 
 export type ImprovedResult = {
   content: ScoredContent;
@@ -46,6 +45,10 @@ export async function improvePostTo90(
   if (!score) {
     const useScore = fallbackScore ?? { seo: 75, aeo: 75, geo: 75, notes: "Scoring unavailable; using fallback" };
     return { content, score: useScore, iterations: 0 };
+  }
+
+  if (seoScoreAverage(score) >= TARGET_MIN) {
+    return { content, score, iterations: 0 };
   }
 
   while (iterations < MAX_ITERATIONS) {

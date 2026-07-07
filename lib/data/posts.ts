@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdminForDataLoader } from "@/lib/auth";
 import type { PostStatus } from "@/lib/types/db";
 
 export type UserWithPostCount = {
@@ -13,18 +14,14 @@ export type UserWithPostCount = {
 
 /** Users (clients) that have at least one post, with post count. For admin posts landing. */
 export async function getUsersWithPostCount(): Promise<UserWithPostCount[]> {
+  await requireAdminForDataLoader();
   const admin = createAdminClient();
-  const { data: rawCounts } = await admin.from("posts").select("author_id");
-  const counts = rawCounts ?? [];
-  const byUser = counts.reduce(
-    (acc, p) => {
-      acc[p.author_id] = (acc[p.author_id] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-  const userIds = Object.keys(byUser);
-  if (userIds.length === 0) return [];
+  const { data: counts, error: countError } = await admin.rpc("admin_users_with_post_count");
+  if (countError) throw countError;
+  const rows = (counts ?? []) as { user_id: string; post_count: number }[];
+  if (rows.length === 0) return [];
+  const userIds = rows.map((r) => r.user_id);
+  const byUser = Object.fromEntries(rows.map((r) => [r.user_id, Number(r.post_count) || 0]));
   const { data: clients } = await admin
     .from("clients")
     .select("user_id, company_name, brand_name, domain")
@@ -37,17 +34,30 @@ export async function getUsersWithPostCount(): Promise<UserWithPostCount[]> {
   }));
 }
 
-export async function getPostsForAdmin(filters?: { status?: PostStatus; userId?: string }) {
+export async function getPostsForAdmin(filters?: {
+  status?: PostStatus;
+  userId?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  await requireAdminForDataLoader();
   const admin = createAdminClient();
+  const page = Math.max(1, filters?.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters?.pageSize ?? 50));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
   let query = admin
     .from("posts")
-    .select(`
+    .select(
+      `
       id, slug, status, primary_locale, author_id, updated_at,
       profiles(display_name),
-      post_localizations(locale, seo_title, focus_keyword, faq_blocks,
-        jsonld, seo_score)
-    `)
-    .order("updated_at", { ascending: false });
+      post_localizations(locale, seo_title, focus_keyword, seo_score)
+    `,
+      { count: "exact" },
+    )
+    .order("updated_at", { ascending: false })
+    .range(from, to);
 
   if (filters?.status) {
     query = query.eq("status", filters.status);
@@ -56,9 +66,17 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus; userId?:
     query = query.eq("author_id", filters.userId);
   }
 
-  const { data: posts, error } = await query;
+  const { data: posts, error, count } = await query;
   if (error) throw error;
-  if (!posts?.length) return { posts: [], clientByAuthor: {} as Record<string, { company_name: string | null; brand_name: string | null }> };
+  if (!posts?.length) {
+    return {
+      posts: [],
+      totalCount: count ?? 0,
+      page,
+      pageSize,
+      clientByAuthor: {} as Record<string, { company_name: string | null; brand_name: string | null }>,
+    };
+  }
 
   const authorIds = [...new Set(posts.map((p) => p.author_id))];
   const { data: clients } = await admin
@@ -69,11 +87,12 @@ export async function getPostsForAdmin(filters?: { status?: PostStatus; userId?:
   for (const c of clients ?? []) {
     clientByAuthor[c.user_id] = { company_name: c.company_name ?? null, brand_name: c.brand_name ?? null };
   }
-  return { posts: posts ?? [], clientByAuthor };
+  return { posts: posts ?? [], totalCount: count ?? posts.length, page, pageSize, clientByAuthor };
 }
 
 /** Latest posts across all clients — for admin home (bounded query). */
 export async function getRecentPostsForAdmin(limit: number) {
+  await requireAdminForDataLoader();
   const admin = createAdminClient();
   const { data: posts, error } = await admin
     .from("posts")

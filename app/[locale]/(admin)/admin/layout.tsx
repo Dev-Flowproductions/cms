@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { requireTeamMember } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AdminLogoutButton } from "./AdminLogoutButton";
 import { AdminSidebarShell } from "./AdminSidebarShell";
 import { AppLogo } from "@/components/AppLogo";
@@ -27,9 +28,10 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireTeamMember();
+  await requireAdmin();
   const t = await getTranslations();
   return (
+    <ThemeProvider>
     <div className="admin-shell-root flex min-h-screen bg-[var(--adm-bg)] font-sans text-[var(--adm-on-surface)] antialiased">
       <AdminSidebarShell>
         <div
@@ -70,5 +72,6 @@ export default async function AdminLayout({
       </div>
       <SchedulerPing />
     </div>
+    </ThemeProvider>
   );
 }

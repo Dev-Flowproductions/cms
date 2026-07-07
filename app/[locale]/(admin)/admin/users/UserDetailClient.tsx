@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useTransition, useEffect } from "react";
 import { useRouter, Link } from "@/lib/navigation";
 import { useTranslations } from "next-intl";
@@ -10,10 +11,14 @@ import {
   updateInstructionReinforcementByAdmin,
   type ClientRow,
 } from "./actions";
-import { EditUserConfig } from "./EditUserConfig";
 import { AdminSiteIdPanel } from "./AdminSiteIdCopy";
 import { NextPostCountdown } from "@/components/NextPostCountdown";
 import type { AdminBlogAuthorRow } from "./actions";
+
+const EditUserConfig = dynamic(
+  () => import("./EditUserConfig").then((m) => m.EditUserConfig),
+  { loading: () => <p className="text-sm" style={{ color: "var(--adm-on-variant)" }}>Loading settings…</p> },
+);
 
 export function UserDetailClient({
   user: initialUser,

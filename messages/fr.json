@@ -317,7 +317,10 @@
       "confirmDeletePost": "Cela supprimera définitivement « {slug} » et toutes les versions linguistiques du CMS.",
       "confirmDeleteSelected": "Cela supprimera définitivement {count} article(s) et toutes les versions linguistiques du CMS. Action irréversible.",
       "confirmNo": "Non, annuler",
-      "confirmYes": "Oui, supprimer"
+      "confirmYes": "Oui, supprimer",
+      "paginationSummary": "Affichage de {from} à {to} sur {total}",
+      "prevPage": "Précédent",
+      "nextPage": "Suivant"
     },
     "editPostPage": {
       "postSettings": "Paramètres de l'article",

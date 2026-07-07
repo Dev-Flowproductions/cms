@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { validateSiteApiKey, getApiKeyFromRequest } from "@/lib/cms-api/auth";
 import { getPublishedPostBySlug } from "@/lib/cms-api/data";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function GET(
   request: NextRequest,

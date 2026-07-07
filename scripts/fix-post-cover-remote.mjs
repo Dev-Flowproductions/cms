@@ -44,7 +44,7 @@ const res = await fetch(`${cmsUrl}/api/internal/regenerate-cover`, {
     Authorization: `Bearer ${cronSecret}`,
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ postId, republish: true }),
+  body: JSON.stringify({ postId, republish: true, allowMissingReferenceVision: true }),
 });
 
 const text = await res.text();

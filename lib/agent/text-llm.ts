@@ -91,6 +91,33 @@ function createOpenAiTextClient(openai: OpenAI): TextLlmClient {
   };
 }
 
+function isOpenAiQuotaOrRateLimitError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /429|quota|rate limit|insufficient_quota|billing/i.test(msg);
+}
+
+/** When OpenAI is out of quota, retry with Gemini if configured. */
+function withGeminiQuotaFallback(primary: TextLlmClient, gemini: TextLlmClient | null): TextLlmClient {
+  if (!gemini) return primary;
+  return {
+    provider: primary.provider,
+    get modelName() {
+      return primary.modelName;
+    },
+    async generateText(options) {
+      try {
+        return await primary.generateText(options);
+      } catch (err) {
+        if (!isOpenAiQuotaOrRateLimitError(err)) throw err;
+        console.warn(
+          `[text-llm] OpenAI quota/rate limit (${err instanceof Error ? err.message : err}) — falling back to Gemini (${gemini.modelName})`,
+        );
+        return gemini.generateText(options);
+      }
+    },
+  };
+}
+
 /**
  * OpenAI-first agent stack (text, embeddings, cover images, vision).
  * Set AI_PROVIDER=gemini to restore Google Gemini for text/embeddings (covers still need OpenAI unless extended).
@@ -108,13 +135,14 @@ export function createAgentLlmBundle(): AgentLlmBundle {
   const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
 
   let text: TextLlmClient;
+  const geminiText = geminiKey ? createGeminiTextClient(geminiKey) : null;
   if (provider === "gemini") {
     if (!geminiKey) {
       throw new Error("GEMINI_API_KEY is required when AI_PROVIDER=gemini");
     }
     text = createGeminiTextClient(geminiKey);
   } else {
-    text = createOpenAiTextClient(openai);
+    text = withGeminiQuotaFallback(createOpenAiTextClient(openai), geminiText);
   }
 
   const embeddings = createEmbeddingService(openai, gemini);

@@ -506,7 +506,9 @@
         "uploadSaved": "Carregamento guardado.",
         "removeSaved": "Removido.",
         "guidelinesUploadSaved": "Diretrizes carregadas e guardadas. O texto extraído aparece acima quando disponível.",
-        "createFirstHint": "Os uploads de ficheiros (logótipo, diretrizes, referências de capa, avatar) ficam disponíveis depois de criar a conta — abra o utilizador novamente para carregar."
+        "createFirstHint": "Os uploads de ficheiros (diretrizes, avatar) ficam disponíveis depois de criar a conta — abra o utilizador novamente para carregar.",
+        "createPendingUploadHint": "O logótipo e as referências de capa selecionados são carregados automaticamente ao guardar a nova conta.",
+        "createUploadPartialFail": "Conta criada, mas estes uploads falharam: {items}. Abra o utilizador para tentar novamente."
       },
       "blogAuthors": {
         "authorSectionTitle": "Autores do blog",

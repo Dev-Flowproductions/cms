@@ -507,7 +507,9 @@
         "uploadSaved": "Upload saved.",
         "removeSaved": "Removed.",
         "guidelinesUploadSaved": "Guidelines uploaded and saved. Extracted text appears above when available.",
-        "createFirstHint": "File uploads (logo, guidelines, cover references, avatar) are available after the account is created — open the user again to upload."
+        "createFirstHint": "File uploads (guidelines, avatar) are available after the account is created — open the user again to upload.",
+        "createPendingUploadHint": "Selected logo and cover reference files upload automatically when you save the new account.",
+        "createUploadPartialFail": "Account created, but these uploads failed: {items}. Open the user to retry."
       },
       "blogAuthors": {
         "authorSectionTitle": "Blog authors",

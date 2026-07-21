@@ -33,9 +33,12 @@ export function UsersClient({ initialUsers, initialError }: Props) {
 
   const dueNowCount = initialUsers.filter(isDueNow).length;
 
-  function handleSuccess() {
+  function handleSuccess(userId?: string) {
     setShowForm(false);
     startTransition(() => { router.refresh(); });
+    if (userId) {
+      router.push(`/admin/users/${userId}`);
+    }
   }
 
   return (

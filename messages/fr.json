@@ -506,7 +506,9 @@
         "uploadSaved": "Téléversement enregistré.",
         "removeSaved": "Supprimé.",
         "guidelinesUploadSaved": "Directives enregistrées. Le texte extrait s’affiche ci-dessus lorsqu’il est disponible.",
-        "createFirstHint": "Les téléversements (logo, directives, références de couverture, avatar) sont disponibles après la création du compte — rouvrez l’utilisateur pour les ajouter."
+        "createFirstHint": "Les téléversements (directives, avatar) sont disponibles après la création du compte — rouvrez l’utilisateur pour les ajouter.",
+        "createPendingUploadHint": "Le logo et les références de couverture sélectionnés sont téléversés automatiquement lors de l’enregistrement du nouveau compte.",
+        "createUploadPartialFail": "Compte créé, mais ces téléversements ont échoué : {items}. Rouvrez l’utilisateur pour réessayer."
       },
       "blogAuthors": {
         "authorSectionTitle": "Auteurs du blog",

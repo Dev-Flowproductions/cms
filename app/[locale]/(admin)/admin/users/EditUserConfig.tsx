@@ -42,7 +42,7 @@ type Settings = Awaited<ReturnType<typeof getClientSettingsByAdmin>>;
 
 type EditUserConfigProps = {
   onClose: () => void;
-  onSaved?: () => void;
+  onSaved?: (userId?: string) => void;
   onAssetsUpdated?: () => void;
   /** When true, run onClose after a successful save (e.g. modal). Default: stay on page. */
   closeOnSave?: boolean;
@@ -100,6 +100,10 @@ export function EditUserConfig(props: EditUserConfigProps) {
   const [coverRef1, setCoverRef1] = useState<string | null>(null);
   const [coverRef2, setCoverRef2] = useState<string | null>(null);
   const [coverRef3, setCoverRef3] = useState<string | null>(null);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [pendingLogoPreview, setPendingLogoPreview] = useState<string | null>(null);
+  const [pendingCoverRefs, setPendingCoverRefs] = useState<Partial<Record<1 | 2 | 3, File>>>({});
+  const [pendingCoverPreviews, setPendingCoverPreviews] = useState<Partial<Record<1 | 2 | 3, string>>>({});
   const [brandGuidelinesText, setBrandGuidelinesText] = useState("");
   const [brandGuidelinesPath, setBrandGuidelinesPath] = useState<string | null>(null);
 
@@ -130,8 +134,53 @@ export function EditUserConfig(props: EditUserConfigProps) {
   useEffect(() => {
     return () => {
       if (assetSuccessClearRef.current) clearTimeout(assetSuccessClearRef.current);
+      if (pendingLogoPreview) URL.revokeObjectURL(pendingLogoPreview);
+      for (const url of Object.values(pendingCoverPreviews)) {
+        if (url) URL.revokeObjectURL(url);
+      }
     };
-  }, []);
+  }, [pendingCoverPreviews, pendingLogoPreview]);
+
+  function stagePendingLogoFile(file: File) {
+    setPendingLogoFile(file);
+    setPendingLogoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setLogoUrl("");
+  }
+
+  function clearPendingLogoFile() {
+    setPendingLogoFile(null);
+    setPendingLogoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
+
+  function stagePendingCoverRef(slot: 1 | 2 | 3, file: File) {
+    setPendingCoverRefs((prev) => ({ ...prev, [slot]: file }));
+    setPendingCoverPreviews((prev) => {
+      const next = { ...prev };
+      if (next[slot]) URL.revokeObjectURL(next[slot]!);
+      next[slot] = URL.createObjectURL(file);
+      return next;
+    });
+  }
+
+  function clearPendingCoverRef(slot: 1 | 2 | 3) {
+    setPendingCoverRefs((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+    setPendingCoverPreviews((prev) => {
+      const next = { ...prev };
+      if (next[slot]) URL.revokeObjectURL(next[slot]!);
+      delete next[slot];
+      return next;
+    });
+  }
 
   function scheduleAssetSuccessClear() {
     if (assetSuccessClearRef.current) clearTimeout(assetSuccessClearRef.current);
@@ -191,8 +240,13 @@ export function EditUserConfig(props: EditUserConfigProps) {
     return () => { cancelled = true; };
   }, [isCreate, user?.user_id]);
 
-  async function postAdminAsset(formData: FormData, successMessage?: string) {
-    if (isCreate || !user) {
+  async function postAdminAsset(
+    formData: FormData,
+    successMessage?: string,
+    targetUserId?: string,
+  ) {
+    const uid = targetUserId ?? user?.user_id;
+    if (!uid) {
       setAssetError(t("configAssets.createFirstHint"));
       return false;
     }
@@ -200,7 +254,7 @@ export function EditUserConfig(props: EditUserConfigProps) {
     setAssetError(null);
     setAssetSuccess(null);
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.user_id)}/assets`, {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(uid)}/assets`, {
         method: "POST",
         body: formData,
       });
@@ -209,9 +263,11 @@ export function EditUserConfig(props: EditUserConfigProps) {
         setAssetError(data.error ?? "Upload failed");
         return false;
       }
-      const refreshed = await getClientSettingsByAdmin(user.user_id);
-      applySettingsData(refreshed);
-      onAssetsUpdated?.();
+      if (!targetUserId && user) {
+        const refreshed = await getClientSettingsByAdmin(user.user_id);
+        applySettingsData(refreshed);
+        onAssetsUpdated?.();
+      }
       if (successMessage) {
         setAssetSuccess(successMessage);
         scheduleAssetSuccessClear();
@@ -226,8 +282,14 @@ export function EditUserConfig(props: EditUserConfigProps) {
   }
 
   /** Large cover reference images: signed direct upload to Storage (bypasses platform body limits). */
-  async function uploadAdminCoverRef(slot: 1 | 2 | 3, file: File, successMessage?: string) {
-    if (isCreate || !user) {
+  async function uploadAdminCoverRef(
+    slot: 1 | 2 | 3,
+    file: File,
+    successMessage?: string,
+    targetUserId?: string,
+  ) {
+    const uid = targetUserId ?? user?.user_id;
+    if (!uid) {
       setAssetError(t("configAssets.createFirstHint"));
       return false;
     }
@@ -237,7 +299,7 @@ export function EditUserConfig(props: EditUserConfigProps) {
     try {
       const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".") + 1) : "jpg";
       const pre = await fetch(
-        `/api/admin/users/${encodeURIComponent(user.user_id)}/assets/prepare-cover-ref`,
+        `/api/admin/users/${encodeURIComponent(uid)}/assets/prepare-cover-ref`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -280,7 +342,7 @@ export function EditUserConfig(props: EditUserConfigProps) {
       }
 
       const fin = await fetch(
-        `/api/admin/users/${encodeURIComponent(user.user_id)}/assets/finalize-cover-ref`,
+        `/api/admin/users/${encodeURIComponent(uid)}/assets/finalize-cover-ref`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -298,9 +360,11 @@ export function EditUserConfig(props: EditUserConfigProps) {
         return false;
       }
 
-      const refreshed = await getClientSettingsByAdmin(user.user_id);
-      applySettingsData(refreshed);
-      onAssetsUpdated?.();
+      if (!targetUserId && user) {
+        const refreshed = await getClientSettingsByAdmin(user.user_id);
+        applySettingsData(refreshed);
+        onAssetsUpdated?.();
+      }
       if (successMessage) {
         setAssetSuccess(successMessage);
         scheduleAssetSuccessClear();
@@ -312,6 +376,27 @@ export function EditUserConfig(props: EditUserConfigProps) {
     } finally {
       setAssetBusy(false);
     }
+  }
+
+  async function uploadPendingCreateAssets(userId: string): Promise<string | null> {
+    const failures: string[] = [];
+
+    if (pendingLogoFile) {
+      const fd = new FormData();
+      fd.append("action", "logo");
+      fd.append("file", pendingLogoFile);
+      const ok = await postAdminAsset(fd, undefined, userId);
+      if (!ok) failures.push("logo");
+    }
+
+    for (const slot of [1, 2, 3] as const) {
+      const file = pendingCoverRefs[slot];
+      if (!file) continue;
+      const ok = await uploadAdminCoverRef(slot, file, undefined, userId);
+      if (!ok) failures.push(`cover reference ${slot}`);
+    }
+
+    return failures.length > 0 ? failures.join(", ") : null;
   }
 
   const FREQUENCY_OPTIONS: { value: Frequency; label: string; sublabel: string }[] = [
@@ -348,7 +433,9 @@ export function EditUserConfig(props: EditUserConfigProps) {
       fd.set("frequency", frequency);
       fd.set("domain", normalizedDomain ?? "");
       fd.set("company_name", companyName.trim());
-      fd.set("logo_url", logoUrl.trim());
+      if (!pendingLogoFile) {
+        fd.set("logo_url", logoUrl.trim());
+      }
       fd.set("primary_color", primaryColor);
       fd.set("secondary_color", secondaryColor);
       fd.set("tertiary_color", tertiaryColor);
@@ -361,12 +448,22 @@ export function EditUserConfig(props: EditUserConfigProps) {
       fd.set("auto_publish", autoPublish ? "on" : "off");
 
       const result = await createUser(fd);
-      setSaving(false);
       if (result.error) {
+        setSaving(false);
         setSaveError(result.error);
         return;
       }
-      onSaved?.();
+
+      let uploadFailure: string | null = null;
+      if (result.userId) {
+        uploadFailure = await uploadPendingCreateAssets(result.userId);
+      }
+
+      setSaving(false);
+      if (uploadFailure) {
+        setSaveError(t("configAssets.createUploadPartialFail", { items: uploadFailure }));
+      }
+      onSaved?.(result.userId);
       if (closeOnSave) onClose();
       return;
     }
@@ -613,10 +710,10 @@ export function EditUserConfig(props: EditUserConfigProps) {
               className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-start"
               style={{ background: "var(--adm-surface-high)", borderColor: "var(--adm-border-subtle)" }}
             >
-              {logoUrl?.trim() ? (
+              {(pendingLogoPreview ?? logoUrl?.trim()) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={logoUrl}
+                  src={pendingLogoPreview ?? logoUrl}
                   alt=""
                   className="h-16 w-16 shrink-0 rounded-lg border object-contain"
                   style={{ borderColor: "var(--adm-border-subtle)" }}
@@ -634,50 +731,61 @@ export function EditUserConfig(props: EditUserConfigProps) {
               <div className="min-w-0 flex-1 space-y-3">
                 {isCreate ? (
                   <p className="text-xs leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
-                    {t("configAssets.createFirstHint")}
+                    {t("configAssets.createPendingUploadHint")}
                   </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        className="hidden"
-                        disabled={assetBusy}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = "";
-                          if (!file) return;
-                          const fd = new FormData();
-                          fd.append("action", "logo");
-                          fd.append("file", file);
-                          await postAdminAsset(fd, t("configAssets.uploadSaved"));
-                        }}
-                      />
-                      <span
-                        className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
-                        style={{ background: "var(--adm-primary-container)", color: "#fff" }}
-                      >
-                        {assetBusy ? t("configAssets.uploading") : logoUrl?.trim() ? tBrand("logoChange") : tBrand("logoUpload")}
-                      </span>
-                    </label>
-                    {logoUrl?.trim() && (
-                      <button
-                        type="button"
-                        disabled={assetBusy}
-                        onClick={async () => {
-                          const fd = new FormData();
-                          fd.append("action", "removeLogo");
-                          await postAdminAsset(fd, t("configAssets.removeSaved"));
-                        }}
-                        className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-                        style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
-                      >
-                        {t("configAssets.remove")}
-                      </button>
-                    )}
-                  </div>
-                )}
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <label className={assetBusy ? "cursor-wait opacity-60" : "cursor-pointer"}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      disabled={assetBusy}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        if (isCreate) {
+                          stagePendingLogoFile(file);
+                          return;
+                        }
+                        const fd = new FormData();
+                        fd.append("action", "logo");
+                        fd.append("file", file);
+                        await postAdminAsset(fd, t("configAssets.uploadSaved"));
+                      }}
+                    />
+                    <span
+                      className="inline-block rounded-lg px-3 py-1.5 text-xs font-semibold"
+                      style={{ background: "var(--adm-primary-container)", color: "#fff" }}
+                    >
+                      {assetBusy
+                        ? t("configAssets.uploading")
+                        : pendingLogoPreview || logoUrl?.trim()
+                          ? tBrand("logoChange")
+                          : tBrand("logoUpload")}
+                    </span>
+                  </label>
+                  {(pendingLogoPreview || logoUrl?.trim()) && (
+                    <button
+                      type="button"
+                      disabled={assetBusy}
+                      onClick={async () => {
+                        if (isCreate) {
+                          clearPendingLogoFile();
+                          return;
+                        }
+                        const fd = new FormData();
+                        fd.append("action", "removeLogo");
+                        await postAdminAsset(fd, t("configAssets.removeSaved"));
+                      }}
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                      style={{ border: "1px solid var(--adm-border-subtle)", color: "var(--adm-on-variant)" }}
+                    >
+                      {t("configAssets.remove")}
+                    </button>
+                  )}
+                </div>
                 <p className="text-xs" style={{ color: "var(--adm-on-variant)" }}>
                   {tBrand("logoHint")}
                 </p>
@@ -688,7 +796,10 @@ export function EditUserConfig(props: EditUserConfigProps) {
                   <input
                     type="url"
                     value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
+                    onChange={(e) => {
+                      if (pendingLogoFile) clearPendingLogoFile();
+                      setLogoUrl(e.target.value);
+                    }}
                     placeholder="https://..."
                     className={`${inputClass} w-full rounded-xl px-4 py-2.5 text-sm`}
                     style={inputFieldStyle}
@@ -1263,11 +1374,18 @@ export function EditUserConfig(props: EditUserConfigProps) {
               {tAssets("title")}
             </p>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>{tAssets("description")}</p>
+            {isCreate ? (
+              <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--adm-on-variant)" }}>
+                {t("configAssets.createPendingUploadHint")}
+              </p>
+            ) : null}
           </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
           {([1, 2, 3] as const).map((slot) => {
             const path = slot === 1 ? coverRef1 : slot === 2 ? coverRef2 : coverRef3;
-            const src = brandAssetUrl(path);
+            const pendingPreview = pendingCoverPreviews[slot];
+            const src = pendingPreview ?? brandAssetUrl(path);
+            const hasImage = Boolean(src);
             return (
               <div key={slot} className="flex min-h-0 flex-col space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-on-variant)" }}>
@@ -1295,6 +1413,10 @@ export function EditUserConfig(props: EditUserConfigProps) {
                         const file = e.target.files?.[0];
                         e.target.value = "";
                         if (!file) return;
+                        if (isCreate) {
+                          stagePendingCoverRef(slot, file);
+                          return;
+                        }
                         await uploadAdminCoverRef(slot, file, t("configAssets.uploadSaved"));
                       }}
                     />
@@ -1302,14 +1424,18 @@ export function EditUserConfig(props: EditUserConfigProps) {
                       className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold"
                       style={{ background: "var(--adm-primary-container)", color: "#fff" }}
                     >
-                      {assetBusy ? "Uploading…" : t("configAssets.upload")}
+                      {assetBusy ? t("configAssets.uploading") : t("configAssets.upload")}
                     </span>
                   </label>
-                  {path && (
+                  {hasImage && (
                     <button
                       type="button"
                       disabled={assetBusy}
                       onClick={async () => {
+                        if (isCreate) {
+                          clearPendingCoverRef(slot);
+                          return;
+                        }
                         const fd = new FormData();
                         fd.append("action", "removeCoverRef");
                         fd.append("slot", String(slot));

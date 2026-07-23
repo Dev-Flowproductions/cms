@@ -14,6 +14,7 @@ import {
   joinGeneralInstructionsInOrder,
   joinRankedInstructionChunksInOrder,
 } from "./instruction-chunks";
+import { NO_COVER_ON_IMAGE_TEXT_OVERRIDE } from "./cover-text-policy";
 
 export type InstructionTaskKind =
   | "post_generation"
@@ -156,12 +157,18 @@ export type CoverInstructionPrefixMeta = {
   clientInstructionChunkCount: number;
 };
 
+export type CoverInstructionPrefixOptions = {
+  /** When true, skip default CMS headline rules and inject a no-text override. */
+  omitOnImageText?: boolean;
+};
+
 async function buildCoverInstructionEmbeddingPrefixCore(
   embeddings: EmbeddingService,
   partial: Pick<InstructionSelectionContext, "focusKeywordOrTopic"> &
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
+  options?: CoverInstructionPrefixOptions,
 ): Promise<{ prefix: string; meta: CoverInstructionPrefixMeta }> {
   const ctx: InstructionSelectionContext = {
     contentType: partial.contentType ?? "hero",
@@ -196,12 +203,20 @@ async function buildCoverInstructionEmbeddingPrefixCore(
   }
 
   const fullRankOrder = await rankGeneralInstructionChunkIds(embeddings, ctx);
-  const pickedGeneralChunkIds = fullRankOrder.filter((id) => id === "cover" || id === "formatting");
+  const omitOnImageText = options?.omitOnImageText === true;
+  const pickedGeneralChunkIds = omitOnImageText
+    ? fullRankOrder.filter((id) => id === "formatting")
+    : fullRankOrder.filter((id) => id === "cover" || id === "formatting");
   const text = joinRankedInstructionChunksInOrder(pickedGeneralChunkIds);
-  if (!text?.trim()) {
+  if (!text?.trim() && !omitOnImageText) {
     throw new Error("Cover instruction embedding: no cover/formatting chunk text after ranking");
   }
-  segments.push(`EDITORIAL IMAGE RULES (CMS — follow exactly):\n${text}`);
+  if (text?.trim()) {
+    segments.push(`EDITORIAL IMAGE RULES (CMS — follow exactly):\n${text}`);
+  }
+  if (omitOnImageText) {
+    segments.unshift(NO_COVER_ON_IMAGE_TEXT_OVERRIDE);
+  }
 
   const prefix = `${segments.join("\n\n")}\n\n`;
   const meta: CoverInstructionPrefixMeta = {
@@ -235,9 +250,16 @@ export async function buildCoverInstructionEmbeddingPrefixWithMeta(
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
+  options?: CoverInstructionPrefixOptions,
 ): Promise<{ prefix: string; meta: CoverInstructionPrefixMeta }> {
   try {
-    return await buildCoverInstructionEmbeddingPrefixCore(embeddings, partial, clientInstructionsRaw, referenceVisionBrief);
+    return await buildCoverInstructionEmbeddingPrefixCore(
+      embeddings,
+      partial,
+      clientInstructionsRaw,
+      referenceVisionBrief,
+      options,
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Cover instruction embedding failed: ${msg}`);
@@ -258,9 +280,16 @@ export async function buildCoverInstructionEmbeddingPrefix(
     Partial<Omit<InstructionSelectionContext, "focusKeywordOrTopic">>,
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
+  options?: CoverInstructionPrefixOptions,
 ): Promise<string | null> {
   try {
-    const { prefix } = await buildCoverInstructionEmbeddingPrefixCore(embeddings, partial, clientInstructionsRaw, referenceVisionBrief);
+    const { prefix } = await buildCoverInstructionEmbeddingPrefixCore(
+      embeddings,
+      partial,
+      clientInstructionsRaw,
+      referenceVisionBrief,
+      options,
+    );
     return prefix;
   } catch (e) {
     console.warn("[instruction-embeddings] Cover instruction embedding failed:", e);
@@ -276,9 +305,10 @@ export function buildCoverInstructionEmbeddingPrefixWithTimeout(
   partial: Parameters<typeof buildCoverInstructionEmbeddingPrefix>[1],
   clientInstructionsRaw?: string | null,
   referenceVisionBrief?: string | null,
+  options?: CoverInstructionPrefixOptions,
 ): Promise<string | null> {
   return Promise.race([
-    buildCoverInstructionEmbeddingPrefix(embeddings, partial, clientInstructionsRaw, referenceVisionBrief),
+    buildCoverInstructionEmbeddingPrefix(embeddings, partial, clientInstructionsRaw, referenceVisionBrief, options),
     new Promise<string | null>((resolve) =>
       setTimeout(() => resolve(null), COVER_INSTRUCTION_EMBED_TIMEOUT_MS),
     ),

@@ -18,6 +18,7 @@ import {
 } from "@/lib/agent/text-llm";
 import { bindAiUsageContext, flushAiTokenUsageWrites } from "@/lib/agent/token-usage";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { clientDisallowsCoverOnImageText } from "@/lib/agent/cover-text-policy";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
@@ -1061,6 +1062,7 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
         );
       }
     }
+    const omitOnImageText = clientDisallowsCoverOnImageText(combinedInstructions);
     const { prefix: coverEmbedPrefix } = await buildCoverInstructionEmbeddingPrefixWithMeta(
       embeddings,
       {
@@ -1071,17 +1073,22 @@ Respond with a single valid JSON object — no markdown fences, no preamble:
       },
       combinedInstructions,
       referenceVisionBrief,
+      { omitOnImageText },
     );
     const baseCoverPrompt = buildCoverPrompt(
       coverSubject,
-      headlineForCover,
+      omitOnImageText ? "" : headlineForCover,
       brandStyle,
       visualIdentity ? {
         colorPalette: visualIdentity.colorPalette,
         aestheticStyle: visualIdentity.aestheticStyle,
         imageStyle: visualIdentity.imageStyle,
       } : null,
-      { headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly, hasReferenceImages: refParts.length > 0 }
+      {
+        headlineMayBeNonEnglish: !omitOnImageText && !coverHeadlineIsEnglishOnly,
+        hasReferenceImages: refParts.length > 0,
+        omitOnImageText,
+      },
     );
     const buffer = await generateCoverImageBufferWithEmbedFallback(coverImageClientsFromLlm(llm), {
       embedPrefix: coverEmbedPrefix,

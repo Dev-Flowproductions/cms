@@ -14,6 +14,7 @@ import {
   stripModelJsonFences,
 } from "@/lib/agent/text-llm";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { clientDisallowsCoverOnImageText } from "@/lib/agent/cover-text-policy";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief } from "@/lib/agent/cover-reference-vision";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
@@ -425,6 +426,7 @@ export async function executeAgentGeneratePost(input: {
         clientRow?.cover_reference_image_2,
         clientRow?.cover_reference_image_3,
       ]);
+      const omitOnImageText = clientDisallowsCoverOnImageText(combinedInstructions);
       let referenceVisionBrief: string | null = null;
       if (refParts.length > 0) {
         referenceVisionBrief = await requireCoverReferenceVisionBrief(
@@ -443,10 +445,11 @@ export async function executeAgentGeneratePost(input: {
         },
         combinedInstructions,
         referenceVisionBrief,
+        { omitOnImageText },
       );
       const baseCoverPrompt = buildCoverPrompt(
         coverSubject,
-        headlineForCover,
+        omitOnImageText ? "" : headlineForCover,
         brandStyle,
         visualIdentity
           ? {
@@ -456,8 +459,9 @@ export async function executeAgentGeneratePost(input: {
             }
           : null,
         {
-          headlineMayBeNonEnglish: !coverHeadlineIsEnglishOnly,
+          headlineMayBeNonEnglish: !omitOnImageText && !coverHeadlineIsEnglishOnly,
           hasReferenceImages: refParts.length > 0,
+          omitOnImageText,
         },
       );
 

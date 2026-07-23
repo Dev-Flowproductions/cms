@@ -73,6 +73,8 @@ export type BuildCoverPromptOptions = {
    * switches from "editorial illustration" to "match the style of the reference images exactly".
    */
   hasReferenceImages?: boolean;
+  /** Client forbids on-image typography — omit headline/text layers entirely. */
+  omitOnImageText?: boolean;
 };
 
 /** Build the Imagen prompt for editorial blog cover. */
@@ -83,6 +85,7 @@ export function buildCoverPrompt(
   visualIdentity: CoverVisualIdentity,
   options?: BuildCoverPromptOptions
 ): string {
+  const omitOnImageText = options?.omitOnImageText === true;
   const needsEnglishDerivation = options?.headlineMayBeNonEnglish === true;
   const hasRefs = options?.hasReferenceImages === true;
   // European sentence case per word, but acronyms (AI, SEO, B2B, …) stay ALL CAPS
@@ -141,13 +144,20 @@ export function buildCoverPrompt(
     "Acronyms and initialisms (AI, SEO, API, B2B, LLM, etc.) must appear in ALL CAPS on the image; " +
     "other words use European sentence case (first letter uppercase, rest lowercase). ";
 
-  const headlineInstruction = needsEnglishDerivation
-    ? `${englishOnlyRule} ` +
-      `Centered on-image headline: exactly ONE line, 2–4 words, ENGLISH ONLY. ${acronymRule}` +
-      `The article title below may be in another language — do NOT copy it onto the image; invent a short natural English phrase that fits the topic. ` +
-      `Topic / title reference: "${headlineForImage}". `
-    : `${englishOnlyRule} ` +
-      `Include this text ONCE only, centered: "${headlineForImage}". ${acronymRule}`;
+  const headlineInstruction = omitOnImageText
+    ? "CRITICAL — NO ON-IMAGE TEXT: Do not render any letters, words, headlines, typography, labels, captions, or readable text anywhere on the image. " +
+      "Pure visual/graphic composition only; keep the center clear. No logos or brand names as text. "
+    : needsEnglishDerivation
+      ? `${englishOnlyRule} ` +
+        `Centered on-image headline: exactly ONE line, 2–4 words, ENGLISH ONLY. ${acronymRule}` +
+        `The article title below may be in another language — do NOT copy it onto the image; invent a short natural English phrase that fits the topic. ` +
+        `Topic / title reference: "${headlineForImage}". `
+      : `${englishOnlyRule} ` +
+        `Include this text ONCE only, centered: "${headlineForImage}". ${acronymRule}`;
+
+  const typographyLayerRule = omitOnImageText
+    ? "Do not add typography layers."
+    : "Text must be the TOP LAYER, centered; no shapes overlapping the text. Use the brand font/style. Bold editorial typography. No logos or brand names.";
 
   return (
     heroLead +
@@ -155,6 +165,6 @@ export function buildCoverPrompt(
     brandStr +
     styleInstruction +
     headlineInstruction +
-    `Text must be the TOP LAYER, centered; no shapes overlapping the text. Use the brand font/style. Bold editorial typography. No logos or brand names.`
+    typographyLayerRule
   );
 }

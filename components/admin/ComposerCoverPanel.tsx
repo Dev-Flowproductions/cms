@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "@/lib/navigation";
+import { readApiJsonResponse } from "@/lib/http/read-api-json";
 
 type UploadResult = { error?: string; success?: boolean; publicUrl?: string };
 
@@ -92,12 +93,12 @@ export function ComposerCoverPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: id, query: coverQuery.trim() || "blog article" }),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Failed to generate cover");
+      const { ok, data } = await readApiJsonResponse(res);
+      if (!ok) {
+        setError(typeof data.error === "string" ? data.error : "Failed to generate cover");
         return;
       }
-      const publicUrl = (json.publicUrl ?? json.cover_image_url) as string | undefined;
+      const publicUrl = (data.publicUrl ?? data.cover_image_url) as string | undefined;
       if (!publicUrl) {
         setError("Cover generated but no image URL was returned");
         return;

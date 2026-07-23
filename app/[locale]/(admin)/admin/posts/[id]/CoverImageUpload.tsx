@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "@/lib/navigation";
+import { readApiJsonResponse } from "@/lib/http/read-api-json";
 
 type UploadResult = { error?: string; success?: boolean };
 
@@ -72,9 +73,12 @@ export function CoverImageUpload({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, query }),
       });
-      const json = await res.json();
-      if (!res.ok) { setError(json.error ?? "Failed to generate cover"); return; }
-      const publicUrl = (json.publicUrl ?? json.cover_image_url) as string | undefined;
+      const { ok, data } = await readApiJsonResponse(res);
+      if (!ok) {
+        setError(typeof data.error === "string" ? data.error : "Failed to generate cover");
+        return;
+      }
+      const publicUrl = (data.publicUrl ?? data.cover_image_url) as string | undefined;
       if (!publicUrl) { setError("No image URL returned"); return; }
       setPreviewUrl(publicUrl);
       onCoverChange?.(publicUrl);

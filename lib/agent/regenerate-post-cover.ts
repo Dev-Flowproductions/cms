@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildCoverInstructionEmbeddingPrefixWithMeta } from "@/lib/agent/instruction-embeddings";
 import { combineClientInstructionsForModel } from "@/lib/agent/instructions";
 import { buildCoverPrompt, truncateCoverImageSubject } from "@/lib/agent/cover-prompt";
+import { clientDisallowsCoverOnImageText } from "@/lib/agent/cover-text-policy";
 import { generateCoverImageBufferWithEmbedFallback } from "@/lib/agent/cover-image";
 import { loadCoverReferenceImageParts } from "@/lib/agent/cover-reference-images";
 import { requireCoverReferenceVisionBrief, buildCoverReferenceVisionBriefWithTimeout } from "@/lib/agent/cover-reference-vision";
@@ -91,6 +92,7 @@ export async function regeneratePostCover(
     client.custom_instructions,
     client.instruction_reinforcement,
   );
+  const omitOnImageText = clientDisallowsCoverOnImageText(combinedInstructions);
 
   const title = loc?.title ?? post.slug;
   const keyword = loc?.focus_keyword ?? title;
@@ -108,6 +110,7 @@ export async function regeneratePostCover(
     },
     combinedInstructions,
     referenceVisionBrief,
+    { omitOnImageText },
   );
 
   const resolvedBrandColors = resolveClientBrandColors({
@@ -123,7 +126,7 @@ export async function regeneratePostCover(
     embedPrefix: coverEmbedPrefix,
     basePrompt: buildCoverPrompt(
       coverSubject,
-      title.trim().split(/\s+/).slice(0, 4).join(" "),
+      omitOnImageText ? "" : title.trim().split(/\s+/).slice(0, 4).join(" "),
       {
         primaryColor: resolvedBrandColors.primaryColor,
         secondaryColor: resolvedBrandColors.secondaryColor,
@@ -133,7 +136,11 @@ export async function regeneratePostCover(
         brandVoice: client.brand_voice ?? "professional",
       },
       null,
-      { headlineMayBeNonEnglish: true, hasReferenceImages: refParts.length > 0 },
+      {
+        headlineMayBeNonEnglish: !omitOnImageText,
+        hasReferenceImages: refParts.length > 0,
+        omitOnImageText,
+      },
     ),
     logLabel,
     referenceImages: refParts.length ? refParts : undefined,

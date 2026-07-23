@@ -307,7 +307,23 @@ CMS waits up to **15 seconds** for your webhook response. Heavy work should be q
 
 ---
 
-## 7. Optional: pull content via CMS API
+## 7. WordPress sites
+
+For WordPress client sites, use the in-repo plugin instead of a custom webhook route:
+
+**Plugin path:** [`wordpress-plugin/witflow-cms/`](../wordpress-plugin/witflow-cms/)
+
+1. Install/activate the plugin (and **Polylang** if you sync pt/en/fr).
+2. Open **Settings → Witflow CMS** and set CMS base URL, Site ID, API key, and Webhook secret.
+3. Copy the plugin webhook URL: `https://yourdomain.com/wp-json/witflow-cms/v1/webhook`
+4. In CMS Admin → Users → client, paste that URL + matching Webhook Secret (`spec` format).
+5. **Publish to website** on a test post. The plugin upserts native WP posts (Markdown → HTML, featured image, SEO meta) and links locales via Polylang.
+
+See the plugin [`readme.txt`](../wordpress-plugin/witflow-cms/readme.txt) for curl checks, multilingual notes, and Sync now / Test connection.
+
+---
+
+## 8. Optional: pull content via CMS API
 
 Webhooks push full post data on publish/update. You can also **pull** published posts with the headless API — useful for rebuilds or webhook-only revalidation flows. See [CMS_API_V1.md](CMS_API_V1.md).
 
@@ -319,15 +335,16 @@ CMS_SITE_ID=<client-uuid-from-cms-admin>
 CMS_API_TOKEN=<cms-api-key-or-same-as-webhook-secret>
 ```
 
-Pull API is optional. For webhook-only integration, **`CMS_WEBHOOK_SECRET` + deployed route** is enough.
+Pull API is optional. For webhook-only integration, **`CMS_WEBHOOK_SECRET` + deployed route** is enough. On WordPress, use the plugin **Sync now** button (same API) instead of wiring env vars manually.
 
 ---
 
-## 8. Testing tips
+## 9. Testing tips
 
 - Inspect payloads with [webhook.site](https://webhook.site) or a tunnel — set that URL temporarily in CMS Admin, publish a test post, then switch back to your production URL.
 - The CMS host exposes `POST /api/test-webhook` for internal logging experiments; **your site must still implement its own URL** that production will call.
 - After any secret or URL change: verify with curl ([§3](#3-verify-before-registering-in-cms-admin)), then one **Publish to website** from CMS Admin.
+- For WordPress: use the curl checks in [`wordpress-plugin/witflow-cms/readme.txt`](../wordpress-plugin/witflow-cms/readme.txt).
 
 ---
 
@@ -335,10 +352,10 @@ Pull API is optional. For webhook-only integration, **`CMS_WEBHOOK_SECRET` + dep
 
 | Step | Where | Action |
 |------|--------|--------|
-| 1 | Your site | Deploy `POST` handler; verify 401 without secret |
-| 2 | Your site | Set `CMS_WEBHOOK_SECRET` on Production; redeploy; verify 2xx with secret |
+| 1 | Your site | Deploy `POST` handler (or install Witflow CMS WP plugin); verify 401 without secret |
+| 2 | Your site | Set webhook secret (env or plugin settings); verify auth with secret |
 | 3 | CMS Admin | Set Webhook URL + Webhook Secret (must match site) |
 | 4 | CMS Admin | **Publish to website** on a test post; confirm success |
-| 5 | Your site | Render author from `post.author` / `translations[locale].author`; allow cover image domains in Next.js |
+| 5 | Your site | Render author from `post.author` / `translations[locale].author`; allow cover image domains (Next.js) or rely on WP media sideload |
 
 When in doubt, run the two curl commands in [§3](#3-verify-before-registering-in-cms-admin) and share the **status code + response body** with the CMS team — that usually isolates URL, deploy, and auth issues in one step.

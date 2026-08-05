@@ -3,13 +3,8 @@
  */
 import type { Locale } from "@/lib/types/db";
 import type { AuthorForBlock } from "@/lib/agent/internal-link";
+import { localeWritingLanguageInstruction } from "@/lib/agent/locale-language";
 import { stripModelJsonFences, type TextLlmClient } from "@/lib/agent/text-llm";
-
-const LOCALE_NAME: Record<Locale, string> = {
-  en: "English",
-  pt: "Portuguese",
-  fr: "French",
-};
 
 export async function localizeAuthorForLocale(
   textLlm: TextLlmClient,
@@ -21,7 +16,7 @@ export async function localizeAuthorForLocale(
   const bio = author.bio?.trim() ?? "";
   if (!job && !bio) return author;
 
-  const langName = LOCALE_NAME[targetLocale] ?? targetLocale;
+  const langName = localeWritingLanguageInstruction(targetLocale);
   const raw = await textLlm.generateText({
     temperature: 0.2,
     assistant: "author_localization",

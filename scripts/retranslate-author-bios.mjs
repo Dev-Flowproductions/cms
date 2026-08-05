@@ -91,7 +91,11 @@ function appendAuthorBlock(contentMd, locale, author) {
   return `${stripAuthorBlocks(contentMd).trimEnd()}${block}`;
 }
 
-const localeName = { en: "English", pt: "Portuguese", fr: "French" };
+const localeName = {
+  en: "English",
+  pt: "European Portuguese (Portugal / pt-PT) — never Brazilian Portuguese",
+  fr: "French",
+};
 
 async function translateAuthorFields(openai, toLocale, author) {
   const res = await openai.chat.completions.create({

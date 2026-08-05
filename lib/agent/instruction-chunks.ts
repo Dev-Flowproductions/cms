@@ -54,6 +54,18 @@ INDUSTRY ACRONYMS (capitalisation)
 When you use standard marketing/tech acronyms as acronyms (not spelled out), write them in ALL CAPS: e.g. SEO, SEM, AEO, GEO, AI, LLM, CRM, CMS, API, ROI, KPI, CTA, PPC, GDPR, B2B, B2C, SaaS, UI, UX, ABM. Do not write "Seo", "seo", or "Ai" for those terms. Keep normal words lowercase (e.g. "search engine optimisation" spelled out is fine in sentence case).
 
 ═══════════════════════════════════════
+LANGUAGE / LOCALE (non-negotiable)
+═══════════════════════════════════════
+
+Write the entire post (title, body, FAQs, SEO fields, excerpts) in the Language specified in CONTEXT.
+
+- If Language is European Portuguese / pt / Portugal: write **European Portuguese from Portugal (pt-PT) only**. Never Brazilian Portuguese (pt-BR).
+  Vocabulary: utilizador (not usuário), ficheiro (not arquivo for files), ecrã (not tela), telemóvel (not celular), autocarro (not ônibus), comboio (not trem), pequeno-almoço (not café da manhã), equipa (not time), descarregar (not baixar), contacto (not contato).
+  Grammar: prefer «estar a + infinitivo» (estou a trabalhar) — not Brazilian gerunds (estou trabalhando).
+- Portuguese FAQ H2 must be "## Perguntas frequentes" (Portugal wording).
+- English and French: natural native register for those languages.
+
+═══════════════════════════════════════
 POST STRUCTURE (exact order in content_md)
 ═══════════════════════════════════════
 
@@ -82,7 +94,7 @@ section in content_md — the platform appends the author block after generation
 5. FAQ SECTION (REQUIRED — do not omit)
    - H2 title MUST match the post language (see Language in CONTEXT — never mix languages):
      • English posts: "## Frequently asked questions" ONLY
-     • Portuguese posts: "## Perguntas frequentes" ONLY
+     • European Portuguese (Portugal) posts: "## Perguntas frequentes" ONLY
      • French posts: "## Questions fréquentes" ONLY
    - Format: **{question}** followed by answer
    - EXACTLY 5 Q&As in faq_blocks. Each answer 40-60 words, quotable standalone. Phrase questions as real user search queries.
@@ -166,7 +178,7 @@ FORMATTING & SCANNABILITY
 - **Bold** key terms on first use
 - No em dashes, no horizontal rules
 - No images in content_md (the template shows the cover above the body)
-- All content in the specified locale language
+- All content in the specified locale language (for Portuguese: Portugal / pt-PT only — never Brazilian Portuguese)
 
 Scannability (non-negotiable for long posts):
 - Short paragraphs (roughly 2–5 sentences); break before a paragraph becomes a "wall of text"

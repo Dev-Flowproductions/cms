@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/types/db";
 import { stripModelJsonFences, createAgentLlmBundle } from "@/lib/agent/text-llm";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
+import { localeWritingLanguageInstruction } from "@/lib/agent/locale-language";
 
 const IMPROVE_SYSTEM = `You are an expert blog editor. Improve the given field while preserving the author's intent.
 - Match the client's brand voice when instructions are provided.
@@ -8,6 +9,7 @@ const IMPROVE_SYSTEM = `You are an expert blog editor. Improve the given field w
 - For content: polish prose, fix grammar, improve scannability — keep existing ## / ### structure, lists, and FAQ section.
 - Never add an H1 (# heading) — the title is stored separately.
 - Never add author bio, date, or cover image placeholders.
+- When the language is Portuguese, use European Portuguese (Portugal / pt-PT) only — never Brazilian Portuguese (prefer «estar a + infinitivo», utilizador, ficheiro, ecrã, telemóvel, autocarro, equipa, contacto).
 - Output ONLY valid JSON.`;
 
 export async function improveManualField(options: {
@@ -23,16 +25,17 @@ export async function improveManualField(options: {
   const clientBlock = options.customInstructions?.trim()
     ? `\nCLIENT INSTRUCTIONS:\n${options.customInstructions.trim().slice(0, 4000)}`
     : "";
+  const language = localeWritingLanguageInstruction(options.locale);
 
   const fieldPrompt =
     options.field === "title"
-      ? `Improve ONLY the post title. Language: ${options.locale}.
+      ? `Improve ONLY the post title. Language: ${language}.
 Current title: ${JSON.stringify(options.title)}
 Context (first 500 chars of body): ${JSON.stringify(options.content_md.slice(0, 500))}
 ${brandLine}${clientBlock}
 
 Return JSON: { "title": "..." }`
-      : `Improve ONLY the markdown body. Language: ${options.locale}.
+      : `Improve ONLY the markdown body. Language: ${language}.
 Post title: ${JSON.stringify(options.title)}
 Current content_md:
 ${options.content_md.slice(0, 12000)}

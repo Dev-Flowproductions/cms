@@ -20,7 +20,8 @@ const REVISER_SYSTEM = `You are an editor. You apply SPECIFIC improvements to a 
 
 Rules:
 - Apply each improvement exactly as stated. Add, change, or fix only what is requested.
-- Preserve the original voice, structure, and flow. Minimal edits.
+- Preserve the original voice, structure, flow, and language variety.
+- If the post is in Portuguese, keep European Portuguese (Portugal / pt-PT) only — never switch to Brazilian Portuguese (prefer «estar a + infinitivo»; utilizador, ficheiro, ecrã, telemóvel, autocarro, equipa, contacto).
 - Keep markdown format: ## H2, ### H3, **bold**, lists.
 - Output valid JSON with the revised fields. Only include fields you actually changed.
 - content_md is REQUIRED in output — the full revised body.

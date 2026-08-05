@@ -18,6 +18,7 @@ import {
 import type { InstructionSelectionContext, InstructionTaskKind } from "./instruction-embeddings";
 import type { EnrichedUrl } from "./site-urls";
 import { FAQ_HEADING_BY_LOCALE } from "./faq-heading";
+import { localeWritingLanguageInstruction } from "./locale-language";
 import type { Locale } from "@/lib/types/db";
 
 export type { InstructionSelectionContext, InstructionTaskKind };
@@ -198,15 +199,7 @@ export function buildPrompt(post: PostContext, client: ClientContext, options?: 
   lines.push("CONTEXT");
   lines.push("═══════════════════════════════");
   lines.push(`Today: ${currentDate}`);
-  const localeLabel =
-    post.locale === "pt"
-      ? "European Portuguese (Portugal) — Write in pt-PT. Use Portugal-specific vocabulary and spelling: «utilizador» (not «usuário»), «ficheiro» (not «arquivo»), «ecrã» (not «tela»), «telemóvel» (not «celular»), «autocarro» (not «ônibus»), «computador portátil» (not «notebook»), «anúncio» (not «propaganda»). Avoid Brazilian Portuguese idioms, spelling variants (e.g. «atividade» → pt-PT «actividade» per old spelling; use the current post-2009 agreement only if it matches pt-PT usage). Do NOT write in Brazilian Portuguese."
-      : post.locale === "en"
-        ? "English"
-        : post.locale === "fr"
-          ? "French"
-          : post.locale;
-  lines.push(`Language: ${localeLabel}`);
+  lines.push(`Language: ${localeWritingLanguageInstruction(post.locale)}`);
   lines.push(
     "Industry acronyms (SEO, AEO, GEO, AI, CRM, etc.) must appear in ALL CAPS when used as abbreviations.",
   );

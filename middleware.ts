@@ -6,9 +6,50 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const intlMiddleware = createMiddleware(routing);
 
+/** Framer plugin id from framer-plugin/framer.json — used for CORS allowlist */
+const FRAMER_PLUGIN_ID = "wfc001";
+
 /** Matches /en, /en/, /pt, /pt/, /fr, /fr/ */
 function isLocaleRoot(pathname: string) {
   return /^\/(en|pt|fr)\/?$/.test(pathname);
+}
+
+/**
+ * CORS for Framer plugin → CMS Content API (/api/v1).
+ * Allows: local HTTPS plugin (mkcert) + Framer-hosted plugin origins.
+ * See https://www.framer.com/developers/plugins-cors
+ */
+function getFramerPluginCorsHeaders(request: NextRequest): Record<string, string> {
+  const origin = request.headers.get("origin");
+  if (!origin) return {};
+
+  const localDev =
+    /^https:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  const framerHosted = new RegExp(
+    `^https://${FRAMER_PLUGIN_ID}(-[a-zA-Z0-9]+)?\\.plugins\\.framercdn\\.com$`,
+    "i"
+  ).test(origin);
+
+  if (!localDev && !framerHosted) return {};
+
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, Accept, x-api-key",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+}
+
+function withCorsHeaders(
+  response: NextResponse,
+  cors: Record<string, string>
+): NextResponse {
+  for (const [key, value] of Object.entries(cors)) {
+    response.headers.set(key, value);
+  }
+  return response;
 }
 
 /**
@@ -26,8 +67,15 @@ export default async function middleware(request: NextRequest) {
   // Refresh Supabase session — must happen first so cookies are up to date
   const { supabase, response: supabaseRes } = await updateSession(request);
 
-  // ── API routes: only need session refresh, no intl/redirects ───────────────
+  // ── API routes: session refresh (+ CORS for /api/v1 Framer plugin) ─────────
   if (pathname.startsWith("/api/")) {
+    if (pathname.startsWith("/api/v1")) {
+      const cors = getFramerPluginCorsHeaders(request);
+      if (request.method === "OPTIONS") {
+        return withCorsHeaders(new NextResponse(null, { status: 204 }), cors);
+      }
+      return withCorsHeaders(supabaseRes, cors);
+    }
     return supabaseRes;
   }
 

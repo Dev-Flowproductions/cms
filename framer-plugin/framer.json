@@ -1,0 +1,9 @@
+{
+  "id": "wfc001",
+  "name": "Witflow CMS",
+  "modes": [
+    "configureManagedCollection",
+    "syncManagedCollection"
+  ],
+  "icon": "/icon.svg"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "witflow-framer-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Witflow CMS → Framer Server API webhook bridge (phase 3; dual-write fallback A)",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "start": "tsx --env-file=.env src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "framer-api": "^0.1.29"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.0.0"
+  }
+}

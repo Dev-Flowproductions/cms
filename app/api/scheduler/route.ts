@@ -27,6 +27,10 @@ import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-field
 import { improvePostTo90 } from "@/lib/agent/improve-to-90";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
 import { localizeAuthorForLocale } from "@/lib/agent/localize-author-for-locale";
+import {
+  localeLanguageShortName,
+  localeWritingLanguageInstruction,
+} from "@/lib/agent/locale-language";
 import { seoScoreAverage, seoScoreMeetsPublishBar } from "@/lib/agent/score-post";
 import {
   appendAuthorBlock,
@@ -316,16 +320,7 @@ function normalizeSchedulerPrimaryLocale(postLocale: string | null | undefined):
 }
 
 function localeToEnglishName(locale: SupportedLocale): string {
-  switch (locale) {
-    case "pt":
-      return "Portuguese";
-    case "en":
-      return "English";
-    case "fr":
-      return "French";
-    default:
-      return locale;
-  }
+  return localeLanguageShortName(locale);
 }
 
 type GeneratedContent = {
@@ -865,8 +860,8 @@ async function generatePostForClient(
       .single();
     const transRunId = transRun?.id;
 
-    const langName = locale === "en" ? "English" : locale === "fr" ? "French" : locale;
-    const sourceLangName = localeToEnglishName(primaryLocale);
+    const langName = localeWritingLanguageInstruction(locale);
+    const sourceLangName = localeWritingLanguageInstruction(primaryLocale);
     const primaryBodyForTranslation = stripAuthorBlocksFromContentMd(primaryContentMd);
     const authorSourceBlock = authorForBlock
       ? `
@@ -882,7 +877,7 @@ Bio: ${authorForBlock.bio ?? ""}
 RULES:
 - Translate ALL text accurately while preserving the exact same structure, markdown formatting, and meaning.
 - Keep the same headings (H1, H2, H3), bullet points, numbered lists, and FAQ format.
-- Translate the FAQ section H2 heading to the target language (English: "## Frequently asked questions", Portuguese: "## Perguntas frequentes", French: "## Questions fréquentes").
+- Translate the FAQ section H2 heading to the target language (English: "## Frequently asked questions", European Portuguese / Portugal: "## Perguntas frequentes", French: "## Questions fréquentes").
 - Translate the title, excerpt, SEO title, SEO description, and all FAQ questions/answers.
 - Translate author_job_title and author_bio into ${langName} (required when author fields are provided below). Do NOT leave the bio in ${sourceLangName}.
 - Do NOT include an "About the author" / author HTML block inside content_md — the CMS appends that separately.
@@ -892,6 +887,7 @@ RULES:
 - Do not add a date line or cover image in content_md; the website template shows them above the body.
 - Do NOT add, remove, or change any facts, statistics, or claims — only translate.
 - Use natural, fluent ${langName} — not word-for-word translation.
+- If the target is European Portuguese (Portugal / pt-PT): NEVER use Brazilian Portuguese. Prefer «estar a + infinitivo» (not Brazilian gerunds), and Portugal vocabulary (utilizador, ficheiro, ecrã, telemóvel, autocarro, comboio, equipa, contacto).
 
 ORIGINAL CONTENT (${sourceLangName}):
 

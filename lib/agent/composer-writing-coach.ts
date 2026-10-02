@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/types/db";
 import { formatStructureGuideForPrompt } from "@/lib/agent/post-structure-guide";
+import { localeWritingLanguageInstruction } from "@/lib/agent/locale-language";
 import { stripModelJsonFences, createAgentLlmBundle } from "@/lib/agent/text-llm";
 
 const COACH_SYSTEM = `You are a friendly, concise writing coach inside a CMS post composer.
@@ -10,7 +11,7 @@ Rules:
 - Each tip is one short sentence (under 140 characters), specific to what the author has written so far.
 - Say what is missing, weak, or should come next (intro, FAQ, H2 questions, word count, bold definition, etc.).
 - If the draft is empty or very short, encourage the next concrete step.
-- Match the post language given in the request (pt, en, or fr).
+- Match the post language given in the request. For Portuguese, use European Portuguese (Portugal / pt-PT) only — never Brazilian Portuguese.
 - Never suggest adding H1, date, cover image, or author bio in markdown.
 - Output ONLY valid JSON: { "tips": ["...", "..."] }`;
 
@@ -25,7 +26,7 @@ export async function getComposerWritingTips(options: {
   const wordCount = options.content_md.trim() ? options.content_md.trim().split(/\s+/).length : 0;
   const brandLine = options.brandName?.trim() ? `Brand: ${options.brandName.trim()}` : "";
 
-  const prompt = `Post language: ${options.locale}
+  const prompt = `Post language: ${localeWritingLanguageInstruction(options.locale)}
 ${brandLine}
 
 REQUIRED STRUCTURE:

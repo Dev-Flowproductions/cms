@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUser, requireAdmin } from "@/lib/auth";
+import { getUser, getUserRoles, hasAdminRole } from "@/lib/auth";
 import { z } from "zod";
 import { clampMetaDescription, clampSeoTitle } from "@/lib/agent/clamp-seo-fields";
 import { normalizeFaqHeading } from "@/lib/agent/faq-heading";
@@ -149,9 +149,13 @@ const adminManualPostSchema = z.object({
   excerpt: z.string().optional(),
 });
 
-/** Admin-only: create a manual draft post on behalf of a client user. */
+/**
+ * Create a manual draft for a client account.
+ * Admins may create on behalf of any client; clients may only create for themselves.
+ */
 export async function adminCreateManualPostForUser(formData: FormData) {
-  await requireAdmin();
+  const user = await getUser();
+  if (!user) return { error: "Unauthorized" };
 
   const parsed = adminManualPostSchema.safeParse({
     author_id: formData.get("author_id")?.toString().trim(),
@@ -185,6 +189,12 @@ export async function adminCreateManualPostForUser(formData: FormData) {
   } = parsed.data;
 
   const admin = createAdminClient();
+
+  const isSelf = user.id === author_id;
+  if (!isSelf) {
+    const roles = await getUserRoles(user.id);
+    if (!hasAdminRole(roles)) return { error: "Forbidden" };
+  }
 
   const { data: clientRow } = await admin.from("clients").select("user_id").eq("user_id", author_id).maybeSingle();
   if (!clientRow) return { error: "Client account not found" };

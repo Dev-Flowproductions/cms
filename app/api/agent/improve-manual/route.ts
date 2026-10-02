@@ -10,11 +10,6 @@ export async function POST(request: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const roles = await getUserRoles(user.id);
-  if (!hasAdminRole(roles)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   let body: {
     author_user_id: string;
     locale: string;
@@ -31,6 +26,12 @@ export async function POST(request: Request) {
   const { author_user_id, locale, field, title = "", content_md = "" } = body;
   if (!author_user_id || !locale || (field !== "title" && field !== "content")) {
     return NextResponse.json({ error: "author_user_id, locale, and field are required" }, { status: 400 });
+  }
+
+  const roles = await getUserRoles(user.id);
+  const isSelf = user.id === author_user_id;
+  if (!isSelf && !hasAdminRole(roles)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (locale !== "pt" && locale !== "en" && locale !== "fr") {
     return NextResponse.json({ error: "locale must be pt, en, or fr" }, { status: 400 });

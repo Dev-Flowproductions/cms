@@ -58,11 +58,14 @@ export function AdminPostComposer({
   accountName,
   brand,
   postsListHref,
+  fullEditorHrefBase = "/admin/posts",
 }: {
   authorUserId: string;
   accountName: string;
   brand: ClientBrandPreview;
   postsListHref: string;
+  /** Base path for "Open full editor" (e.g. `/dashboard/posts` or `/admin/posts`). */
+  fullEditorHrefBase?: string;
 }) {
   const t = useTranslations("admin");
   const router = useRouter();
@@ -511,7 +514,7 @@ export function AdminPostComposer({
 
               {postId && (
                 <Link
-                  href={`/admin/posts/${postId}`}
+                  href={`${fullEditorHrefBase}/${postId}`}
                   className="inline-flex items-center rounded-xl border px-5 py-2.5 text-sm font-semibold transition-all"
                   style={{
                     background: "var(--adm-surface-high)",

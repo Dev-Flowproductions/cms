@@ -52,6 +52,7 @@ export function buildInstructionRetrievalQuery(ctx: InstructionSelectionContext)
     return [
       "Professional translation task for CMS blog content.",
       `Target language context: ${ctx.locale}.`,
+      "If target is Portuguese: European Portuguese from Portugal (pt-PT) only — never Brazilian Portuguese.",
       "Preserve markdown structure, heading levels, FAQ layout.",
       "Keep every internal link URL character-for-character; translate only anchor text in brackets.",
       "Do not add or remove facts, statistics, or claims.",

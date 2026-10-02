@@ -22,3 +22,13 @@
 	width: 6rem;
 	margin: 2px 0 8px 4px;
 }
+
+.witflow-cms-settings #witflow_webhook_secret {
+	margin-right: 6px;
+}
+
+.witflow-cms-settings #witflow-generate-secret,
+.witflow-cms-settings #witflow-copy-secret {
+	margin: 0 4px 0 0;
+	vertical-align: middle;
+}

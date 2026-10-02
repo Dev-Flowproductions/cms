@@ -173,7 +173,9 @@ class Witflow_CMS_Settings {
 						<th scope="row"><label for="witflow_webhook_secret"><?php echo esc_html__( 'Webhook secret', 'witflow-cms' ); ?></label></th>
 						<td>
 							<input type="password" class="regular-text" id="witflow_webhook_secret" name="<?php echo esc_attr( WITFLOW_CMS_OPTION ); ?>[webhook_secret]" value="<?php echo esc_attr( $settings['webhook_secret'] ); ?>" autocomplete="off" />
-							<p class="description"><?php echo esc_html__( 'Must match the Webhook Secret in CMS Admin character for character.', 'witflow-cms' ); ?></p>
+							<button type="button" class="button" id="witflow-generate-secret"><?php echo esc_html__( 'Generate secret', 'witflow-cms' ); ?></button>
+							<button type="button" class="button" id="witflow-copy-secret"><?php echo esc_html__( 'Copy', 'witflow-cms' ); ?></button>
+							<p class="description"><?php echo esc_html__( 'Generate a secret here, save settings, then paste the same value into CMS Admin → Webhook Secret.', 'witflow-cms' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -241,14 +243,73 @@ class Witflow_CMS_Settings {
 		</div>
 		<script>
 		(function () {
-			var btn = document.getElementById('witflow-copy-webhook');
-			var el = document.getElementById('witflow-webhook-url');
-			if (!btn || !el) return;
-			btn.addEventListener('click', function () {
-				if (navigator.clipboard && navigator.clipboard.writeText) {
-					navigator.clipboard.writeText(el.textContent.trim());
+			var copyWebhookBtn = document.getElementById('witflow-copy-webhook');
+			var webhookUrlEl = document.getElementById('witflow-webhook-url');
+			if (copyWebhookBtn && webhookUrlEl) {
+				copyWebhookBtn.addEventListener('click', function () {
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(webhookUrlEl.textContent.trim());
+					}
+				});
+			}
+
+			var secretInput = document.getElementById('witflow_webhook_secret');
+			var generateBtn = document.getElementById('witflow-generate-secret');
+			var copySecretBtn = document.getElementById('witflow-copy-secret');
+
+			function generateSecret() {
+				var bytes = new Uint8Array(32);
+				if (window.crypto && window.crypto.getRandomValues) {
+					window.crypto.getRandomValues(bytes);
+				} else {
+					for (var i = 0; i < bytes.length; i++) {
+						bytes[i] = Math.floor(Math.random() * 256);
+					}
 				}
-			});
+				var hex = '';
+				for (var j = 0; j < bytes.length; j++) {
+					hex += ('0' + bytes[j].toString(16)).slice(-2);
+				}
+				return hex;
+			}
+
+			function copyText(text) {
+				if (!text) {
+					return;
+				}
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(text);
+					return;
+				}
+				var tmp = document.createElement('textarea');
+				tmp.value = text;
+				tmp.setAttribute('readonly', '');
+				tmp.style.position = 'absolute';
+				tmp.style.left = '-9999px';
+				document.body.appendChild(tmp);
+				tmp.select();
+				try {
+					document.execCommand('copy');
+				} catch (e) {
+					// Ignore copy failures; user can still select the field manually.
+				}
+				document.body.removeChild(tmp);
+			}
+
+			if (generateBtn && secretInput) {
+				generateBtn.addEventListener('click', function () {
+					secretInput.type = 'text';
+					secretInput.value = generateSecret();
+					secretInput.focus();
+					secretInput.select();
+				});
+			}
+
+			if (copySecretBtn && secretInput) {
+				copySecretBtn.addEventListener('click', function () {
+					copyText(secretInput.value.trim());
+				});
+			}
 		})();
 		</script>
 		<?php
